@@ -358,9 +358,9 @@ function send(kind, payload){
   if (!CONFIG.sheetUrl) return;
   try { fetch(CONFIG.sheetUrl, { method:'POST', mode:'no-cors', headers:{'Content-Type':'text/plain;charset=utf-8'}, body }); } catch(e){}
 }
-function clarity(...a){ try{ if (window.clarity) window.clarity(...a); }catch(e){} }
+function cTrack(...a){ try{ if (typeof window.clarity==='function') window.clarity(...a); }catch(e){} }
 if (CONFIG.clarityId) {
-  clarity('identify', S.pid);
+  cTrack('identify', S.pid);
 }
 const ON_PATH = {
   T1:['guide','type','price','qty','slider','buy','confirm','hoga','chart','toggle','seg_buy','amount','avail'],
@@ -436,7 +436,7 @@ function rPre(){
     const expert = a.exp==='3년 이상' && a.freq==='일주일에 2번 이상';
     const novice = a.exp==='해 본 적 없어요' || a.exp==='1년 미만' || a.kiwoom==='써 본 적 없어요';
     S.segment = expert ? '숙련' : novice ? '입문' : '중간';
-    clarity('set','segment',S.segment); clarity('set','order',S.order.join(''));
+    cTrack('set','segment',S.segment); cTrack('set','order',S.order.join(''));
     send('pre',{...a, order:S.order.join(''), device: matchMedia('(pointer:coarse)').matches?'mobile':'desktop'});
     S.phase='taskIntro'; save(); render();
   };
@@ -452,7 +452,7 @@ function rTaskIntro(){
     <div class="actions"><button class="btn btn-primary" id="go">시작하기</button></div>`;
   $('#go').onclick=()=>{
     S.phase='task'; save(); EVENTS=[]; taskT0=Date.now();
-    clarity('set','version',curV()); clarity('set','task',t.id);
+    cTrack('set','version',curV()); cTrack('set','task',t.id);
     log('task_start','task',t.id); render();
   };
 }
@@ -477,7 +477,7 @@ function finishTask(result, detail){
   const firstTap = EVENTS.find(e=>e.event==='tap');
   lastResult = { version:curV(), task:t.id, result, ms:dur, taps:EVENTS.filter(e=>e.event==='tap').length,
     off_path:offPath, first_tap_ok: firstTap?firstTap.on_path:null, ...detail };
-  clarity('event','task_'+result);
+  cTrack('event','task_'+result);
   send('events',{ version:curV(), task:t.id, events:EVENTS });
   S.last=lastResult; S.phase='survey'; save();
   setTimeout(render, result==='skip'?0:700);
