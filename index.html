@@ -375,6 +375,13 @@ function log(event, target='', value=''){
   const on = (ON_PATH[t]||[]).some(p => String(target).startsWith(p));
   EVENTS.push({ t:Date.now()-taskT0, event, target, value:String(value), on_path:on });
 }
+/* 과업 중 프로토타입 밖(오른쪽 안내 카드, 의견 칸 등) 클릭은 panel_tap으로 따로 기록. 경로 이탈 계산에는 안 들어감 */
+document.addEventListener('click', e => {
+  if (S.phase!=='task' || e.target.closest('#device')) return;
+  const el = e.target.closest('button,textarea,input,a') || e.target;
+  const name = el.id==='skip' ? '건너뛰기' : el.id==='fb-text'||el.tagName==='TEXTAREA' ? '의견 입력칸' : (el.textContent||'').trim().slice(0,30) || '빈 곳';
+  EVENTS.push({ t:Date.now()-taskT0, event:'panel_tap', target:name, value:'', on_path:'' });
+}, true);
 
 /* ═════════ 오른쪽 카드 렌더링 ═════════ */
 const card = $('#card'), veil = $('#veil'), device = $('#device');
