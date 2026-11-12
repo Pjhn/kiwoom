@@ -1,0 +1,909 @@
+<title>주문 흐름 UT</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+@font-face{font-family:"Pretendard";font-weight:400;font-display:swap;src:url("fonts/Pretendard-Regular.woff2") format("woff2")}
+@font-face{font-family:"Pretendard";font-weight:500;font-display:swap;src:url("fonts/Pretendard-Medium.woff2") format("woff2")}
+@font-face{font-family:"Pretendard";font-weight:600;font-display:swap;src:url("fonts/Pretendard-SemiBold.woff2") format("woff2")}
+@font-face{font-family:"Pretendard";font-weight:700;font-display:swap;src:url("fonts/Pretendard-Bold.woff2") format("woff2")}
+
+/* 레이아웃: 왼쪽 목업 무대 + 오른쪽 안내 칼럼(진행 카드 위, 피드백 아래) + 왼쪽 아래 문의 버튼 */
+:root{
+  --bg:#F2F4F6; --surface:#FFFFFF; --surface-2:#F4F5F7; --line:#E5E8EB;
+  --fg:#191F28; --fg-2:#4E5968; --fg-3:#8B95A1;
+  --accent:#E6007E; --accent-press:#C4006B; --accent-soft:#FDE9F3; --on-accent:#FFFFFF;
+  --phone:#191F28;
+  --font:"Pretendard",-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR",system-ui,sans-serif;
+  --r-lg:24px; --r-md:16px; --r-sm:12px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#101013; --surface:#1B1B1F; --surface-2:#26262B; --line:#2C2C33;
+  --fg:#F2F4F6; --fg-2:#B0B8C1; --fg-3:#7E8691;
+  --accent:#FF3D9A; --accent-press:#FF64AE; --accent-soft:#3A1529; --on-accent:#FFFFFF;
+  --phone:#000000; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#101013; --surface:#1B1B1F; --surface-2:#26262B; --line:#2C2C33;
+  --fg:#F2F4F6; --fg-2:#B0B8C1; --fg-3:#7E8691;
+  --accent:#FF3D9A; --accent-press:#FF64AE; --accent-soft:#3A1529; --on-accent:#FFFFFF;
+  --phone:#000000; color-scheme:dark}
+
+html,body{height:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--font);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased;word-break:keep-all}
+button{font:inherit;cursor:pointer;border:0;background:none;color:inherit;padding:0}
+button:focus-visible,textarea:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.app{min-height:100%;box-sizing:border-box;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,440px);gap:48px;align-items:stretch;
+  max-width:1200px;margin:0 auto;padding-block:32px;padding-left:max(40px,env(safe-area-inset-left,0px));padding-right:max(40px,env(safe-area-inset-right,0px))}
+
+/* 목업 무대 */
+.stage{display:flex;align-items:center;justify-content:center;min-width:0}
+.phone{width:min(100%,375px,calc((100vh - 64px) * 375 / 812));aspect-ratio:375/812;background:var(--phone);border-radius:52px;padding:10px;box-sizing:border-box;
+  box-shadow:0 24px 60px rgba(0,23,51,.14)}
+.screen{width:100%;height:100%;border-radius:42px;overflow:hidden;position:relative;background:#fff}
+.veil{position:absolute;inset:0;background:rgba(255,255,255,.72);backdrop-filter:blur(2px);display:flex;align-items:center;justify-content:center;text-align:center;
+  color:#4E5968;font-size:15px;font-weight:600;padding:24px;z-index:50}
+.veil[hidden]{display:none}
+
+/* 오른쪽 안내 칼럼 */
+.side{display:flex;flex-direction:column;gap:16px;min-width:0;max-height:calc(100vh - 64px)}
+.card{background:var(--surface);border-radius:var(--r-lg);padding:28px;overflow-y:auto;flex:1 1 auto;min-height:0}
+.step{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;gap:8px}
+.step .step-badge{margin-right:auto}
+.back-btn{font-size:13px;font-weight:600;color:var(--fg-2);background:var(--surface-2);padding:5px 10px 5px 8px;border-radius:8px;display:inline-flex;align-items:center;gap:5px}
+.back-btn::before{content:'‹';font-size:16px;line-height:1;margin-top:-2px}
+.step-badge{font-size:13px;font-weight:600;color:var(--accent);background:var(--accent-soft);padding:5px 10px;border-radius:8px}
+.step-count{font-size:13px;color:var(--fg-3);font-variant-numeric:tabular-nums}
+.bar{height:4px;background:var(--line);border-radius:2px;margin-bottom:24px;overflow:hidden}
+.bar span{display:block;height:100%;background:var(--accent);border-radius:2px;transition:width .3s}
+.title{font-size:24px;line-height:1.4;font-weight:700;letter-spacing:-.02em;margin:0 0 10px;text-wrap:balance}
+.sub{font-size:15px;color:var(--fg-2);margin:0 0 20px}
+.hint{display:flex;gap:10px;background:var(--surface-2);border-radius:var(--r-sm);padding:14px 16px;font-size:14px;color:var(--fg-2);margin-bottom:20px}
+.hint svg{flex:none;margin-top:2px}
+.actions{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+.btn{height:56px;border-radius:var(--r-md);font-size:17px;font-weight:600;width:100%}
+.btn-primary{background:var(--accent);color:var(--on-accent)}
+.btn-primary:hover{background:var(--accent-press)}
+.btn-primary:disabled{opacity:.35;cursor:default}
+.btn-ghost{color:var(--fg-3);height:44px;font-size:15px;font-weight:500}
+.btn-ghost:hover{color:var(--fg-2)}
+.q{margin-bottom:22px}
+.q-label{font-size:16px;font-weight:600;margin-bottom:10px;display:block}
+.q-help{font-size:13px;color:var(--fg-3);margin:-6px 0 10px}
+.scale{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.scale.s5{grid-template-columns:repeat(5,1fr)}
+.chip{height:44px;border-radius:10px;background:var(--surface-2);color:var(--fg-2);font-weight:600;font-size:15px}
+.chip[aria-pressed="true"]{background:var(--accent);color:var(--on-accent)}
+.scale-ends{display:flex;justify-content:space-between;font-size:12px;color:var(--fg-3);margin-top:6px}
+.opts{display:flex;flex-wrap:wrap;gap:8px}
+.opts .chip{height:40px;padding:0 14px;font-weight:500}
+.check{display:flex;gap:10px;align-items:flex-start;font-size:15px;color:var(--fg-2);margin-bottom:12px;cursor:pointer}
+.check input{width:20px;height:20px;accent-color:var(--accent);margin:2px 0 0;flex:none}
+textarea.field{width:100%;box-sizing:border-box;min-height:80px;resize:vertical;border:0;background:var(--surface-2);border-radius:var(--r-sm);padding:12px 14px;font:inherit;font-size:15px;color:var(--fg)}
+textarea.field::placeholder{color:var(--fg-3)}
+.sus-row{padding:12px 0;border-top:1px solid var(--line)}
+.sus-row:first-child{border-top:0}
+.sus-row p{margin:0 0 8px;font-size:15px}
+.done-code{font-size:28px;font-weight:700;letter-spacing:.08em;color:var(--accent)}
+
+.feedback{background:var(--surface);border-radius:var(--r-lg);padding:18px 20px 14px;flex:none}
+.feedback label{display:block;font-size:15px;font-weight:600;margin-bottom:2px}
+.feedback p{margin:0 0 10px;font-size:13px;color:var(--fg-3)}
+.fb-row{display:flex;gap:8px;align-items:flex-end}
+.fb-row textarea{flex:1;min-width:0;resize:none;height:48px;box-sizing:border-box;border:0;background:var(--surface-2);border-radius:var(--r-sm);padding:13px 14px;
+  font:inherit;font-size:15px;color:var(--fg)}
+.fb-row textarea::placeholder{color:var(--fg-3)}
+.btn-send{height:48px;padding:0 18px;border-radius:var(--r-sm);background:var(--accent-soft);color:var(--accent);font-weight:600;font-size:15px;flex:none}
+.btn-send:disabled{opacity:.45;cursor:default}
+.sent{font-size:13px;color:var(--accent);margin-top:8px}
+
+.contact{position:fixed;left:max(24px,calc(env(safe-area-inset-left,0px) + 16px));bottom:calc(24px + env(safe-area-inset-bottom,0px));z-index:80;
+  display:flex;align-items:center;gap:6px;height:40px;padding:0 14px 0 12px;border-radius:20px;background:var(--surface);color:var(--fg-2);font-size:13px;font-weight:600;
+  box-shadow:0 4px 16px rgba(0,23,51,.08)}
+.contact:hover{color:var(--fg)}
+.contact-pop{position:fixed;left:max(24px,calc(env(safe-area-inset-left,0px) + 16px));bottom:calc(72px + env(safe-area-inset-bottom,0px));z-index:80;
+  background:var(--surface);color:var(--fg-2);border-radius:var(--r-md);padding:16px 18px;font-size:14px;max-width:280px;box-shadow:0 8px 28px rgba(0,23,51,.14)}
+.contact-pop b{display:block;color:var(--fg);margin-bottom:4px}
+
+@media (max-width:860px){
+  .app{grid-template-columns:1fr;gap:16px;padding-block:16px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-bottom:88px}
+  .side{order:-1;max-height:none}
+  .card{padding:22px;overflow:visible}
+  .phone{width:min(100%,375px);padding:6px;border-radius:44px}
+  .screen{border-radius:38px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* ───── 목업 기기(B안): 실제 앱처럼 항상 라이트, 375×812 기준으로 그리고 프레임에 맞게 축소 ───── */
+.device{position:absolute;left:0;top:0;width:375px;height:812px;transform-origin:0 0;background:#fff;color:#191F28;overflow:hidden;
+  font-size:14px;line-height:1.35;font-variant-numeric:tabular-nums;--m:#E6007E;--m-soft:#FDE9F3;--blue:#2F6FED;--g0:#F4F5F7;--g1:#EEF0F3;--g2:#8B95A1;--g3:#4E5968;--ln:#E8EBEE}
+.device button{color:inherit}
+.device{letter-spacing:-.02em}
+.d-scroll{position:absolute;top:44px;left:0;right:0;bottom:0;overflow-y:auto;overflow-x:hidden;scrollbar-width:none}
+.d-scroll::-webkit-scrollbar{display:none}
+.d-status{position:absolute;top:0;left:0;right:0;height:44px;display:flex;justify-content:space-between;align-items:center;padding:0 28px 0 40px;font-size:16px;font-weight:600;background:#fff;z-index:5}
+.d-status .icons{display:flex;gap:6px;align-items:center}
+.d-head{height:52px;display:flex;align-items:center;gap:10px;padding:0 16px 0 12px}
+.d-search{flex:1;height:38px;border-radius:19px;background:var(--g0);display:flex;align-items:center;gap:8px;padding:0 14px;font-size:16px;font-weight:500;text-align:left}
+.d-mode{height:36px;padding:0 10px 0 12px;border:1px solid var(--ln);border-radius:8px;font-size:14px;display:flex;align-items:center;gap:6px}
+.d-acct-row{display:flex;align-items:center;gap:8px;padding:6px 16px 8px}
+.d-acct{flex:1;height:34px;border-radius:8px;background:var(--g0);display:flex;align-items:center;gap:8px;padding:0 12px;font-size:14px;text-align:left}
+.d-acct .dot{width:7px;height:7px;border-radius:50%;background:linear-gradient(135deg,#FF8A3D,#E6007E)}
+.d-acct .chev{margin-left:auto}
+.d-icon{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center}
+.d-icon.on{background:var(--g0)}
+.d-chart{border-bottom:1px solid var(--ln)}
+.d-chart #lwc{cursor:crosshair}
+.h-row .v.tk{animation:tk .6s ease-out}
+@keyframes tk{from{box-shadow:inset 0 0 0 1px #191F28}to{box-shadow:inset 0 0 0 1px transparent}}
+.d-tf{display:flex;align-items:center;gap:18px;padding:8px 16px;font-size:14px;color:var(--g3)}
+.d-tf .on{color:var(--m);font-weight:700;background:var(--m-soft);border-radius:6px;padding:2px 10px}
+.d-tf .r{margin-left:auto;display:flex;gap:14px}
+.d-main{display:flex;gap:16px;padding:4px 16px 12px}
+.d-hoga{width:124px;flex:none;height:auto;contain:size;letter-spacing:-.04em;overflow-y:auto;scrollbar-width:none;position:relative;-webkit-mask-image:linear-gradient(transparent,#000 6%,#000 94%,transparent)}
+.d-hoga::-webkit-scrollbar{display:none}
+.h-row{display:flex;align-items:center;justify-content:space-between;width:100%;height:49px;text-align:left;padding-left:4px}
+.h-row .p{font-size:14px;font-weight:600;color:var(--m);display:block}
+.h-row .c{font-size:12px;color:var(--m);display:block}
+.h-row .v{font-size:11px;min-width:16px;text-align:right;padding:2px 3px;border-radius:2px}
+.h-row.hs .v{color:var(--blue);background:#EEF4FF}
+.h-row.hb .v{color:var(--m);background:var(--m-soft)}
+.h-row.cur{height:52px}
+.h-row.cur .p{font-size:20px;font-weight:700}
+.h-row:hover{background:var(--g0)}
+.h-row.sel{box-shadow:inset 0 0 0 1.5px #191F28;border-radius:6px}
+.d-form{flex:1;min-width:0;display:flex;flex-direction:column;gap:10px}
+.seg{display:flex;background:var(--g0);border-radius:8px;padding:3px}
+.seg button{flex:1;height:32px;border-radius:6px;font-size:14px;color:var(--g3)}
+.seg .on{background:#fff;color:var(--m);font-weight:700;box-shadow:0 1px 2px rgba(0,0,0,.06)}
+.f-box{height:46px;border-radius:8px;background:var(--g0);display:flex;align-items:center;padding:0 10px 0 12px;gap:6px;font-size:15px;box-sizing:border-box;border:1.5px solid transparent}
+.f-box.focus{border-color:#191F28;background:#fff}
+.f-box input{flex:1;min-width:0;border:0;background:transparent;font:inherit;font-size:15px;font-weight:600;color:#191F28;outline:none;padding:0}
+.f-box input::placeholder{color:#A4ACB5;font-weight:500}
+.f-box input:disabled{color:#4E5968}
+.f-box .unit{font-size:14px;color:#191F28}
+.f-box .pm{font-size:22px;width:22px;line-height:1;color:#4E5968;font-weight:300}
+.f-type{justify-content:space-between;font-weight:700;width:100%;text-align:left}
+.f-type .q{display:inline-flex;align-items:center;gap:6px;margin:0}
+.slider{position:relative;height:26px;margin:4px 0 0;touch-action:none;cursor:pointer}
+.slider .track{position:absolute;left:0;right:0;top:11px;height:3px;background:var(--ln);border-radius:2px}
+.slider .fill{position:absolute;left:0;top:11px;height:3px;background:var(--m);border-radius:2px}
+.slider .tick{position:absolute;top:10px;width:5px;height:5px;margin-left:-2.5px;border-radius:50%;background:#B8BFC6}
+.slider .knob{position:absolute;top:2px;width:20px;height:20px;margin-left:-10px;border-radius:50%;background:#fff;border:2px solid #4E5968;box-sizing:border-box}
+.slider.act .knob{border-color:var(--m)}
+.slider.over .fill{background:#E5243B}.slider.over .knob{border-color:#E5243B}
+.slider .tip{position:absolute;top:28px;transform:translateX(-50%);background:#3A3F47;color:#fff;font-size:11px;padding:2px 6px;border-radius:4px;white-space:nowrap}
+.slider.over .tip{background:#E5243B}
+.s-ends{display:flex;justify-content:space-between;font-size:12px;color:var(--g3);margin-top:-6px}
+.kv{display:flex;justify-content:space-between;align-items:center;font-size:14px}
+.tg{width:36px;height:22px;border-radius:11px;background:#B8BFC6;position:relative;transition:background .15s}
+.tg::after{content:"";position:absolute;left:3px;top:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:left .15s}
+.tg[aria-checked="true"]{background:var(--m)}
+.tg[aria-checked="true"]::after{left:17px}
+.est{text-align:right;margin-top:10px;font-size:13px;color:var(--g3)}
+.est b{display:block;font-size:20px;color:#191F28}.est b small{font-size:14px;font-weight:500}
+.buy{height:48px;border-radius:8px;background:var(--m);color:#fff!important;font-size:17px;font-weight:700;width:100%;box-shadow:0 6px 16px rgba(230,0,126,.25)}
+.d-tabs{display:flex;padding:0 16px;border-top:8px solid #F7F8FA}
+.d-tabs button{flex:1;padding:14px 0 10px;font-size:15px;color:var(--g3);position:relative}
+.d-tabs .glow{color:var(--m);font-weight:700;animation:glow 1.6s ease-in-out infinite}
+@keyframes glow{0%,100%{text-shadow:0 0 0 rgba(230,0,126,0)}50%{text-shadow:0 0 6px rgba(230,0,126,.75),0 0 14px rgba(230,0,126,.45)}}
+.d-tabs .on{color:#191F28;font-weight:700}
+.d-tabs .on::after{content:"";position:absolute;left:18%;right:18%;bottom:0;height:2px;background:var(--m)}
+.d-list{min-height:260px;padding:8px 16px 40px}
+.l-bar{display:flex;align-items:center;gap:6px;margin:6px 0 4px}
+.l-chip{height:30px;padding:0 10px;border-radius:6px;font-size:13px;color:var(--g3)}
+.l-chip.on{background:var(--g0);color:#191F28;font-weight:600}
+.l-bar .r{margin-left:auto;height:30px;padding:0 10px;border:1px solid var(--ln);border-radius:6px;font-size:13px}
+.l-item{display:flex;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid #F1F2F4}
+.logo{width:38px;height:38px;border-radius:50%;background:#FEE500;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#3A1D1D;flex:none}
+.l-item .t{flex:1;min-width:0}
+.l-item .t b{font-size:15px}.l-item .t .sd{color:var(--m);margin-right:4px;font-weight:600}
+.l-item .t small{display:block;font-size:13px;color:var(--g3);margin-top:3px}
+.l-item .badge{font-size:11px;font-weight:600;color:var(--m);background:var(--m-soft);border-radius:4px;padding:1px 5px;margin-left:4px}
+.l-item .x{height:32px;padding:0 12px;border-radius:6px;background:var(--g0);font-size:13px;font-weight:600}
+.l-item.fresh{background:linear-gradient(90deg,var(--m-soft),transparent 70%);margin:0 -16px;padding-left:16px;padding-right:16px}
+.l-item .amt{text-align:right}.l-item .amt b{font-size:16px}.l-item .amt small{display:block;color:var(--blue);font-size:13px}
+.empty{display:flex;flex-direction:column;align-items:center;gap:10px;padding:56px 0;color:var(--g2);font-size:14px}
+.empty i{width:44px;height:56px;border-radius:6px;background:linear-gradient(160deg,#E2E5E9,#B7BDC4)}
+.toast{position:absolute;left:24px;right:24px;top:56px;background:#14213D;color:#fff;border-radius:8px;padding:12px 14px;display:flex;align-items:center;gap:10px;font-size:14px;z-index:30;
+  box-shadow:0 8px 20px rgba(0,0,0,.18);animation:tin .25s ease-out}
+.toast button{margin-left:auto;color:#7FB2FF!important;font-weight:600;font-size:14px}
+@keyframes tin{from{transform:translateY(-8px);opacity:0}to{transform:none;opacity:1}}
+.dim{position:absolute;inset:0;background:rgba(0,0,0,.45);z-index:40}
+.sheet{position:absolute;left:0;right:0;bottom:0;background:#fff;border-radius:20px 20px 0 0;padding:12px 20px 28px;z-index:41;animation:sin .22s ease-out}
+@keyframes sin{from{transform:translateY(24px);opacity:.4}to{transform:none;opacity:1}}
+.sheet .grab{width:36px;height:4px;border-radius:2px;background:#D1D6DB;margin:0 auto 14px}
+.sheet .lead{font-size:14px;color:var(--g3);margin:0 0 6px}
+.sheet h3{font-size:24px;line-height:1.35;margin:0 0 8px;font-weight:700;letter-spacing:-.02em}
+.sheet .total{font-size:14px;color:var(--g3);margin:0 0 16px}.sheet .total b{color:#191F28}
+.sheet .row2{display:flex;gap:8px;margin-top:8px}
+.sheet .row2 button{height:52px;border-radius:12px;font-size:16px;font-weight:600}
+.sheet .row2 .no{flex:1;background:var(--g0)}
+.sheet .row2 .yes{flex:2;background:var(--m);color:#fff!important}
+.sheet .dup{display:flex;gap:8px;align-items:flex-start;background:#FFF0F7;border-radius:12px;padding:12px 14px;font-size:13.5px;line-height:1.5;color:#4E5968;margin:0 0 12px}
+.sheet .dup i{flex:none;width:18px;height:18px;border-radius:50%;background:var(--m);color:#fff;font-style:normal;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;margin-top:1px}
+.sheet .dup b{color:#191F28}
+.sheet .more{display:flex;justify-content:space-between;align-items:center;width:100%;background:var(--g0);border-radius:12px;padding:14px;font-size:14px;margin:0 0 8px}
+.sheet .more small{font-size:12.5px;color:var(--g3);display:flex;align-items:center;gap:4px}
+.sheet .more.open small svg{transform:rotate(180deg)}
+.sheet .det2{background:var(--g0);border-radius:12px;padding:4px 14px;margin:0 0 8px}
+.sheet .det2 div{display:flex;justify-content:space-between;padding:8px 0;font-size:13.5px;color:var(--g3)}
+.sheet .det2 div span:last-child{color:#191F28}
+.sheet.cf{text-align:center;padding:12px 16px 28px}
+.sheet.cf .grab{width:48px;height:3px;background:#C9CED4;margin-bottom:28px}
+.cf-l{margin:0;font-size:21px;line-height:38px;color:#191F28;display:flex;align-items:center;justify-content:center;gap:5px}
+.cf-l b{font-weight:600}.cf-l .u{color:#6B7684;font-weight:400}
+.logo.sm{width:22px;height:22px;font-size:5px;margin-right:2px}
+.cf-amt{margin:2px 0 20px;font-size:13px;color:#8B95A1}
+.cf-det{background:#F7F8FA;padding:14px 24px;margin:-4px 8px 16px;text-align:left;display:flex;flex-direction:column;gap:12px}
+.cf-det div{display:flex;justify-content:space-between;font-size:14px}.cf-det span{color:#6B7684}.cf-det b{color:#191F28;font-weight:600}
+.cf-more{font-size:13px;color:#4E5968;display:inline-flex;align-items:center;gap:4px;margin-bottom:14px}
+.cf-more svg{width:10px;height:10px}.cf-more.open svg{transform:rotate(180deg)}
+.sheet .row2.cf-btn button{flex:1;height:46px;border-radius:8px}
+.sheet .det{display:flex;justify-content:space-between;background:var(--g0);border-radius:10px;padding:12px 14px;font-size:14px;color:var(--g3)}
+.opt{display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;padding:14px 4px;border-bottom:1px solid #F1F2F4;text-align:left}
+.opt b{font-size:16px}.opt small{font-size:13px;color:var(--g3)}
+.opt.on b{color:var(--m)}
+.err{position:absolute;left:50%;bottom:40px;transform:translateX(-50%);background:#3A3F47;color:#fff;font-size:13px;padding:10px 14px;border-radius:8px;white-space:nowrap;z-index:45}
+.coach-ring{position:absolute;border-radius:14px;box-shadow:0 0 0 3px #fff,0 0 0 9999px rgba(0,0,0,.5);z-index:42;pointer-events:none;transition:all .2s}
+.coach{position:absolute;left:16px;right:16px;background:#fff;border-radius:20px;padding:20px 20px 16px;z-index:43;box-shadow:0 10px 30px rgba(0,0,0,.18)}
+.coach .tail{position:absolute;width:16px;height:16px;background:#fff;transform:rotate(45deg);border-radius:2px}
+.coach .tail.up{top:-7px}.coach .tail.down{bottom:-7px}
+.coach .dots{display:flex;gap:4px;justify-content:flex-end;margin-bottom:6px}
+.coach .dots i{width:6px;height:6px;border-radius:3px;background:#D1D6DB}
+.coach .dots i.on{width:16px;background:#2B2F36}
+.coach h4{margin:0 0 8px;font-size:18px;font-weight:700;color:#191F28}
+.coach p{margin:0 0 16px;font-size:14.5px;color:#4E5968;line-height:1.6}
+.coach p b{color:#191F28;font-weight:700}
+.coach .row2{display:flex;justify-content:space-between;align-items:center}
+.coach .skip{font-size:15px;color:#4E5968;padding:8px 4px}
+.coach .next{height:42px;padding:0 20px;border-radius:10px;background:#2B2F36;color:#fff!important;font-weight:600;font-size:15px}
+.ph{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:#8B95A1;font-size:14px;text-align:center;padding:40px}
+.ph b{color:#4E5968;font-size:16px}
+</style>
+
+<main class="app">
+  <section class="stage" aria-label="테스트 화면">
+    <div class="phone">
+      <div class="screen" id="screen">
+        <div class="device" id="device"></div>
+        <div class="veil" id="veil">안내를 읽고 시작하기를 눌러 주세요</div>
+      </div>
+    </div>
+  </section>
+
+  <aside class="side">
+    <div class="card" id="card" aria-live="polite"></div>
+    <form class="feedback" id="fb">
+      <label for="fb-text">불편한 점이 있었나요?</label>
+      <p>언제든 떠오르는 대로 짧게 적어 주세요</p>
+      <div class="fb-row">
+        <textarea id="fb-text" rows="1" placeholder="예: 가격을 어디서 바꾸는지 헷갈렸어요"></textarea>
+        <button class="btn-send" id="fb-send" type="submit" disabled>보내기</button>
+      </div>
+      <div class="sent" id="fb-sent" hidden>의견을 받았어요. 고마워요!</div>
+    </form>
+  </aside>
+</main>
+
+<button class="contact" id="contact" type="button" aria-expanded="false">
+  <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 3h10a1.5 1.5 0 0 1 1.5 1.5v6A1.5 1.5 0 0 1 13 12H7l-3 2.5V12H3a1.5 1.5 0 0 1-1.5-1.5v-6A1.5 1.5 0 0 1 3 3z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>
+  개발자 문의
+</button>
+<div class="contact-pop" id="contact-pop" hidden></div>
+
+<script>
+/* ═════════ 설정: 배포 전에 채우기 ═════════ */
+const CONFIG = {
+  clarityId: 'zcdy5z0dp7',        // Microsoft Clarity Project ID
+  sheetUrl: 'https://script.google.com/macros/s/AKfycbxitxyz33yCy1pFqLv9anitS32mYCD6UDVS3Zzp79rgN9NxC5lcznbHtQ6bdLxOfB4yzw/exec',         // 구글 Apps Script 웹 앱 URL (doPost)
+  contact: '',          // 개발자 문의에 보일 연락처(이메일 등)
+};
+
+/* ═════════ 공통 유틸 ═════════ */
+const $ = (s, r=document) => r.querySelector(s);
+const won = n => Math.round(n).toLocaleString('ko-KR');
+const store = {
+  get(k){ try{ return JSON.parse(localStorage.getItem(k)); }catch(e){ return null; } },
+  set(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} },
+  del(k){ try{ localStorage.removeItem(k); }catch(e){} }
+};
+const params = new URLSearchParams(location.search);
+
+/* ═════════ 과업 정의 ═════════ */
+const TASKS = [
+  { id:'T1', title:'카카오 주식 1주를 구매해 보세요', sub:'평소 주식 앱을 쓰듯 편하게 진행해 주세요.', order:true,
+    judge:o => o.qty===1 },
+  { id:'T2', title:'카카오 주식을 31,700원에 7주 구매해 주세요', sub:'', order:true,
+    judge:o => o.type==='지정가' && o.price===31700 && o.qty===7 },
+  { id:'T3', title:'50만 원어치만 구매해 주세요', sub:'50만 원에 딱 맞출 필요는 없어요. 가격은 원하는 대로 정해도 괜찮아요.', order:true,
+    judge:o => Math.abs(o.price*o.qty-500000) <= o.price },
+  { id:'T4', title:'카카오 주식을 31,500원에 구매해 주세요', sub:'수량과 구매금액은 상관없어요.', order:true,
+    judge:o => o.type==='지정가' && o.price===31500 },
+  { id:'T5', title:'방금 넣은 주문 가격이 잘못됐어요. 그 주문만 취소해 주세요', sub:'다른 주문은 그대로 두어야 해요.', order:false },
+  { id:'T6', title:'주문이 체결됐어요. 구매한 주식이 어떻게 됐는지 확인해 보세요', sub:'확인했다고 생각되면 다음 안내가 나와요.', order:false },
+];
+
+/* ═════════ 참가자 상태 ═════════ */
+const KEY = 'ut-kiwoom-v1';
+let S = store.get(KEY);
+if (!S || params.has('reset')) {
+  const code = Array.from({length:4},()=> 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[Math.floor(Math.random()*32)]).join('');
+  const only = (params.get('v')||'').toUpperCase();
+  let order = ['A','B']; // 현행(A) 먼저, 개선안(B) 다음으로 고정
+  if (only==='A' || only==='B') order = [only];
+  S = { pid:code, order, phase:'intro', vIdx:0, tIdx:0, pre:{}, segment:'', results:[], startedAt:Date.now() };
+  store.set(KEY, S);
+}
+const save = () => store.set(KEY, S);
+if (S.phase==='task') S.phase='taskIntro';
+const totalSteps = () => S.order.length * TASKS.length;
+const stepNo = () => S.vIdx*TASKS.length + S.tIdx + 1;
+const curV = () => S.order[S.vIdx];
+const curT = () => TASKS[S.tIdx];
+
+/* ═════════ 기록: 이벤트 로그, 시트 전송, Clarity ═════════ */
+let EVENTS = [];
+let taskT0 = 0;
+function send(kind, payload){
+  const body = JSON.stringify({ kind, pid:S.pid, segment:S.segment, ts:Date.now(), ...payload });
+  if (!CONFIG.sheetUrl) return;
+  try { fetch(CONFIG.sheetUrl, { method:'POST', mode:'no-cors', headers:{'Content-Type':'text/plain;charset=utf-8'}, body }); } catch(e){}
+}
+function clarity(...a){ try{ if (window.clarity) window.clarity(...a); }catch(e){} }
+if (CONFIG.clarityId) {
+  (function(c,l,a,r,i,t,y){c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);})(window,document,"clarity","script",CONFIG.clarityId);
+  clarity('identify', S.pid);
+}
+const ON_PATH = {
+  T1:['guide','type','price','qty','slider','buy','confirm','hoga','chart','toggle','seg_buy','amount','avail'],
+  T2:['guide','type','price','qty','slider','buy','confirm','hoga','chart','toggle','seg_buy','amount','avail'],
+  T3:['guide','type','price','qty','slider','buy','confirm','hoga','chart','toggle','seg_buy','amount','avail'],
+  T4:['guide','type','price','qty','slider','buy','confirm','hoga','chart','toggle','seg_buy','amount','avail'],
+  T5:['toast_view','tab_pending','tab_modify','chip','cancel','cancelsheet'],
+  T6:['toast_holdings','tab_holdings','chip'],
+};
+function log(event, target='', value=''){
+  if (S.phase!=='task') return;
+  const t = curT().id;
+  const on = (ON_PATH[t]||[]).some(p => String(target).startsWith(p));
+  EVENTS.push({ t:Date.now()-taskT0, event, target, value:String(value), on_path:on });
+}
+
+/* ═════════ 오른쪽 카드 렌더링 ═════════ */
+const card = $('#card'), veil = $('#veil'), device = $('#device');
+function header(label){
+  const pct = Math.round((stepNo()-1)/totalSteps()*100);
+  return `<div class="step"><span class="step-badge">${label}</span><span class="step-count">${Math.min(stepNo(),totalSteps())} / ${totalSteps()}</span></div>
+          <div class="bar" aria-hidden="true"><span style="width:${pct}%"></span></div>`;
+}
+const infoIcon = `<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="7" fill="var(--fg-3)"/><rect x="7.2" y="7" width="1.6" height="4.5" rx=".8" fill="var(--surface)"/><circle cx="8" cy="4.8" r="1" fill="var(--surface)"/></svg>`;
+
+function scaleQ(name, label, lo, hi, n=7){
+  let b=''; for(let i=1;i<=n;i++) b+=`<button type="button" class="chip" data-q="${name}" data-v="${i}" aria-pressed="false">${i}</button>`;
+  return `<div class="q"><span class="q-label">${label}</span><div class="scale ${n===5?'s5':''}">${b}</div><div class="scale-ends"><span>${lo}</span><span>${hi}</span></div></div>`;
+}
+function optQ(name, label, opts){
+  return `<div class="q"><span class="q-label">${label}</span><div class="opts">${opts.map(o=>`<button type="button" class="chip" data-q="${name}" data-v="${o}" aria-pressed="false">${o}</button>`).join('')}</div></div>`;
+}
+function bindChips(ans, onChange){
+  card.querySelectorAll('.chip[data-q]').forEach(b=>b.addEventListener('click',()=>{
+    const q=b.dataset.q;
+    card.querySelectorAll(`.chip[data-q="${q}"]`).forEach(x=>x.setAttribute('aria-pressed','false'));
+    b.setAttribute('aria-pressed','true'); ans[q]=b.dataset.v; onChange&&onChange();
+  }));
+}
+
+/* 이전 단계로 돌아가기: 단계가 바뀔 때마다 직전 상태를 저장 */
+let lastKey = null, lastSnap = null;
+const keyOf = () => S.phase+'|'+S.vIdx+'|'+S.tIdx;
+const snapOf = () => { const c = JSON.parse(JSON.stringify(S)); delete c.hist; return c; };
+function goBack(){
+  const h = S.hist || []; if (!h.length) return;
+  const cur = (S.phase==='task'?'taskIntro':S.phase)+'|'+S.vIdx+'|'+S.tIdx; let prev;
+  do { prev = h.pop(); if (prev.phase==='task') prev.phase='taskIntro'; } while (h.length && prev.phase+'|'+prev.vIdx+'|'+prev.tIdx===cur);
+  S = Object.assign(prev, { hist:h }); lastKey = null; lastSnap = null; save(); render();
+}
+function render(){
+  const k = keyOf();
+  if (lastKey && k!==lastKey && lastSnap){ S.hist = (S.hist||[]).concat([lastSnap]).slice(-40); save(); }
+  if (k!==lastKey){ lastKey = k; lastSnap = snapOf(); }
+  veil.hidden = S.phase==='task';
+  if (S.phase!=='task') veil.textContent = ({done:'참여해 주셔서 감사합니다', survey:'질문에 답해 주세요', sus:'질문에 답해 주세요', final:'질문에 답해 주세요'})[S.phase] || '안내를 읽고 시작하기를 눌러 주세요';
+  ({intro:rIntro, pre:rPre, taskIntro:rTaskIntro, task:rTask, survey:rSurvey, sus:rSus, final:rFinal, done:rDone})[S.phase]();
+  card.scrollTop = 0;
+  const row = card.querySelector('.step');
+  if (row && (S.hist||[]).length && S.phase!=='intro'){
+    const b = document.createElement('button'); b.className='back-btn'; b.type='button'; b.textContent='이전'; b.onclick=goBack;
+    row.prepend(b);
+  }
+}
+
+function rIntro(){
+  mountProto(null);
+  card.innerHTML = `
+    <div class="step"><span class="step-badge">시작</span><span class="step-count">약 20분</span></div>
+    <h1 class="title">주식 주문 화면을 써 보고 의견을 들려주세요</h1>
+    <p class="sub">두 가지 주문 화면으로 같은 과업 6개를 해 보고, 과업마다 짧은 질문에 답해요. 정답을 맞히는 시험이 아니라 화면을 평가하는 거예요. 막히면 언제든 넘어가셔도 돼요.</p>
+    <div class="hint">${infoIcon}<span>화면 속 가격과 계좌는 모두 테스트용이에요. 실제로 주문되지 않아요.</span></div>
+    <label class="check"><input type="checkbox" id="c1"><span>화면을 누른 기록과 화면 녹화가 익명으로 수집되는 것에 동의해요. 녹화 도구(Microsoft Clarity)가 쿠키를 사용해요.</span></label>
+    <label class="check"><input type="checkbox" id="c2"><span>만 18세 이상이에요.</span></label>
+    <div class="actions"><button class="btn btn-primary" id="go" disabled>시작하기</button></div>`;
+  const upd=()=>$('#go').disabled=!($('#c1').checked&&$('#c2').checked);
+  $('#c1').onchange=upd; $('#c2').onchange=upd;
+  $('#go').onclick=()=>{ S.phase='pre'; save(); send('consent',{order:S.order.join('')}); render(); };
+}
+
+function rPre(){
+  const a = {};
+  card.innerHTML = `
+    <div class="step"><span class="step-badge">사전 질문</span><span class="step-count">3문항</span></div>
+    ${optQ('exp','주식 투자를 한 지 얼마나 됐나요?',['해 본 적 없어요','1년 미만','1~3년','3년 이상'])}
+    ${optQ('freq','주식을 얼마나 자주 사고파나요?',['거의 안 해요','한 달에 1~3번','일주일에 1번','일주일에 2번 이상'])}
+    ${optQ('kiwoom','키움증권 앱을 써 봤나요?',['지금 쓰고 있어요','써 본 적 있어요','써 본 적 없어요'])}
+    <div class="actions"><button class="btn btn-primary" id="go" disabled>다음</button></div>`;
+  bindChips(a, ()=>$('#go').disabled = !(a.exp&&a.freq&&a.kiwoom));
+  $('#go').onclick=()=>{
+    S.pre=a;
+    const expert = a.exp==='3년 이상' && a.freq==='일주일에 2번 이상';
+    const novice = a.exp==='해 본 적 없어요' || a.exp==='1년 미만' || a.kiwoom==='써 본 적 없어요';
+    S.segment = expert ? '숙련' : novice ? '입문' : '중간';
+    clarity('set','segment',S.segment); clarity('set','order',S.order.join(''));
+    send('pre',{...a, order:S.order.join(''), device: matchMedia('(pointer:coarse)').matches?'mobile':'desktop'});
+    S.phase='taskIntro'; save(); render();
+  };
+}
+
+function rTaskIntro(){
+  const t = curT();
+  mountProto(t, true);
+  const first = S.tIdx===0;
+  card.innerHTML = `${header('과업 '+(S.tIdx+1))}
+    <h1 class="title">${t.title}</h1>
+    ${(t.sub || (S.vIdx===0&&S.tIdx===0)) ? `<p class="sub">${[t.sub, (S.vIdx===0&&S.tIdx===0)?'과업을 마치면 자동으로 다음 단계로 넘어가요.':''].filter(Boolean).join(' ')}</p>` : ''}
+    <div class="actions"><button class="btn btn-primary" id="go">시작하기</button></div>`;
+  $('#go').onclick=()=>{
+    S.phase='task'; save(); EVENTS=[]; taskT0=Date.now();
+    clarity('set','version',curV()); clarity('set','task',t.id);
+    log('task_start','task',t.id); render();
+  };
+}
+
+function rTask(){
+  const t = curT();
+  if (!PROTO_READY()) mountProto(t, false);
+  card.innerHTML = `${header('과업 '+(S.tIdx+1)+' 진행 중')}
+    <h1 class="title">${t.title}</h1>
+    <p class="sub">${t.sub}</p>
+    <div class="actions"><button class="btn btn-ghost" id="skip">잘 모르겠어요, 다음으로 넘어갈게요</button></div>`;
+  $('#skip').onclick=()=>finishTask('skip',{});
+}
+
+let lastResult=null;
+function finishTask(result, detail){
+  if (S.phase!=='task') return;
+  const t = curT();
+  log('task_end','task',result);
+  const dur = Date.now()-taskT0;
+  const offPath = EVENTS.filter(e=>e.event==='tap' && !e.on_path).length;
+  const firstTap = EVENTS.find(e=>e.event==='tap');
+  lastResult = { version:curV(), task:t.id, result, ms:dur, taps:EVENTS.filter(e=>e.event==='tap').length,
+    off_path:offPath, first_tap_ok: firstTap?firstTap.on_path:null, ...detail };
+  clarity('event','task_'+result);
+  send('events',{ version:curV(), task:t.id, events:EVENTS });
+  S.last=lastResult; S.phase='survey'; save();
+  setTimeout(render, result==='skip'?0:700);
+}
+
+function rSurvey(){
+  const t = curT(), a = {}, r = lastResult||S.last||{};
+  const isOrder = t.order && r.result!=='skip';
+  let extra = '';
+  if (t.id==='T1' && r.result!=='skip') extra += optQ('outside','주문하다가 앱 밖에서 정보를 찾아보고 싶었나요?',['예','아니요']);
+  if (t.id==='T3' && r.result!=='skip') extra += optQ('calc','계산기나 외부 검색을 사용했나요?',['예','아니요']);
+  if (t.id==='T6' && r.result!=='skip') extra += scaleQ('reuse','다음에도 이 화면으로 주문하고 싶나요?','전혀 아니에요','꼭 그래요');
+  card.innerHTML = `${header('과업 '+(S.tIdx+1)+' 질문')}
+    <h1 class="title" style="font-size:20px">${r.result==='skip'?'괜찮아요. 하나만 물어볼게요':'수고했어요. 몇 가지만 물어볼게요'}</h1>
+    ${scaleQ('seq','이 과업은 얼마나 쉬웠나요?','매우 어려웠어요','매우 쉬웠어요')}
+    ${isOrder?scaleQ('conf','방금 주문이 내가 의도한 대로 들어갔다고 확신하나요?','전혀 아니에요','확실해요'):''}
+    ${extra}
+    <div class="actions"><button class="btn btn-primary" id="go" disabled>다음</button></div>`;
+  const need = Array.from(new Set(Array.from(card.querySelectorAll('.chip[data-q]')).map(b=>b.dataset.q)));
+  bindChips(a, ()=>$('#go').disabled = !need.every(q=>a[q]));
+  $('#go').onclick=()=>{
+    const row = { ...r, ...a, segment:S.segment, order:S.order.join('') };
+    S.results.push(row); send('task', row);
+    S.tIdx++;
+    if (S.tIdx>=TASKS.length){ S.phase='sus'; } else { S.phase='taskIntro'; }
+    save(); render();
+  };
+}
+
+const SUS = ['이 화면을 자주 쓰고 싶어요','이 화면은 쓸데없이 복잡했어요','이 화면은 쓰기 쉬웠어요','이 화면을 쓰려면 다른 사람의 도움이 필요할 것 같아요','이 화면의 기능들이 잘 어우러져 있었어요',
+  '이 화면에는 앞뒤가 안 맞는 부분이 많았어요','대부분의 사람이 이 화면을 금방 익힐 것 같아요','이 화면은 쓰기 번거로웠어요','주문 과정에서 어려움은 없었어요','이 화면을 쓰기 전에 배워야 할 게 많았어요'];
+function rSus(){
+  mountProto(null);
+  const a={};
+  card.innerHTML = `<div class="step"><span class="step-badge">${S.vIdx===0?'첫 번째':'두 번째'} 화면 평가</span><span class="step-count">10문항</span></div>
+    <h1 class="title" style="font-size:20px">방금 쓴 화면 전체를 떠올리며 답해 주세요</h1>
+    <p class="q-help" style="margin:0 0 8px">1은 전혀 아니에요, 5는 매우 그래요</p>
+    ${SUS.map((s,i)=>`<div class="sus-row"><p>${s}</p><div class="scale s5">${[1,2,3,4,5].map(v=>`<button type="button" class="chip" data-q="s${i+1}" data-v="${v}" aria-pressed="false">${v}</button>`).join('')}</div></div>`).join('')}
+    <div class="actions"><button class="btn btn-primary" id="go" disabled>다음</button></div>`;
+  bindChips(a, ()=>$('#go').disabled = Object.keys(a).length<10);
+  $('#go').onclick=()=>{
+    let sc=0; for(let i=1;i<=10;i++){ const v=+a['s'+i]; sc += i%2 ? v-1 : 5-v; }
+    send('sus',{ version:curV(), ...a, score:sc*2.5 });
+    S.vIdx++; S.tIdx=0;
+    S.phase = S.vIdx>=S.order.length ? 'final' : 'taskIntro';
+    save(); render();
+  };
+}
+
+function rFinal(){
+  const a={};
+  const two = S.order.length>1;
+  card.innerHTML = `<div class="step"><span class="step-badge">마지막 질문</span><span class="step-count">거의 끝났어요</span></div>
+    <h1 class="title" style="font-size:20px">마지막으로 몇 가지만 들려주세요</h1>
+    ${two?optQ('pref','다시 주문한다면 어느 화면을 쓰고 싶나요?',['첫 번째 화면','두 번째 화면','비슷해요']):''}
+    ${two?`<div class="q"><label class="q-label" for="why">그렇게 고른 이유는요?</label><textarea class="field" id="why" placeholder="자유롭게 적어 주세요"></textarea></div>`:''}
+    <div class="q"><label class="q-label" for="o1">가장 막혔던 순간은 언제였나요?</label><textarea class="field" id="o1" placeholder="없었다면 비워 두셔도 돼요"></textarea></div>
+    <div class="q"><label class="q-label" for="o2">주문 내용을 확인하는 화면이 번거롭거나 느리게 느껴졌나요?</label><textarea class="field" id="o2"></textarea></div>
+    <div class="q"><label class="q-label" for="o3">수량을 정할 때 막대(비율)와 직접 입력 중 무엇이 편했나요?</label><textarea class="field" id="o3"></textarea></div>
+    <div class="actions"><button class="btn btn-primary" id="go" ${two?'disabled':''}>제출하기</button></div>`;
+  bindChips(a, ()=>$('#go').disabled=false);
+  $('#go').onclick=()=>{
+    const pref = a.pref==='첫 번째 화면'?S.order[0]: a.pref==='두 번째 화면'?S.order[1]: (a.pref||'');
+    send('final',{ pref, pref_raw:a.pref||'', why:($('#why')||{}).value||'', stuck:$('#o1').value, confirm_slow:$('#o2').value, qty_method:$('#o3').value, total_ms:Date.now()-S.startedAt });
+    S.phase='done'; save(); render();
+  };
+}
+function rDone(){
+  mountProto(null);
+  card.innerHTML = `<div class="step"><span class="step-badge">완료</span><span class="step-count">${totalSteps()} / ${totalSteps()}</span></div>
+    <div class="bar"><span style="width:100%"></span></div>
+    <h1 class="title">참여해 주셔서 감사합니다</h1>
+    <p class="sub">보내 주신 답변은 주문 화면을 고치는 데 쓰여요. 사례 확인이 필요하면 아래 참가 코드를 알려 주세요.</p>
+    <div class="hint" style="flex-direction:column;gap:4px"><span>참가 코드</span><span class="done-code">${S.pid}</span></div>
+    <button id="restart" style="margin-top:20px;font-size:13px;color:var(--g3);text-decoration:underline">처음부터 다시 하기</button>`;
+  card.querySelector('#restart').onclick = () => { store.set(KEY, null); location.reload(); };
+}
+
+/* ═════════ 프로토타입 연결 ═════════ */
+let proto=null;
+const PROTO_READY = () => !!proto;
+function fit(){ const s = $('#screen').clientWidth/375; device.style.transform = `scale(${s})`; device.dataset.scale = s; }
+new ResizeObserver(fit).observe($('#screen')); fit();
+
+function mountProto(task, preview){
+  proto = null;
+  if (!task){ device.innerHTML = `<div class="ph"><b>주문 화면</b>과업을 시작하면 여기에 화면이 나와요</div>`; return; }
+  const v = curV();
+  const impl = window.PROTOTYPES && window.PROTOTYPES[v];
+  if (!impl){
+    device.innerHTML = `<div class="ph"><b>${v==='A'?'현행':'개선안'} 화면은 준비 중이에요</b>오른쪽의 "다음으로 넘어갈게요"를 눌러 주세요</div>`;
+    return;
+  }
+  proto = impl.mount(device, task.id, {
+    log,
+    onOrder(o){ if(S.phase!=='task'||!task.order) return; const ok = task.judge(o); finishTask(ok?'success':'fail',{ o_type:o.type, o_price:o.price, o_qty:o.qty, o_amount:o.price*o.qty, ...(o.meta||{}) }); },
+    onCancel(c){ if(S.phase!=='task'||task.id!=='T5') return; finishTask(c.ok?'success':'fail',{ cancel_target:c.target }); },
+    onHoldings(via){ if(S.phase!=='task'||task.id!=='T6') return; finishTask('success',{ via }); },
+    guide: task.id==='T1',
+  });
+}
+
+/* ═════════ 피드백·문의 ═════════ */
+const fbt=$('#fb-text'), fbs=$('#fb-send'), fbo=$('#fb-sent');
+fbt.addEventListener('input',()=>{fbs.disabled=!fbt.value.trim();fbo.hidden=true});
+$('#fb').addEventListener('submit',e=>{e.preventDefault();const v=fbt.value.trim();if(!v)return;
+  send('feedback',{ version:S.phase==='intro'||S.phase==='pre'?'':curV(), task:TASKS[S.tIdx]?TASKS[S.tIdx].id:'', phase:S.phase, text:v });
+  fbt.value='';fbs.disabled=true;fbo.hidden=false});
+const cb=$('#contact'), cp=$('#contact-pop');
+cp.innerHTML = `<b>개발자 문의</b>${CONFIG.contact?CONFIG.contact:'문의처를 준비하고 있어요.'}<br><span style="color:var(--fg-3);font-size:13px">참가 코드: ${S.pid}</span>`;
+cb.onclick=()=>{cp.hidden=!cp.hidden;cb.setAttribute('aria-expanded',String(!cp.hidden))};
+</script>
+
+<script src="lib/lightweight-charts.standalone.production.js"></script>
+<script src="data/kakao-daily.js"></script>
+<script src="proto-a.js"></script>
+<script>
+/* ═════════ B안(개선안) 프로토타입 ═════════
+   인터페이스: PROTOTYPES[v].mount(device, taskId, hooks) → 필요하면 객체 반환
+   hooks.log(event,target,value) · hooks.onOrder({type,price,qty,meta}) · hooks.onCancel({ok,target}) · hooks.onHoldings(via) · hooks.guide */
+window.PROTOTYPES = window.PROTOTYPES || {};
+window.PROTOTYPES.B = { mount(root, taskId, H){
+  const PREV = 31000, CUR = 31750, AVAIL = 1000000, TICK = 50;
+  const SELL = [[32000,2184],[31950,1032],[31900,845],[31850,312],[31800,128]];
+  const BUY  = [[31700,1540],[31650,2876],[31600,7178],[31550,1023],[31500,122],[31450,310]];
+  const st = { side:'buy', type:'지정가', price:'', qty:'', pct:0, frac:false, margin:false, chart:false, tab:'pending', chip:'all',
+    pending:[], holdings:[], history:[], toast:null, sheet:null, coach:-1, priceTouched:false, confirmCancel:0 };
+  // 과업별 시작 상태
+  st.price = CUR; // 지정가에 현재가가 들어간 채로 시작
+  if (taskId==='T5'){
+    st.pending = [{id:'old',price:31700,qty:7,state:'체결대기'},{id:'new',price:31870,qty:7,state:'체결대기',fresh:true}];
+    st.price=31870; st.qty=7;
+    st.toast = {text:'카카오 구매 주문을 접수했어요', btn:'대기 보기', act:'toast_view'};
+  }
+  if (taskId==='T6'){
+    st.holdings=[{avg:32800,qty:7}]; st.history=[{price:32800,qty:7,state:'체결'}];
+    st.toast = {text:'카카오 구매가 완료됐어요', btn:'보유 확인', act:'toast_holdings'}; st.holdGlow = true;
+  }
+  if (H.guide) st.coach = 0;
+  const pct = p => ((p-PREV)/PREV*100).toFixed(2);
+  const L = (t,v) => H.log('tap',t,v??'');
+
+  // 차트: TradingView Lightweight Charts + 카카오 일봉(data/kakao-daily.js)
+  const DAILY = window.KAKAO_DAILY || [];
+  let lw = null, lwSeries = null;
+  function mountChart(){
+    if (lw){ try{ lw.remove(); }catch(e){} lw = null; lwSeries = null; }
+    const el = root.querySelector('#lwc'); const LC = window.LightweightCharts;
+    if (!el || !LC || !DAILY.length) return;
+    lw = LC.createChart(el, { width: el.clientWidth || 375, height: 180,
+      layout:{ background:{type:'solid',color:'#FFFFFF'}, textColor:'#8B95A1', fontSize:10, fontFamily:'Pretendard, sans-serif' },
+      grid:{ vertLines:{visible:false}, horzLines:{color:'#F2F4F6'} },
+      rightPriceScale:{ borderVisible:false, scaleMargins:{top:0.08,bottom:0.24} },
+      timeScale:{ borderVisible:false, rightOffset:3 },
+      crosshair:{ mode:LC.CrosshairMode.Normal, vertLine:{visible:false,labelVisible:false}, horzLine:{visible:false,labelVisible:false} },
+      handleScroll:false, handleScale:false,
+      localization:{ priceFormatter:v=>won(Math.round(v)), dateFormat:'yyyy-MM-dd' } });
+    const vol = lw.addHistogramSeries({ priceScaleId:'vol', priceFormat:{type:'volume'}, lastValueVisible:false, priceLineVisible:false });
+    lw.priceScale('vol').applyOptions({ scaleMargins:{top:0.84,bottom:0} });
+    vol.setData(DAILY.map(k=>({ time:k[0], value:k[5], color: k[4]>=k[1] ? 'rgba(230,0,126,.28)' : 'rgba(59,111,224,.28)' })));
+    lwSeries = lw.addCandlestickSeries({ upColor:'#E6007E', downColor:'#3B6FE0', wickUpColor:'#E6007E', wickDownColor:'#3B6FE0', borderVisible:false, priceLineColor:'#E6007E', priceLineStyle:2 });
+    lwSeries.setData(DAILY.map(k=>({ time:k[0], open:k[1], high:k[2], low:k[3], close:k[4] })));
+    const ma = lw.addLineSeries({ color:'#F5A623', lineWidth:1, priceLineVisible:false, lastValueVisible:false, crosshairMarkerVisible:false });
+    ma.setData(DAILY.map((k,i)=>{ const a=DAILY.slice(Math.max(0,i-19),i+1); return { time:k[0], value:a.reduce((t,x)=>t+x[4],0)/a.length }; }).slice(19));
+    if (st.crossP) lwSeries.createPriceLine({ price:st.crossP, color:'#191F28', lineWidth:1, lineStyle:2, axisLabelVisible:true, title:'주문가' });
+    lw.timeScale().fitContent();
+    el.addEventListener('click', e=>{
+      e.stopPropagation();
+      const r = el.getBoundingClientRect(), sc = +root.dataset.scale || 1; const y = (e.clientY - r.top) / sc;
+      const raw = lwSeries && lwSeries.coordinateToPrice(y); if (raw == null) return;
+      const p = Math.round(raw/TICK)*TICK; st.crossP = p; st.type='지정가'; st.price = p; syncPct(); L('chart_price', p); draw(); });
+  }
+
+  // 호가 잔량: 가격은 고정, 잔량만 살짝 움직임
+  const vols = {}; SELL.concat(BUY).forEach(([p,v])=>{ vols[p]=v; });
+  const mid = Math.random().toString(36).slice(2); root.dataset.mid = mid;
+  let jseed = 5; const jr = () => ((jseed = jseed*16807 % 2147483647) / 2147483647);
+  const jit = setInterval(()=>{
+    if (root.dataset.mid !== mid || !root.isConnected || !root.querySelector('#hoga')){ clearInterval(jit); return; }
+    const ps = Object.keys(vols);
+    for (let k=0;k<3;k++){ const p = ps[Math.floor(jr()*ps.length)];
+      const nv = Math.max(3, Math.round(vols[p]*(0.88+jr()*0.24)) + (jr()<.5?-1:1)*Math.round(jr()*30));
+      const b = root.querySelector(`.h-row[data-hoga="${p}"] .v`); vols[p] = nv;
+      if (b){ b.textContent = won(nv); b.classList.remove('tk'); void b.offsetWidth; b.classList.add('tk'); } }
+  }, 1300);
+
+  const ic = {
+    back:`<svg width="22" height="22" viewBox="0 0 22 22"><path d="M14 4l-7 7 7 7" fill="none" stroke="#191F28" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+    search:`<svg width="18" height="18" viewBox="0 0 18 18"><circle cx="8" cy="8" r="5.6" fill="none" stroke="#4E5968" stroke-width="1.8"/><path d="M12.2 12.2l3.6 3.6" stroke="#4E5968" stroke-width="1.8" stroke-linecap="round"/></svg>`,
+    chev:`<svg width="12" height="12" viewBox="0 0 12 12"><path d="M2.5 4.5l3.5 3.5 3.5-3.5" fill="none" stroke="#4E5968" stroke-width="1.5" stroke-linecap="round"/></svg>`,
+    spark:`<svg width="18" height="18" viewBox="0 0 18 18"><path d="M9 1.5c.6 3.6 2.2 5.6 6.5 7.5-4.3 1.9-5.9 3.9-6.5 7.5-.6-3.6-2.2-5.6-6.5-7.5C6.8 7.1 8.4 5.1 9 1.5z" fill="#E6007E"/></svg>`,
+    bars:`<svg width="20" height="20" viewBox="0 0 20 20"><rect x="3" y="9" width="3" height="8" rx="1" fill="#4E5968"/><rect x="8.5" y="4" width="3" height="13" rx="1" fill="#4E5968"/><rect x="14" y="7" width="3" height="10" rx="1" fill="#4E5968"/></svg>`,
+    q:`<svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" fill="#6B7684"/><text x="8" y="11.5" font-size="10" fill="#fff" text-anchor="middle" font-weight="700">?</text></svg>`,
+    check:`<svg width="18" height="18" viewBox="0 0 18 18"><path d="M3.5 9.5l3.5 3.5 7.5-8" fill="none" stroke="#3DD68C" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  };
+
+  const priceNum = () => st.type==='시장가' ? CUR : st.type==='현재가' ? CUR : (+st.price||0);
+  const maxPct = () => st.margin ? 250 : 100;
+  function setPct(p){
+    st.pct = Math.max(0, Math.min(maxPct(), Math.round(p)));
+    const px = priceNum() || CUR;
+    if (st.type==='지정가' && !st.price) st.price = CUR;
+    st.qty = Math.floor(AVAIL*st.pct/100/px) || '';
+  }
+  function syncPct(){ const px=priceNum(); st.pct = px&&st.qty ? Math.min(maxPct(), Math.round(px*st.qty/AVAIL*100)) : 0; }
+
+  function hogaHtml(){
+    const row=(p,v,cls)=>`<button class="h-row ${cls} ${+st.price===p&&st.type==='지정가'?'sel':''}" data-hoga="${p}"><span><span class="p">${won(p)}</span><span class="c">+${pct(p)}%</span></span><span class="v">${won(v)}</span></button>`;
+    return SELL.map(([p])=>row(p,vols[p],'hs')).join('') + `<button class="h-row cur ${+st.price===CUR&&st.type==='지정가'?'sel':''}" data-hoga="${CUR}"><span><span class="p">${won(CUR)}</span><span class="c">+${pct(CUR)}%</span></span></button>` + BUY.map(([p])=>row(p,vols[p],'hb')).join('');
+  }
+
+  function listHtml(){
+    if (st.tab==='pending'){
+      if (!st.pending.length) return `<div class="empty"><i></i>대기 중인 주문이 없어요</div>`;
+      return `<div class="l-bar"><button class="l-chip ${st.chip==='all'?'on':''}" data-act="chip_all">전체 ${st.pending.length}</button><button class="l-chip ${st.chip==='cur'?'on':''}" data-act="chip_cur">현재 종목 ${st.pending.length}</button><button class="r" data-act="cancelall">${st.pending.length}건 취소</button></div>`
+        + st.pending.slice().reverse().map(o=>`<div class="l-item ${o.fresh?'fresh':''}"><span class="logo">kakao</span><div class="t"><b><span class="sd">구매</span>카카오</b>${o.fresh?'<span class="badge">방금</span>':''}<small>${won(o.price)}원 | ${o.qty}주 | ${o.state}</small></div><button class="x" data-cancel="${o.id}">취소</button></div>`).join('');
+    }
+    if (st.tab==='holdings'){
+      if (!st.holdings.length) return `<div class="empty"><i></i>보유한 주식이 없어요</div>`;
+      return `<div class="l-bar"><button class="l-chip on" data-act="chip_all">전체 ${st.holdings.length}</button><button class="l-chip" data-act="chip_cur">현재 종목 ${st.holdings.length}</button></div>`
+        + st.holdings.map(h=>{ const val=CUR*h.qty-(CUR-31750)*0, cost=h.avg*h.qty, diff=CUR*h.qty-cost; return `<div class="l-item"><span class="logo">kakao</span><div class="t"><b>카카오</b><small>평균 ${won(h.avg)}원 | ${h.qty}주</small></div><div class="amt"><b>${won(CUR*h.qty)}</b><small>${won(diff)} (${(diff/cost*100).toFixed(1)}%)</small></div></div>`; }).join('');
+    }
+    if (!st.history.length) return `<div class="empty"><i></i>주문 내역이 비어있어요</div>`;
+    return st.history.slice().reverse().map(o=>`<div class="l-item"><span class="logo">kakao</span><div class="t"><b><span class="sd">구매</span>카카오</b><small>${won(o.price)}원 | ${o.qty}주 | ${o.state}</small></div></div>`).join('');
+  }
+
+  function sliderHtml(){
+    const over = st.pct>100, pos = Math.min(100,st.pct/maxPct()*100);
+    return `<div class="slider ${st.pct>0?'act':''} ${over?'over':''}" id="slider">
+        <div class="track"></div><div class="fill" style="width:${pos}%"></div>
+        ${[25,50,75,100].map(t=>`<span class="tick" style="left:${t/(maxPct()/100)}%"></span>`).join('')}
+        <div class="knob" style="left:${pos}%"></div>
+        ${st.pct>0?`<div class="tip" style="left:${pos}%">${st.pct}%</div>`:''}
+      </div>`;
+  }
+  function estInner(){ const px=priceNum(), amount = px && st.qty ? px*st.qty : 0; return `예상 구매금액<b>${won(amount)} <small>원</small></b>`; }
+  function live(){ const sl=root.querySelector('#slider'); if(sl){ sl.outerHTML=sliderHtml(); bindSlider(); } const e=root.querySelector('#est'); if(e) e.innerHTML=estInner(); }
+  function formHtml(){
+    const priceField = st.type==='지정가'
+      ? `<input id="f-price" inputmode="numeric" placeholder="가격 입력" value="${st.price?won(st.price):''}" aria-label="가격">${st.price?'<span class="unit">원</span>':''}`
+      : `<input id="f-price" disabled value="${st.type==='시장가'?'시장가로 주문':won(CUR)+' (현재가)'}" aria-label="가격">`;
+    return `
+      <div class="seg"><button class="${st.side==='buy'?'on':''}" data-act="seg_buy">구매</button><button class="${st.side==='sell'?'on':''}" data-act="seg_sell">판매</button></div>
+      <button class="f-box f-type" data-act="type_open" id="g-type"><span>${st.type}</span><span class="q">${ic.q}${ic.chev}</span></button>
+      <div class="f-box ${st.focus==='price'?'focus':''}" id="g-price">${priceField}<button class="pm" data-act="price_minus" aria-label="가격 내리기">−</button><button class="pm" data-act="price_plus" aria-label="가격 올리기">+</button></div>
+      <div class="f-box ${st.focus==='qty'?'focus':''}" id="g-qty"><input id="f-qty" inputmode="numeric" placeholder="수량 입력" value="${st.qty||''}" aria-label="수량">${st.qty?'<span class="unit">주</span>':''}<button class="pm" data-act="qty_minus" aria-label="수량 줄이기">−</button><button class="pm" data-act="qty_plus" aria-label="수량 늘리기">+</button></div>
+      ${sliderHtml()}
+      <div class="s-ends"><span>0%</span><span>${st.margin?'250%':'100%'}</span></div>
+      <div id="g-avail" style="display:flex;flex-direction:column;gap:10px">
+        <div class="kv"><span>구매가능</span><span>${won(AVAIL)} 원</span></div>
+        <div class="kv"><span>소수점</span><button class="tg" role="switch" aria-checked="${st.frac}" data-act="toggle_frac" aria-label="소수점"></button></div>
+        <div class="kv"><span>미수거래</span><button class="tg" role="switch" aria-checked="${st.margin}" data-act="toggle_margin" aria-label="미수거래"></button></div>
+      </div>
+      <div class="est" id="est">${estInner()}</div>
+      <button class="buy" data-act="buy" id="g-buy">구매하기</button>`;
+  }
+
+  function sheetHtml(){
+    if (!st.sheet) return '';
+    if (st.sheet.kind==='type') return `<div class="dim" data-act="type_close"></div><div class="sheet"><div class="grab"></div><p class="lead">주문 방식을 골라 주세요</p>
+      ${[['지정가','내가 정한 가격에 구매해요. 그 가격이 될 때까지 기다려요.'],['현재가','지금 가격(31,750원)으로 주문해요.'],['시장가','가격을 정하지 않고 지금 바로 구매해요. 예상보다 비싸게 구매될 수 있어요.']]
+        .map(([n,d])=>`<button class="opt ${st.type===n?'on':''}" data-type="${n}"><b>${n}</b><small>${d}</small></button>`).join('')}</div>`;
+    if (st.sheet.kind==='confirm'){ const o=st.sheet.o; const amt=o.price*o.qty, fee=Math.round(amt*0.00015);
+      const l2 = o.type==='시장가' ? `<span class="u">시장가로</span>` : `<b>${won(o.price)}</b> <span class="u">원에</span>`;
+      const det = st.sheet.more ? `<div class="cf-det">${[['종목명','카카오'],['거래소','SOR(스마트 주문)'],['주문유형',o.type+' 매수'],['주문가격',o.type==='시장가'?'시장가':won(o.price)+' 원'],['주문수량',o.qty+' 주']]
+        .map(([k,v])=>`<div><span>${k}</span><b>${v}</b></div>`).join('')}</div>` : '';
+      return `<div class="dim" data-act="confirm_dim"></div><div class="sheet cf"><div class="grab"></div>
+        <p class="cf-l"><span class="logo sm">kakao</span><b>카카오</b> <span class="u">주식을</span></p>
+        <p class="cf-l">${l2}</p>
+        <p class="cf-l"><b>${o.qty}</b> <span class="u">주 구매할게요</span></p>
+        <p class="cf-amt">≈ ${won(amt+fee)} 원</p>
+        ${det}
+        <button class="cf-more ${st.sheet.more?'open':''}" data-act="confirm_more">${st.sheet.more?'접기':'세부 사항'} ${ic.chev}</button>
+        <div class="row2 cf-btn"><button class="no" data-act="confirm_cancel">취소</button><button class="yes" data-act="confirm_buy">구매하기</button></div></div>`; }
+    if (st.sheet.kind==='cancel'){ const o=st.pending.find(x=>x.id===st.sheet.id);
+      return `<div class="dim" data-act="cancelsheet_close"></div><div class="sheet"><div class="grab"></div><p class="lead">주문 취소</p><h3>${won(o.price)}원 ${o.qty}주<br>구매 주문을 취소할까요?</h3>
+        <div class="row2"><button class="no" data-act="cancelsheet_close">닫기</button><button class="yes" data-act="cancelsheet_ok">취소하기</button></div></div>`; }
+    if (st.sheet.kind==='cancelall') return `<div class="dim" data-act="cancelsheet_close"></div><div class="sheet"><div class="grab"></div><p class="lead">주문 취소</p><h3>대기 중인 주문 ${st.pending.length}건을<br>모두 취소할까요?</h3>
+        <div class="row2"><button class="no" data-act="cancelsheet_close">닫기</button><button class="yes" data-act="cancelall_ok">모두 취소</button></div></div>`;
+    return '';
+  }
+
+  const COACH = [
+    ['g-type','어떻게 살지 먼저 골라요','<b>지정가</b>는 원하는 가격을 직접 정하고, <b>현재가</b>는 지금 가격으로, <b>시장가</b>는 가격 상관없이 가장 빨리 사요.'],
+    ['g-price','얼마에 살지 적어요','적은 가격 이하로 팔려는 사람이 있으면 구매돼요. 지금 가격보다 너무 낮으면 오래 기다릴 수 있어요.'],
+    ['g-qty','몇 주 살지 정해요','<b>소수점</b>을 고르면 1주보다 적게, 0.5주처럼 나눠서 살 수도 있어요.'],
+    ['g-avail','쓸 수 있는 돈을 확인해요','<b>미수거래</b>는 돈을 빌려서 사는 방식이에요. 갚지 못하면 강제로 팔릴 수 있어서, 처음엔 꺼 두는 걸 권해요.'],
+    ['g-buy','금액을 확인하고 구매해요','<b>예상 구매금액</b>이 맞는지 보고 구매하기를 누르세요. 한 번 더 확인한 뒤에 주문돼요.'],
+  ];
+  function coachHtml(){
+    if (st.coach<0) return '';
+    const [,t,b] = COACH[st.coach], last = st.coach===COACH.length-1;
+    const dots = COACH.map((_,i)=>`<i class="${i===st.coach?'on':''}"></i>`).join('');
+    return `<div class="coach-ring" id="ring"></div><div class="coach" id="coach"><span class="tail" id="tail"></span><div class="dots">${dots}</div><h4>${t}</h4><p>${b}</p>
+      <div class="row2">${last?'<button class="skip" data-act="guide_prev">이전</button>':'<button class="skip" data-act="guide_skip">건너뛰기</button>'}<button class="next" data-act="guide_next">${last?'시작하기':'다음'}</button></div></div>`;
+  }
+  function placeRing(){
+    const ring = root.querySelector('#ring'); if(!ring) return;
+    const el = root.querySelector('#'+COACH[st.coach][0]); if(!el) return;
+    const sc = +root.dataset.scale||1, d=root.getBoundingClientRect(), r=el.getBoundingClientRect();
+    const x=(r.left-d.left)/sc, y=(r.top-d.top)/sc, w=r.width/sc, h=r.height/sc;
+    Object.assign(ring.style,{left:x-5+'px',top:y-5+'px',width:w+10+'px',height:h+10+'px'});
+    const cb = root.querySelector('#coach'), tail = root.querySelector('#tail'); if(!cb) return;
+    const bh = cb.offsetHeight, below = y+h+14+bh < 800;
+    cb.style.top = (below ? y+h+16 : y-16-bh) + 'px';
+    tail.className = 'tail ' + (below?'up':'down');
+    tail.style.left = Math.max(24, Math.min(375-32-24, x+w/2-16-8)) + 'px';
+  }
+
+  let scrollY = 0, hogaY = null;
+  function draw(){
+    const sc = root.querySelector('.d-scroll'); if (sc) scrollY = sc.scrollTop;
+    const hg = root.querySelector('.d-hoga'); if (hg) hogaY = hg.scrollTop;
+    root.innerHTML = `
+      <div class="d-status"><span>9:41</span><span class="icons">
+        <svg width="18" height="11" viewBox="0 0 18 11"><rect x="0" y="7" width="3" height="4" rx="1" fill="#191F28"/><rect x="5" y="5" width="3" height="6" rx="1" fill="#191F28"/><rect x="10" y="2.5" width="3" height="8.5" rx="1" fill="#191F28"/><rect x="15" y="0" width="3" height="11" rx="1" fill="#191F28"/></svg>
+        <svg width="25" height="12" viewBox="0 0 25 12"><rect x=".5" y=".5" width="21" height="11" rx="3" fill="none" stroke="#191F28" opacity=".4"/><rect x="2" y="2" width="18" height="8" rx="1.8" fill="#191F28"/></svg></span></div>
+      <div class="d-scroll">
+        <div class="d-head"><button data-act="hdr_back" aria-label="뒤로">${ic.back}</button><button class="d-search" data-act="hdr_search">${ic.search}카카오</button><button class="d-mode" data-act="hdr_mode">일반주문 ${ic.chev}</button></div>
+        <div class="d-acct-row"><button class="d-acct" data-act="hdr_account"><span class="dot"></span>5555 - 3333 [위탁종합]<span class="chev">${ic.chev}</span></button>
+          <button class="d-icon" data-act="hdr_ai" aria-label="AI">${ic.spark}</button><button class="d-icon ${st.chart?'on':''}" data-act="chart_toggle" aria-label="차트">${ic.bars}</button></div>
+        ${st.chart?`<div class="d-chart"><div id="lwc" style="height:180px"></div><div class="d-tf"><span>15분 ⌄</span><span class="on">일</span><span>주</span><span>월</span><span>년</span><span class="r">⤢ ⚙</span></div></div>`:''}
+        <div class="d-main"><div class="d-hoga" id="hoga">${hogaHtml()}</div><div class="d-form">${formHtml()}</div></div>
+        <div class="d-tabs"><button class="${st.tab==='pending'?'on':''}" data-act="tab_pending">대기</button><button class="${st.tab==='holdings'?'on':''} ${st.holdGlow?'glow':''}" data-act="tab_holdings">보유</button><button class="${st.tab==='history'?'on':''}" data-act="tab_history">내역</button></div>
+        <div class="d-list">${listHtml()}</div>
+      </div>
+      ${st.toast?`<div class="toast">${ic.check}<span>${st.toast.text}</span><button data-act="${st.toast.act}">${st.toast.btn}</button></div>`:''}
+      ${st.err?`<div class="err">${st.err}</div>`:''}
+      ${sheetHtml()}${coachHtml()}`;
+    const sc2 = root.querySelector('.d-scroll'); sc2.scrollTop = scrollY;
+    const hg2 = root.querySelector('.d-hoga'); hg2.scrollTop = hogaY==null ? (hg2.scrollHeight-hg2.clientHeight)/2 - 20 : hogaY;
+    bindInputs(); mountChart(); placeRing();
+  }
+
+  function flash(msg){ st.err=msg; draw(); clearTimeout(flash.t); flash.t=setTimeout(()=>{st.err=null;draw();},1800); }
+  function scrollToList(){ const sc=root.querySelector('.d-scroll'), tabs=root.querySelector('.d-tabs'); if(sc&&tabs){ sc.scrollTop = tabs.offsetTop-60; scrollY=sc.scrollTop; } }
+
+  function bindInputs(){
+    const fp = root.querySelector('#f-price'), fq = root.querySelector('#f-qty');
+    if (fp && !fp.disabled){
+      fp.onfocus=()=>{ L('price_input'); };
+      fp.oninput=()=>{ const v=fp.value.replace(/[^0-9]/g,''); st.price = v? +v : ''; H.log('input_change','price_input',st.price); syncPct(); live(); };
+    }
+    if (fq){
+      fq.onfocus=()=>{ L('qty_input'); };
+      fq.oninput=()=>{ const v=fq.value.replace(/[^0-9]/g,''); st.qty = v? +v : ''; H.log('input_change','qty_input',st.qty); syncPct(); live(); };
+    }
+    bindSlider();
+  }
+  function bindSlider(){
+    const sl = root.querySelector('#slider');
+    if (sl){
+      let r=null;
+      const move = e => { const x=Math.max(0,Math.min(1,(e.clientX-r.left)/r.width)); setPct(x*maxPct()); draw(); };
+      sl.onpointerdown = e => { r=sl.getBoundingClientRect(); L('slider'); move(e); const up=()=>{ window.removeEventListener('pointermove',move); window.removeEventListener('pointerup',up); H.log('input_change','slider',st.pct+'%'); }; window.addEventListener('pointermove',move); window.addEventListener('pointerup',up); };
+    }
+  }
+
+  function submitCheck(){
+    const px=priceNum(), q=+st.qty;
+    if (st.type==='지정가' && !st.price) return flash('가격을 입력해 주세요');
+    if (!q) return flash('수량을 입력해 주세요');
+    if (px*q > AVAIL && !st.margin) return flash('구매가능 금액을 넘었어요');
+    st.sheet = {kind:'confirm', o:{type:st.type, price:px, qty:q}}; H.log('sheet_open','confirm',`${st.type} ${px} ${q}`); draw();
+  }
+
+  root.onclick = e => {
+    const hoga = e.target.closest('[data-hoga]');
+    if (hoga){ const p=+hoga.dataset.hoga; st.type='지정가'; st.price=p; syncPct(); L('hoga_'+p,p); draw(); return; }
+    const ty = e.target.closest('[data-type]');
+    if (ty){ st.type=ty.dataset.type; if(st.type!=='지정가'){ st.priceTouched=true; } st.sheet=null; L('type_'+st.type,st.type); syncPct(); draw(); return; }
+    const cn = e.target.closest('[data-cancel]');
+    if (cn){ st.sheet={kind:'cancel', id:cn.dataset.cancel}; L('cancel_'+cn.dataset.cancel); H.log('sheet_open','cancel',cn.dataset.cancel); draw(); return; }
+    const a = e.target.closest('[data-act]'); if (!a) { if(!e.target.closest('input,#slider,#lwc')) L('blank'); return; }
+    const act = a.dataset.act;
+    switch(act){
+      case 'guide_next': L('guide_next',st.coach+1); st.coach = st.coach>=COACH.length-1 ? -1 : st.coach+1; if(st.coach===3||st.coach===4){ const sc=root.querySelector('.d-scroll'); sc.scrollTop=140; scrollY=140; } if(st.coach<0){scrollY=0;} draw(); return;
+      case 'guide_prev': L('guide_prev',st.coach+1); st.coach=Math.max(0,st.coach-1); draw(); return;
+      case 'guide_skip': L('guide_skip',st.coach+1); st.coach=-1; scrollY=0; draw(); return;
+      case 'seg_buy': L(act); return;
+      case 'seg_sell': L(act); flash('이 테스트에서는 구매만 할 수 있어요'); return;
+      case 'type_open': L(act); st.sheet={kind:'type'}; draw(); return;
+      case 'type_close': L(act); st.sheet=null; draw(); return;
+      case 'price_minus': case 'price_plus': L(act); if(st.type!=='지정가') return; st.price=Math.max(TICK,(+st.price||CUR)+(act==='price_plus'?TICK:-TICK)); syncPct(); draw(); return;
+      case 'qty_minus': case 'qty_plus': L(act); st.qty=Math.max(0,(+st.qty||0)+(act==='qty_plus'?1:-1))||''; syncPct(); draw(); return;
+      case 'toggle_frac': L(act); st.frac=!st.frac; draw(); return;
+      case 'toggle_margin': L(act); st.margin=!st.margin; syncPct(); draw(); return;
+      case 'chart_toggle': L(act, !st.chart); st.chart=!st.chart; H.log('screen_view','chart',st.chart?'open':'close'); draw(); return;
+      case 'buy': L(act); submitCheck(); return;
+      case 'confirm_more': L(act); st.sheet.more=!st.sheet.more; draw(); return;
+      case 'confirm_dim': case 'confirm_cancel': L('confirm_cancel'); st.confirmCancel++; st.sheet=null; draw(); return;
+      case 'confirm_buy': { L(act); const o=st.sheet.o; st.sheet=null;
+        st.pending.push({id:'p'+Date.now(),price:o.price,qty:o.qty,state:'체결대기',fresh:true}); st.history.push({price:o.price,qty:o.qty,state:'접수'});
+        st.toast={text:'카카오 구매 주문을 접수했어요',btn:'대기 보기',act:'toast_view'}; st.tab='pending'; draw();
+        H.onOrder({...o, meta:{ confirm_cancel:st.confirmCancel, chart_open:st.chart, margin:st.margin }}); return; }
+      case 'toast_view': L(act); st.toast=null; st.tab='pending'; draw(); scrollToList(); return;
+      case 'toast_holdings': L(act); st.toast=null; st.holdGlow=false; st.tab='holdings'; draw(); scrollToList(); H.onHoldings('toast'); return;
+      case 'tab_pending': L(act); st.tab='pending'; draw(); return;
+      case 'tab_holdings': L(act); st.holdGlow=false; st.tab='holdings'; draw(); H.onHoldings('tab'); return;
+      case 'tab_history': L(act); st.tab='history'; draw(); return;
+      case 'chip_all': case 'chip_cur': L(act); st.chip=act==='chip_all'?'all':'cur'; draw(); return;
+      case 'cancelall': L(act); st.sheet={kind:'cancelall'}; H.log('sheet_open','cancelall'); draw(); return;
+      case 'cancelsheet_close': L(act); st.sheet=null; draw(); return;
+      case 'cancelsheet_ok': { L(act); const id=st.sheet.id; st.pending=st.pending.filter(x=>x.id!==id); st.sheet=null; st.toast={text:'주문을 취소했어요',btn:'내역',act:'tab_history'}; draw();
+        H.onCancel({ok:id==='new', target:id==='new'?'방금 주문':'이전 주문'}); return; }
+      case 'cancelall_ok': L(act); st.pending=[]; st.sheet=null; st.toast={text:'주문 2건을 취소했어요',btn:'내역',act:'tab_history'}; draw(); H.onCancel({ok:false,target:'전체 취소'}); return;
+      default: L(act); return; // 헤더·검색·AI 등 경로 밖 요소
+    }
+  };
+  syncPct();
+  draw();
+  return { state:st };
+}};
+</script>
+
+<script>
+/* 시작 */
+render();
+</script>
