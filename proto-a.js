@@ -169,6 +169,24 @@ const css = `
 .ka .k-tbl .ck{width:22px;height:22px;border-radius:50%;border:1.5px solid #C2C5CC;display:inline-flex;align-items:center;justify-content:center;color:#fff;font-size:12px;vertical-align:middle;background:#fff}
 .ka .k-tbl .ck.on{background:#2F2D6B;border-color:#2F2D6B}
 .ka .k-empty{text-align:center;color:#AAA;font-size:14px;padding:40px 0}
+.ka .k-tabs button.on3{color:#3E9B4F;font-weight:800}
+.ka .k-tabs button.on3::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;background:#3E9B4F}
+.ka .k-form.km{background:#F7FAF6}
+.ka .km .k-tbox{width:150px;height:42px;border:1px solid #DADCE0;border-radius:4px;background:#F1F2F1;display:flex;align-items:center;padding:0 10px;font-size:16px;color:#222}
+.ka .km .k-tbox.kph{color:#BBB}
+.ka .km .k-info{height:62px;border-radius:4px;background:#EEF1EE;display:flex;align-items:center;justify-content:center;gap:5px;font-size:14.5px;color:#999}
+.ka .km .k-info i{width:13px;height:13px;border:1.2px solid #999;border-radius:50%;font-style:normal;font-size:9px;display:flex;align-items:center;justify-content:center}
+.ka .km .k-info.on{color:#222;background:#fff;border:1px solid #DADCE0;flex-direction:column;gap:2px;font-size:14px}
+.ka .km .k-info.on b{font-size:15px}
+.ka .km .k-num.dis{background:#F1F2F1;border-color:#DADCE0}
+.ka .km .k-num.dis .pm{color:#CCC;border-color:#DADCE0}
+.ka .km .k-num.dis .val{color:#BBB;justify-content:center;padding:0}
+.ka .km .k-sel.dis{background:#F1F2F1;border-color:#DADCE0;color:#BBB}
+.ka .km .k-sel.dis::after{border-top-color:#CCC}
+.ka .km .k-chk.on i{background:#2F2D6B}
+.ka .k-mc{flex:1;background:#F2C94C;color:#fff!important;font-size:18px;font-weight:800}
+.ka .k-mm{flex:1;background:#5CAA5E;color:#fff!important;font-size:18px;font-weight:800}
+.ka .k-dlg .k-tbl{max-height:220px;margin:8px 0}
 .ka .k-ybar{height:48px;flex:none;background:#F2C94C;color:#fff!important;font-size:18px;font-weight:800;width:100%}
 `;
 if (!document.getElementById('ka-css')){ const s=document.createElement('style'); s.id='ka-css'; s.textContent=css; document.head.appendChild(s); }
@@ -182,7 +200,7 @@ window.PROTOTYPES.A = { mount(root, taskId, H){
   const KINDS=['보통(지정가)','시장가','조건부지정가','최유리지정가','최우선지정가'];
   const OTHER=[{name:'삼성전자',qty:3,rate:4.21,pl:12180},{name:'NAVER',qty:1,rate:-2.35,pl:-4700},{name:'현대차',qty:2,rate:1.10,pl:5060}];
   const st={ tab:'buy', kind:'보통(지정가)', qty:'', price:CUR, auto:false, misu:false, credit:false,
-    pending:[], holdings:[], sel:{}, pick:null, sheet:null, dlg:null, toast:null, banner:null, orderNo:null, menu:null, err:null, cc:0, hsub:'loan' };
+    pending:[], holdings:[], sel:{}, pick:null, mall:true, mauto:false, mprice:'', sheet:null, dlg:null, toast:null, banner:null, orderNo:null, menu:null, err:null, cc:0, hsub:'loan' };
   let seq=407300;
   const L=(t,v)=>H.log('tap',t,v??'');
   const cls=p=>p>PREV?'up':p<PREV?'dn':'';
@@ -193,8 +211,8 @@ window.PROTOTYPES.A = { mount(root, taskId, H){
   function toast(t){ st.toast=t; clearTimeout(toast.h); toast.h=setTimeout(()=>{ st.toast=null; if(root.dataset.mid===mid) draw(); },2400); }
   function flash(t){ st.err=t; draw(); clearTimeout(flash.h); flash.h=setTimeout(()=>{ st.err=null; if(root.dataset.mid===mid) draw(); },1800); }
 
-  if (taskId==='T5'){ st.pending=[{id:'old',no:'407211',price:31700,qty:7},{id:'new',no:'407363',price:31870,qty:7}]; st.price=31870; st.qty=7; st.orderNo='407363'; toast('KRX 매수주문이 완료되었습니다.'); }
-  if (taskId==='T6'){ st.holdings=[{name:'카카오',qty:7,avg:32800}]; st.banner={price:32800,qty:7}; }
+  if (taskId==='T4'){ st.pending=[{id:'old',no:'407211',price:31700,qty:7},{id:'new',no:'407363',price:31870,qty:7}]; st.price=31870; st.qty=7; st.orderNo='407363'; toast('KRX 매수주문이 완료되었습니다.'); }
+  if (taskId==='T5'){ st.holdings=[{name:'카카오',qty:7,avg:32800}]; st.banner={price:32800,qty:7}; }
 
   const mid=Math.random().toString(36).slice(2); root.dataset.mid=mid;
 
@@ -204,7 +222,7 @@ window.PROTOTYPES.A = { mount(root, taskId, H){
     <div class="k-stock"><div class="k-sbox"><button class="nm" data-act="a_stock"><b><i>★</i>카카오</b><small>통합 <em>신</em> 035720</small><span class="dd">⌄</span></button><button class="sr" data-act="a_search" aria-label="검색"><svg width="20" height="20" viewBox="0 0 20 20"><circle cx="8.5" cy="8.5" r="6.5" fill="none" stroke="#555" stroke-width="1.4"/><path d="M13.3 13.3l4.5 4.5" stroke="#555" stroke-width="1.4"/></svg></button></div>
       <div class="k-px"><b class="up">${won(CUR)}</b><small class="up"><span>▲ ${won(CUR-PREV)}</span><span>${((CUR-PREV)/PREV*100).toFixed(2)}%</span></small></div></div>
     <div class="k-acct"><button class="a1" data-act="a_acct_type">통합<i></i></button><button class="a2" data-act="a_acct">${ACCT}<span style="color:#888;font-size:12px">⌄</span></button><button class="a3" data-act="a_pw">●●●●</button></div>
-    <div class="k-tabs">${[['buy','매수'],['sell','매도'],['modify','정정/취소'],['pending','미체결'],['holdings','잔고']].map(([k,n])=>`<button class="${st.tab===k?(k==='buy'?'on':'on2'):''}" data-act="tab_${k}">${n}</button>`).join('')}</div>`;
+    <div class="k-tabs">${[['buy','매수'],['sell','매도'],['modify','정정/취소'],['pending','미체결'],['holdings','잔고']].map(([k,n])=>`<button class="${st.tab===k?(k==='buy'?'on':k==='modify'?'on3':'on2'):''}" data-act="tab_${k}">${n}</button>`).join('')}</div>`;
 
   const bottom=()=>`<div class="k-tick"><span>지수 채팅</span>투자의 길, 함께 떠들면 덜 외로워요</div>
     <div class="k-bnav"><button class="menu" data-act="a_menu"><b></b>메뉴</button>${['관심종목','현재가','주문','차트','계좌'].map(n=>`<button class="n ${n==='주문'?'on':''}" data-act="a_bnav_${n}">${n}</button>`).join('')}</div><div class="k-home"></div>`;
@@ -247,8 +265,17 @@ window.PROTOTYPES.A = { mount(root, taskId, H){
       ${orderTable('pending')}${n?`<button class="k-ybar" data-act="cancel_bar">${n}건 주문취소</button>`:''}</div>`;
   }
   function modifyPane(){
-    return `<div class="k-pane"><div class="k-tool"><span style="font-size:14px;color:#555">정정·취소할 원주문을 선택하세요</span></div>${orderTable('modify')}
-      ${st.pick?`<div style="display:flex"><button class="k-ybar" style="background:#8E8EA8" data-act="a_modify_order">정정주문</button><button class="k-ybar" data-act="cancel_order">취소주문</button></div>`:''}</div>`;
+    const o = st.pending.find(x=>x.id===st.pick);
+    return `<div class="k-book"><div class="k-bh"><span>호가</span><span>잔량</span></div><div class="k-bl" id="kbook">${bookHtml()}</div></div>
+      <div class="k-form km"><div class="k-f">
+        <div class="k-line"><button class="k-tbox ${o?'':'kph'}" data-act="cancel_ono">${o?o.no:'원주문번호'}</button><button class="k-btn" data-act="cancel_list">미체결</button></div>
+        ${o?`<div class="k-info on"><b>카카오</b><span>매수 ${won(o.price)}원 ${o.qty}주</span></div>`:`<div class="k-info"><i>!</i>미체결 내역을 선택해주세요.</div>`}
+        <div class="k-num ${o&&!st.mall?'':'dis'}"><button class="pm" data-act="a_mqty_minus">−</button><span class="val">${o?won(o.qty)+'주':'수량'}</span><button class="pm" data-act="a_mqty_plus">+</button></div>
+        <div class="k-line" style="align-items:center"><button class="k-chk ${st.mall?'on':''}" data-act="a_mall" style="width:93px"><i>✓</i>잔량전부</button><span class="k-sel sm dis" style="width:75px">100%</span></div>
+        <div class="k-line"><div class="k-num"><button class="pm" data-act="a_mprice_minus">−</button><button class="val y ${o?'':'kph'}" data-act="a_mprice">${o?won(st.mprice)+'원':'가격'}</button><button class="pm" data-act="a_mprice_plus">+</button></div><button class="k-btn" data-act="a_mmarket">✓시장가</button></div>
+        <div class="k-line" style="align-items:center;justify-content:space-between"><button class="k-chk ${st.mauto?'on':''}" data-act="a_mauto"><i>✓</i>가격 자동(원주문가)</button><button class="k-btn" data-act="a_hogabtn">호가</button></div>
+      </div>
+      <div class="k-bottom"><div class="k-buyrow"><button class="k-mc" data-act="cancel_order">취소</button><button class="k-mm" data-act="a_modify_order">정정</button></div></div></div>`;
   }
   function holdingsPane(){
     const rows = OTHER.map(h=>({name:h.name,qty:h.qty,rate:h.rate,pl:h.pl}))
@@ -280,6 +307,8 @@ window.PROTOTYPES.A = { mount(root, taskId, H){
         <tr><td>종목명</td><td>카카오</td></tr><tr><td>매매종류</td><td>${st.kind}</td></tr><tr><td>주문수량</td><td>${won(o.qty)}주</td></tr>
         <tr><td>주문가격</td><td class="y">${o.type==='지정가'||o.type==='조건부지정가'?won(o.price)+'원':st.kind}</td></tr><tr><td>거래소</td><td>KRX (한국거래소)</td></tr></table>
         <div class="bt"><button data-act="confirm_cancel">취소</button><button class="ok" data-act="confirm_buy">확인</button></div></div>`; }
+    if (d.kind==='plist') return `<div class="k-dlgdim" data-act="cancel_list_close"></div><div class="k-dlg"><h4>미체결 내역</h4>${orderTable('modify')}
+        <div class="bt"><button data-act="cancel_list_close">닫기</button></div></div>`;
     if (d.kind==='cancel') return `<div class="k-dlgdim"></div><div class="k-dlg"><h4 class="yl">주식 취소 주문</h4><div class="msg">선택하신 주문${d.ids.length}건에 대해<br>취소 주문을 내시겠습니까?</div>
         <div class="bt"><button data-act="cancel_dlg_close">취소</button><button class="ok yl" data-act="cancelsheet_ok">확인</button></div></div>`;
     return '';
@@ -331,15 +360,15 @@ window.PROTOTYPES.A = { mount(root, taskId, H){
   root.onclick = e => {
     const kd=e.target.closest('[data-key]'); if (kd){ const k=kd.dataset.key; const f=st.sheet.focus; L(k==='avail'?'avail':k==='price_cur'?'price_cur':`${f}_key_${k}`,k); keyIn(k); draw(); return; }
     const sh=e.target.closest('[data-shoga]'); if (sh){ const p=+sh.dataset.shoga; L('hoga_'+p,p); if(!isMkt()){ st.sheet.price=p; st.sheet.focus='price'; st.sheet.fresh=true; recalc(); } draw(); return; }
-    const hg=e.target.closest('[data-hoga]'); if (hg){ const p=+hg.dataset.hoga; L('hoga_'+p,p); if(isMkt()) st.kind='보통(지정가)'; st.price=p; st.auto=false; draw(); return; }
+    const hg=e.target.closest('[data-hoga]'); if (hg){ const p=+hg.dataset.hoga; L('hoga_'+p,p); if(st.tab==='modify'){ if(st.pick){ st.mprice=p; st.mauto=false; } draw(); return; } if(isMkt()) st.kind='보통(지정가)'; st.price=p; st.auto=false; draw(); return; }
     const kn=e.target.closest('[data-kind]'); if (kn){ st.kind=kn.dataset.kind; st.menu=null; L('type_'+st.kind,st.kind); draw(); return; }
-    const rw=e.target.closest('[data-row]'); if (rw){ const id=rw.dataset.row; if(st.tab==='pending'){ st.sel[id]=!st.sel[id]; L('cancel_check_'+id, st.sel[id]?'on':'off'); } else { st.pick=st.pick===id?null:id; L('cancel_pick_'+id); } draw(); return; }
+    const rw=e.target.closest('[data-row]'); if (rw){ const id=rw.dataset.row; if(st.tab==='pending'){ st.sel[id]=!st.sel[id]; L('cancel_check_'+id, st.sel[id]?'on':'off'); } else { st.pick=id; const o=st.pending.find(x=>x.id===id); st.mprice=o?o.price:''; st.dlg=null; L('cancel_pick_'+id); } draw(); return; }
     const a=e.target.closest('[data-act]'); if (!a){ L('blank'); return; }
     const act=a.dataset.act;
     switch(act){
       case 'tab_buy': L(act); st.tab='buy'; draw(); return;
       case 'tab_sell': L(act); flash('이 테스트에서는 매수만 할 수 있어요'); return;
-      case 'tab_modify': L(act); st.tab='modify'; st.pick=null; draw(); return;
+      case 'tab_modify': L(act); st.tab='modify'; st.pick=null; st.mprice=''; draw(); return;
       case 'tab_pending': L(act); st.tab='pending'; st.sel={}; draw(); return;
       case 'tab_holdings': L(act); st.tab='holdings'; draw(); H.onHoldings('tab'); return;
       case 'a_credit': L(act); flash('이 테스트에서는 현금 주문만 할 수 있어요'); return;
@@ -365,8 +394,14 @@ window.PROTOTYPES.A = { mount(root, taskId, H){
         H.onOrder({type:o.type, price:o.price, qty:o.qty, meta:{confirm_cancel:st.cc}}); return; }
       case 'cancel_check_all': { L(act); const all=st.pending.every(o=>st.sel[o.id]); st.sel={}; if(!all) st.pending.forEach(o=>st.sel[o.id]=true); draw(); return; }
       case 'cancel_bar': L(act); st.dlg={kind:'cancel', ids:st.pending.filter(o=>st.sel[o.id]).map(o=>o.id)}; H.log('sheet_open','cancel',st.dlg.ids.join(',')); draw(); return;
-      case 'cancel_order': L(act); st.dlg={kind:'cancel', ids:[st.pick]}; H.log('sheet_open','cancel',st.pick); draw(); return;
-      case 'cancel_krx': L(act); st.tab='modify'; st.pick=null; draw(); return;
+      case 'cancel_order': L(act); if(!st.pick) return flash('미체결 내역을 선택해주세요.'); st.dlg={kind:'cancel', ids:[st.pick]}; H.log('sheet_open','cancel',st.pick); draw(); return;
+      case 'cancel_list': case 'cancel_ono': L(act); st.dlg={kind:'plist'}; draw(); return;
+      case 'cancel_list_close': L(act); st.dlg=null; draw(); return;
+      case 'a_mall': L(act); st.mall=!st.mall; draw(); return;
+      case 'a_mauto': L(act); st.mauto=!st.mauto; if(st.mauto){ const o=st.pending.find(x=>x.id===st.pick); if(o) st.mprice=o.price; } draw(); return;
+      case 'a_mprice_minus': case 'a_mprice_plus': L(act); if(st.pick){ st.mprice=Math.max(TICK,(+st.mprice||CUR)+(act==='a_mprice_plus'?TICK:-TICK)); st.mauto=false; draw(); } return;
+      case 'a_mprice': case 'a_mqty_minus': case 'a_mqty_plus': case 'a_mmarket': L(act); if(!st.pick) flash('미체결 내역을 선택해주세요.'); else flash('이 테스트에서는 정정 주문을 쓸 수 없어요'); return;
+      case 'cancel_krx': L(act); st.tab='modify'; st.pick=null; st.mprice=''; draw(); return;
       case 'cancel_dlg_close': L(act); st.dlg=null; draw(); return;
       case 'cancelsheet_ok': L(act); cancelDone(st.dlg.ids); return;
       case 'a_modify_order': L(act); flash('이 테스트에서는 정정 주문을 쓸 수 없어요'); return;

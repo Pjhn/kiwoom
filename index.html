@@ -36,9 +36,15 @@ button:focus-visible,textarea:focus-visible,input:focus-visible{outline:2px soli
 
 /* 목업 무대 */
 .stage{display:flex;align-items:center;justify-content:center;min-width:0}
-.phone{width:min(100%,375px,calc((100vh - 64px) * 375 / 812));aspect-ratio:375/812;background:var(--phone);border-radius:52px;padding:10px;box-sizing:border-box;
-  box-shadow:0 24px 60px rgba(0,23,51,.14)}
-.screen{width:100%;height:100%;border-radius:42px;overflow:hidden;position:relative;background:#fff}
+.phone{position:relative;width:min(100%,399px,calc((100vh - 64px) * 399 / 836));aspect-ratio:399/836;border-radius:56px;padding:3px;box-sizing:border-box;
+  background:linear-gradient(135deg,#F3F4F6 0%,#B9BDC3 18%,#E8EAED 34%,#9DA2A9 52%,#D9DCE0 70%,#A7ACB3 86%,#EEF0F2 100%);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.55),inset 0 0 2px 2px rgba(0,0,0,.12),0 0 0 1px rgba(0,0,0,.18),0 24px 60px rgba(0,23,51,.18)}
+.phone::before,.phone::after{content:"";position:absolute;width:3px;border-radius:2px;background:linear-gradient(90deg,#8F949B,#D8DBDF 50%,#9A9FA6)}
+.phone::before{right:-3px;top:23%;height:12%}
+.phone::after{left:-3px;top:13%;height:22%;background:linear-gradient(180deg,#A9AEB4 0 16%,transparent 16% 36%,#A9AEB4 36% 64%,transparent 64% 73%,#A9AEB4 73% 100%)}
+.screen{width:100%;height:100%;box-sizing:border-box;border:9px solid #0A0A0B;border-radius:53px;overflow:hidden;position:relative;background:#fff}
+.notch{position:absolute;top:0;left:50%;transform:translateX(-50%);width:42%;aspect-ratio:158/30;background:#0A0A0B;border-radius:0 0 18px 18px;z-index:60;pointer-events:none}
+.notch::after{content:"";position:absolute;top:28%;left:50%;transform:translateX(-50%);width:28%;height:14%;border-radius:4px;background:#1C1D20}
 .veil{position:absolute;inset:0;background:rgba(255,255,255,.72);backdrop-filter:blur(2px);display:flex;align-items:center;justify-content:center;text-align:center;
   color:#4E5968;font-size:15px;font-weight:600;padding:24px;z-index:50}
 .veil[hidden]{display:none}
@@ -105,8 +111,8 @@ textarea.field::placeholder{color:var(--fg-3)}
   .app{grid-template-columns:1fr;gap:16px;padding-block:16px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-bottom:88px}
   .side{order:-1;max-height:none}
   .card{padding:22px;overflow:visible}
-  .phone{width:min(100%,375px);padding:6px;border-radius:44px}
-  .screen{border-radius:38px}
+  .phone{width:min(100%,395px);aspect-ratio:395/832;padding:3px;border-radius:48px}
+  .screen{border-width:7px;border-radius:45px}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 
@@ -263,6 +269,7 @@ textarea.field::placeholder{color:var(--fg-3)}
     <div class="phone">
       <div class="screen" id="screen">
         <div class="device" id="device"></div>
+        <div class="notch" aria-hidden="true"></div>
         <div class="veil" id="veil">안내를 읽고 시작하기를 눌러 주세요</div>
       </div>
     </div>
@@ -314,10 +321,8 @@ const TASKS = [
     judge:o => o.type==='지정가' && o.price===31700 && o.qty===7 },
   { id:'T3', title:'50만 원어치만 구매해 주세요', sub:'50만 원에 딱 맞출 필요는 없어요. 가격은 원하는 대로 정해도 괜찮아요.', order:true,
     judge:o => Math.abs(o.price*o.qty-500000) <= o.price },
-  { id:'T4', title:'카카오 주식을 31,500원에 구매해 주세요', sub:'수량과 구매금액은 상관없어요.', order:true,
-    judge:o => o.type==='지정가' && o.price===31500 },
-  { id:'T5', title:'방금 넣은 주문 가격이 잘못됐어요. 그 주문만 취소해 주세요', sub:'다른 주문은 그대로 두어야 해요.', order:false },
-  { id:'T6', title:'주문이 체결됐어요. 구매한 주식이 어떻게 됐는지 확인해 보세요', sub:'확인했다고 생각되면 다음 안내가 나와요.', order:false },
+  { id:'T4', title:'방금 넣은 주문 가격이 잘못됐어요. 그 주문만 취소해 주세요', sub:'다른 주문은 그대로 두어야 해요.', order:false },
+  { id:'T5', title:'주문이 체결됐어요. 구매한 주식이 어떻게 됐는지 확인해 보세요', sub:'확인했다고 생각되면 다음 안내가 나와요.', order:false },
 ];
 
 /* ═════════ 참가자 상태 ═════════ */
@@ -355,9 +360,8 @@ const ON_PATH = {
   T1:['guide','type','price','qty','slider','buy','confirm','hoga','chart','toggle','seg_buy','amount','avail'],
   T2:['guide','type','price','qty','slider','buy','confirm','hoga','chart','toggle','seg_buy','amount','avail'],
   T3:['guide','type','price','qty','slider','buy','confirm','hoga','chart','toggle','seg_buy','amount','avail'],
-  T4:['guide','type','price','qty','slider','buy','confirm','hoga','chart','toggle','seg_buy','amount','avail'],
-  T5:['toast_view','tab_pending','tab_modify','chip','cancel','cancelsheet'],
-  T6:['toast_holdings','tab_holdings','chip'],
+  T4:['toast_view','tab_pending','tab_modify','chip','cancel','cancelsheet'],
+  T5:['toast_holdings','tab_holdings','chip'],
 };
 function log(event, target='', value=''){
   if (S.phase!=='task') return;
@@ -402,7 +406,7 @@ function rIntro(){
   card.innerHTML = `
     <div class="step"><span class="step-badge">시작</span><span class="step-count">약 20분</span></div>
     <h1 class="title">주식 주문 화면을 써 보고 의견을 들려주세요</h1>
-    <p class="sub">두 가지 주문 화면으로 같은 과업 6개를 해 보고, 과업마다 짧은 질문에 답해요. 정답을 맞히는 시험이 아니라 화면을 평가하는 거예요. 막히면 언제든 넘어가셔도 돼요.</p>
+    <p class="sub">두 가지 주문 화면으로 같은 과업 5개를 해 보고, 과업마다 짧은 질문에 답해요. 정답을 맞히는 시험이 아니라 화면을 평가하는 거예요. 막히면 언제든 넘어가셔도 돼요.</p>
     <div class="hint">${infoIcon}<span>화면 속 가격과 계좌는 모두 테스트용이에요. 실제로 주문되지 않아요.</span></div>
     <label class="check"><input type="checkbox" id="c1"><span>화면을 누른 기록과 화면 녹화가 익명으로 수집되는 것에 동의해요. 녹화 도구(Microsoft Clarity)가 쿠키를 사용해요.</span></label>
     <label class="check"><input type="checkbox" id="c2"><span>만 18세 이상이에요.</span></label>
@@ -479,7 +483,7 @@ function rSurvey(){
   let extra = '';
   if (t.id==='T1' && r.result!=='skip') extra += optQ('outside','주문하다가 앱 밖에서 정보를 찾아보고 싶었나요?',['예','아니요']);
   if (t.id==='T3' && r.result!=='skip') extra += optQ('calc','계산기나 외부 검색을 사용했나요?',['예','아니요']);
-  if (t.id==='T6' && r.result!=='skip') extra += scaleQ('reuse','다음에도 이 화면으로 주문하고 싶나요?','전혀 아니에요','꼭 그래요');
+  if (t.id==='T5' && r.result!=='skip') extra += scaleQ('reuse','다음에도 이 화면으로 주문하고 싶나요?','전혀 아니에요','꼭 그래요');
   card.innerHTML = `${header('과업 '+(S.tIdx+1)+' 질문')}
     <h1 class="title" style="font-size:20px">${r.result==='skip'?'괜찮아요. 하나만 물어볼게요':'수고했어요. 몇 가지만 물어볼게요'}</h1>
     ${scaleQ('seq','이 과업은 얼마나 쉬웠나요?','매우 어려웠어요','매우 쉬웠어요')}
@@ -562,8 +566,8 @@ function mountProto(task, preview){
   proto = impl.mount(device, task.id, {
     log,
     onOrder(o){ if(S.phase!=='task'||!task.order) return; const ok = task.judge(o); finishTask(ok?'success':'fail',{ o_type:o.type, o_price:o.price, o_qty:o.qty, o_amount:o.price*o.qty, ...(o.meta||{}) }); },
-    onCancel(c){ if(S.phase!=='task'||task.id!=='T5') return; finishTask(c.ok?'success':'fail',{ cancel_target:c.target }); },
-    onHoldings(via){ if(S.phase!=='task'||task.id!=='T6') return; finishTask('success',{ via }); },
+    onCancel(c){ if(S.phase!=='task'||task.id!=='T4') return; finishTask(c.ok?'success':'fail',{ cancel_target:c.target }); },
+    onHoldings(via){ if(S.phase!=='task'||task.id!=='T5') return; finishTask('success',{ via }); },
     guide: task.id==='T1',
   });
 }
@@ -600,12 +604,12 @@ window.PROTOTYPES.B = { mount(root, taskId, H){
     pending:[], holdings:[], history:[], toast:null, sheet:null, coach:-1, priceTouched:false, confirmCancel:0 };
   // 과업별 시작 상태
   st.price = CUR; // 지정가에 현재가가 들어간 채로 시작
-  if (taskId==='T5'){
+  if (taskId==='T4'){
     st.pending = [{id:'old',price:31700,qty:7,state:'체결대기'},{id:'new',price:31870,qty:7,state:'체결대기',fresh:true}];
     st.price=31870; st.qty=7;
     st.toast = {text:'카카오 구매 주문을 접수했어요', btn:'대기 보기', act:'toast_view'};
   }
-  if (taskId==='T6'){
+  if (taskId==='T5'){
     st.holdings=[{avg:32800,qty:7}]; st.history=[{price:32800,qty:7,state:'체결'}];
     st.toast = {text:'카카오 구매가 완료됐어요', btn:'보유 확인', act:'toast_holdings'}; st.holdGlow = true;
   }
