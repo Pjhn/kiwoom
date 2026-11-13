@@ -146,13 +146,11 @@ textarea.field::placeholder{color:var(--fg-3)}
 .d-icon.on{background:var(--g0)}
 .d-chart{border-bottom:1px solid var(--ln)}
 .d-chart #lwc{cursor:crosshair}
-.h-row .v.tk{animation:tk .6s ease-out}
-@keyframes tk{from{box-shadow:inset 0 0 0 1px #191F28}to{box-shadow:inset 0 0 0 1px transparent}}
 .d-tf{display:flex;align-items:center;gap:18px;padding:8px 16px;font-size:14px;color:var(--g3)}
 .d-tf .on{color:var(--m);font-weight:700;background:var(--m-soft);border-radius:6px;padding:2px 10px}
 .d-tf .r{margin-left:auto;display:flex;gap:14px}
 .d-main{display:flex;gap:16px;padding:4px 16px 12px}
-.d-hoga{width:124px;flex:none;height:auto;contain:size;letter-spacing:-.04em;overflow-y:auto;scrollbar-width:none;position:relative;-webkit-mask-image:linear-gradient(transparent,#000 6%,#000 94%,transparent)}
+.d-hoga{width:124px;flex:none;height:auto;contain:size;letter-spacing:-.07em;overflow-y:auto;scrollbar-width:none;position:relative;-webkit-mask-image:linear-gradient(transparent,#000 6%,#000 94%,transparent)}
 .d-hoga::-webkit-scrollbar{display:none}
 .h-row{display:flex;align-items:center;justify-content:space-between;width:100%;height:49px;text-align:left;padding-left:4px}
 .h-row .p{font-size:14px;font-weight:600;color:var(--m);display:block}
@@ -163,7 +161,6 @@ textarea.field::placeholder{color:var(--fg-3)}
 .h-row.cur{height:52px}
 .h-row.cur .p{font-size:20px;font-weight:700}
 .h-row:hover{background:var(--g0)}
-.h-row.sel{box-shadow:inset 0 0 0 1.5px #191F28;border-radius:6px}
 .d-form{flex:1;min-width:0;display:flex;flex-direction:column;gap:10px}
 .seg{display:flex;background:var(--g0);border-radius:8px;padding:3px}
 .seg button{flex:1;height:32px;border-radius:6px;font-size:14px;color:var(--g3)}
@@ -257,7 +254,7 @@ textarea.field::placeholder{color:var(--fg-3)}
 .opt b{font-size:16px}.opt small{font-size:13px;color:var(--g3)}
 .opt.on b{color:var(--m)}
 .err{position:absolute;left:50%;bottom:40px;transform:translateX(-50%);background:#3A3F47;color:#fff;font-size:13px;padding:10px 14px;border-radius:8px;white-space:nowrap;z-index:45}
-.coach-ring{position:absolute;border-radius:14px;box-shadow:0 0 0 3px #fff,0 0 0 9999px rgba(0,0,0,.5);z-index:42;pointer-events:none;transition:all .2s}
+.coach-ring{position:absolute;border-radius:14px;box-shadow:0 0 0 1.5px rgba(255,255,255,.95),0 0 14px 3px rgba(255,255,255,.55),0 0 0 9999px rgba(0,0,0,.5);z-index:42;pointer-events:none;transition:all .2s}
 .coach{position:absolute;left:16px;right:16px;background:#fff;border-radius:20px;padding:20px 20px 16px;z-index:43;box-shadow:0 10px 30px rgba(0,0,0,.18)}
 .coach .tail{position:absolute;width:16px;height:16px;background:#fff;transform:rotate(45deg);border-radius:2px}
 .coach .tail.up{top:-7px}.coach .tail.down{bottom:-7px}
@@ -412,7 +409,7 @@ function bindChips(ans, onChange){
 
 function render(){
   veil.hidden = S.phase==='task';
-  if (S.phase!=='task') veil.textContent = ({done:'참여해 주셔서 감사합니다', survey:'질문에 답해 주세요', sus:'질문에 답해 주세요', final:'질문에 답해 주세요'})[S.phase] || (S.phase==='intro'?'안내를 읽고 시작하기를 눌러 주십시오':'안내를 읽고 시작하기를 눌러 주세요');
+  if (S.phase!=='task') veil.textContent = ({done:'모든 테스트가 완료되었습니다', survey:'질문에 답해 주세요', sus:'질문에 답해 주세요', final:'질문에 답해 주세요'})[S.phase] || (S.phase==='intro'?'안내를 읽고 시작하기를 눌러 주십시오':'안내를 읽고 시작하기를 눌러 주세요');
   ({intro:rIntro, pre:rPre, taskIntro:rTaskIntro, task:rTask, survey:rSurvey, sus:rSus, final:rFinal, done:rDone})[S.phase]();
   card.scrollTop = 0;
 }
@@ -497,6 +494,7 @@ function rSurvey(){
   const isOrder = t.order && r.result!=='skip';
   let extra = '';
   if (t.id==='T1' && r.result!=='skip') extra += optQ('outside','주문하다가 앱 밖에서 정보를 찾아보고 싶었나요?',['예','아니요']);
+  if (t.id==='T3') extra += scaleQ('amount_ease','금액을 설정하는 과정은 얼마나 쉬웠나요?','매우 어려웠어요','매우 쉬웠어요');
   if (t.id==='T5' && r.result!=='skip') extra += scaleQ('reuse','다음에도 이 화면으로 주문하고 싶나요?','전혀 아니에요','꼭 그래요');
   const EASY = { T1:'이 과업은 얼마나 쉬웠나요?', T3:'사용할 금액을 정하는 과정은 얼마나 쉬웠나요?', T4:'주문 취소를 하기 위한 과정은 얼마나 쉬웠나요?', T5:'체결 후 보유 주식을 확인하는 과정은 얼마나 쉬웠나요?' };
   const TERM = ['주문 유형(지정가, 시장가 등) 중 무엇을 골라야 할지 몰랐어요','버튼이나 항목이 무슨 기능인지 몰라 망설였어요','뜻을 짐작하느라 주문이 늦어졌어요','잘못 주문할까 봐 불안했어요','그 밖의 불편함이 있었어요'];
@@ -576,8 +574,8 @@ function rDone(){
   mountProto(null);
   card.innerHTML = `<div class="step"><span class="step-badge">완료</span><span class="step-count">${totalSteps()} / ${totalSteps()}</span></div>
     <div class="bar"><span style="width:100%"></span></div>
-    <h1 class="title">참여해 주셔서 감사합니다</h1>
-    <p class="sub">보내 주신 답변은 주문 화면을 고치는 데 쓰여요. 사례 확인이 필요하면 아래 참가 코드를 알려 주세요.</p>
+    <h1 class="title">모든 테스트가 완료되었습니다</h1>
+    <p class="sub">보내 주신 답변은 주문 화면 UX를 개선하는 데 사용됩니다. 테스트에 참여해 주셔서 감사합니다.</p>
     <div class="hint" style="flex-direction:column;gap:4px"><span>참가 코드</span><span class="done-code">${S.pid}</span></div>`;
 }
 
@@ -631,7 +629,7 @@ cb.onclick=()=>{cp.hidden=!cp.hidden;cb.setAttribute('aria-expanded',String(!cp.
 window.PROTOTYPES = window.PROTOTYPES || {};
 window.PROTOTYPES.B = { mount(root, taskId, H){
   const PREV = 31000, CUR = 31750, AVAIL = 1000000, TICK = 50;
-  const SELL = [[32000,2184],[31950,1032],[31900,845],[31850,312],[31800,128]];
+  const SELL = [[32000,2184],[31950,1032],[31900,845],[31850,312],[31800,128],[31750,291]];
   const BUY  = [[31700,1540],[31650,2876],[31600,7178],[31550,1023],[31500,122],[31450,310]];
   const st = { side:'buy', type:'지정가', price:'', qty:'', pct:0, frac:false, margin:false, chart:false, tab:'pending', chip:'all',
     pending:[], holdings:[], history:[], toast:null, sheet:null, coach:-1, priceTouched:false, confirmCancel:0 };
@@ -685,14 +683,6 @@ window.PROTOTYPES.B = { mount(root, taskId, H){
   const vols = {}; SELL.concat(BUY).forEach(([p,v])=>{ vols[p]=v; });
   const mid = Math.random().toString(36).slice(2); root.dataset.mid = mid;
   let jseed = 5; const jr = () => ((jseed = jseed*16807 % 2147483647) / 2147483647);
-  const jit = setInterval(()=>{
-    if (root.dataset.mid !== mid || !root.isConnected || !root.querySelector('#hoga')){ clearInterval(jit); return; }
-    const ps = Object.keys(vols);
-    for (let k=0;k<3;k++){ const p = ps[Math.floor(jr()*ps.length)];
-      const nv = Math.max(3, Math.round(vols[p]*(0.88+jr()*0.24)) + (jr()<.5?-1:1)*Math.round(jr()*30));
-      const b = root.querySelector(`.h-row[data-hoga="${p}"] .v`); vols[p] = nv;
-      if (b){ b.textContent = won(nv); b.classList.remove('tk'); void b.offsetWidth; b.classList.add('tk'); } }
-  }, 1300);
 
   const ic = {
     back:`<svg width="22" height="22" viewBox="0 0 22 22"><path d="M14 4l-7 7 7 7" fill="none" stroke="#191F28" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
@@ -715,15 +705,15 @@ window.PROTOTYPES.B = { mount(root, taskId, H){
   function syncPct(){ const px=priceNum(); st.pct = px&&st.qty ? Math.min(maxPct(), Math.round(px*st.qty/AVAIL*100)) : 0; }
 
   function hogaHtml(){
-    const row=(p,v,cls)=>`<button class="h-row ${cls} ${+st.price===p&&st.type==='지정가'?'sel':''}" data-hoga="${p}"><span><span class="p">${won(p)}</span><span class="c">+${pct(p)}%</span></span><span class="v">${won(v)}</span></button>`;
-    return SELL.map(([p])=>row(p,vols[p],'hs')).join('') + `<button class="h-row cur ${+st.price===CUR&&st.type==='지정가'?'sel':''}" data-hoga="${CUR}"><span><span class="p">${won(CUR)}</span><span class="c">+${pct(CUR)}%</span></span></button>` + BUY.map(([p])=>row(p,vols[p],'hb')).join('');
+    const row=(p,v,cls)=>`<button class="h-row ${cls} ${p===CUR?'cur':''}" data-hoga="${p}"><span><span class="p">${won(p)}</span>${p===CUR?'':`<span class="c">+${pct(p)}%</span>`}</span><span class="v">${won(v)}</span></button>`;
+    return SELL.map(([p])=>row(p,vols[p],'hs')).join('') + BUY.map(([p])=>row(p,vols[p],'hb')).join('');
   }
 
   function listHtml(){
     if (st.tab==='pending'){
       if (!st.pending.length) return `<div class="empty"><i></i>대기 중인 주문이 없어요</div>`;
       return `<div class="l-bar"><button class="l-chip ${st.chip==='all'?'on':''}" data-act="chip_all">전체 ${st.pending.length}</button><button class="l-chip ${st.chip==='cur'?'on':''}" data-act="chip_cur">현재 종목 ${st.pending.length}</button><button class="r" data-act="cancelall">${st.pending.length}건 취소</button></div>`
-        + st.pending.slice().reverse().map(o=>`<div class="l-item ${o.fresh?'fresh':''}"><span class="logo">kakao</span><div class="t"><b><span class="sd">구매</span>카카오</b>${o.fresh?'<span class="badge">방금</span>':''}<small>${won(o.price)}원 | ${o.qty}주 | ${o.state}</small></div><button class="x" data-cancel="${o.id}">취소</button></div>`).join('');
+        + st.pending.slice().reverse().map(o=>`<div class="l-item ${o.fresh?'fresh':''}"><span class="logo">kakao</span><div class="t"><b><span class="sd">구매</span>카카오</b><small>${won(o.price)}원 | ${o.qty}주 | ${o.state}</small></div><button class="x" data-cancel="${o.id}">취소</button></div>`).join('');
     }
     if (st.tab==='holdings'){
       if (!st.holdings.length) return `<div class="empty"><i></i>보유한 주식이 없어요</div>`;
@@ -783,9 +773,9 @@ window.PROTOTYPES.B = { mount(root, taskId, H){
         <button class="cf-more ${st.sheet.more?'open':''}" data-act="confirm_more">${st.sheet.more?'접기':'세부 사항'} ${ic.chev}</button>
         <div class="row2 cf-btn"><button class="no" data-act="confirm_cancel">취소</button><button class="yes" data-act="confirm_buy">구매하기</button></div></div>`; }
     if (st.sheet.kind==='cancel'){ const o=st.pending.find(x=>x.id===st.sheet.id);
-      return `<div class="dim" data-act="cancelsheet_close"></div><div class="sheet"><div class="grab"></div><p class="lead">주문 취소</p><h3 style="margin-bottom:28px">${won(o.price)}원 ${o.qty}주<br>구매 주문을 취소할까요?</h3>
+      return `<div class="dim" data-act="cancelsheet_close"></div><div class="sheet"><div class="grab"></div><h3 style="margin-bottom:28px">${won(o.price)}원 ${o.qty}주<br>구매 주문을 취소할까요?</h3>
         <div class="row2"><button class="no" data-act="cancelsheet_close">닫기</button><button class="yes" data-act="cancelsheet_ok">취소하기</button></div></div>`; }
-    if (st.sheet.kind==='cancelall') return `<div class="dim" data-act="cancelsheet_close"></div><div class="sheet"><div class="grab"></div><p class="lead">주문 취소</p><h3 style="margin-bottom:28px">대기 중인 주문 ${st.pending.length}건을<br>모두 취소할까요?</h3>
+    if (st.sheet.kind==='cancelall') return `<div class="dim" data-act="cancelsheet_close"></div><div class="sheet"><div class="grab"></div><h3 style="margin-bottom:28px">대기 중인 주문 ${st.pending.length}건을<br>모두 취소할까요?</h3>
         <div class="row2"><button class="no" data-act="cancelsheet_close">닫기</button><button class="yes" data-act="cancelall_ok">모두 취소</button></div></div>`;
     return '';
   }
@@ -809,7 +799,8 @@ window.PROTOTYPES.B = { mount(root, taskId, H){
     const el = root.querySelector('#'+COACH[st.coach][0]); if(!el) return;
     const sc = +root.dataset.scale||1, d=root.getBoundingClientRect(), r=el.getBoundingClientRect();
     const x=(r.left-d.left)/sc, y=(r.top-d.top)/sc, w=r.width/sc, h=r.height/sc;
-    Object.assign(ring.style,{left:x-5+'px',top:y-5+'px',width:w+10+'px',height:h+10+'px'});
+    const br = getComputedStyle(el).borderRadius;
+    Object.assign(ring.style,{left:x+'px',top:y+'px',width:w+'px',height:h+'px',borderRadius:(br&&br!=='0px')?br:'4px'});
     const cb = root.querySelector('#coach'), tail = root.querySelector('#tail'); if(!cb) return;
     const bh = cb.offsetHeight, below = y+h+14+bh < 800;
     cb.style.top = (below ? y+h+16 : y-16-bh) + 'px';
