@@ -423,6 +423,12 @@ function bindChips(ans, onChange){
 
 function render(){
   veil.hidden = S.phase==='task';
+  /* Clarity 히트맵을 화면별로 나눠 보려고 단계마다 주소를 바꿈 (예: ?screen=A-T2-task) */
+  try {
+    const v = S.order && S.order[S.vIdx], n = 'T'+(S.tIdx+1);
+    const key = ({ intro:'intro', pre:'pre', taskIntro:`${v}-${n}-intro`, task:`${v}-${n}-task`, survey:`${v}-${n}-survey`, sus:`${v}-rating`, final:'final', done:'done' })[S.phase] || S.phase;
+    if (new URLSearchParams(location.search).get('screen') !== key) history.pushState(null, '', location.pathname + '?screen=' + key);
+  } catch(e){}
   $('#blurWrap').hidden = S.phase!=='survey';
   if (S.phase!=='task') veil.textContent = ({done:'모든 테스트가 완료되었습니다', survey:'질문에 답해 주세요', sus:'질문에 답해 주세요', final:'질문에 답해 주세요'})[S.phase] || (S.phase==='intro'?'안내를 읽고 시작하기를 눌러 주십시오':'안내를 읽고 시작하기를 눌러 주세요');
   ({intro:rIntro, pre:rPre, taskIntro:rTaskIntro, task:rTask, survey:rSurvey, sus:rSus, final:rFinal, done:rDone})[S.phase]();
