@@ -227,7 +227,7 @@ textarea.field::placeholder{color:var(--fg-3)}
 .toast button{margin-left:auto;color:#7FB2FF!important;font-weight:600;font-size:14px}
 @keyframes tin{from{transform:translateY(-8px);opacity:0}to{transform:none;opacity:1}}
 .dim{position:absolute;inset:0;background:rgba(0,0,0,.45);z-index:40}
-.sheet{position:absolute;left:0;right:0;bottom:0;background:#fff;border-radius:20px 20px 0 0;padding:12px 20px 28px;z-index:41;animation:sin .22s ease-out}
+.sheet{position:absolute;left:0;right:0;bottom:0;background:#fff;border-radius:20px 20px 0 0;padding:12px 20px 28px;z-index:41;animation:sin .22s ease-out;letter-spacing:-.06em}
 @keyframes sin{from{transform:translateY(24px);opacity:.4}to{transform:none;opacity:1}}
 .sheet .grab{width:36px;height:4px;border-radius:2px;background:#D1D6DB;margin:0 auto 14px}
 .sheet .lead{font-size:14px;color:var(--g3);margin:0 0 6px}
@@ -513,7 +513,7 @@ function rSurvey(){
   const done = r.result!=='skip';
   const isOrder = t.order && done;
   const METHODS = ['+, - 버튼 입력','숫자 직접 입력','% 버튼','슬라이더 바'];
-  const TERM_HOW = ['물음표(?)나 안내를 눌러 확인했어요','화면의 다른 정보를 보고 짐작했어요','앱 밖에서 찾아보고 싶었어요','해결하지 못한 채로 진행했어요','기타'];
+  const TERM_HOW = ['물음표(?)나 안내를 눌러 확인했어요','화면의 다른 정보를 보고 짐작했어요','외부 검색을 통해 알아봤어요','해결하지 못한 채로 진행했어요','기타'];
   let q = '';
   if (t.id==='T1'){
     q += scaleQ('start_clear','처음 주문을 시작할 때 어디부터 눌러야 할지 바로 알 수 있었나요?','전혀 몰랐어요','바로 알았어요');
@@ -523,7 +523,7 @@ function rSurvey(){
   if (t.id==='T2') q += scaleQ('input_ease','수량 또는 가격 입력은 쉬웠나요?','매우 어려웠어요','매우 쉬웠어요');
   if (t.id==='T3'){
     q += scaleQ('amount_ease','금액을 설정하는 과정은 얼마나 쉬웠나요?','매우 어려웠어요','매우 쉬웠어요');
-    if (done) q += multiQ('qty_method','금액, 수량을 정할 때 어떤 방법을 사용하셨나요?', curV()==='A' ? METHODS.slice(0,3) : METHODS, false);
+    if (done) q += optQ('qty_method','금액, 수량을 정할 때 어떤 방법을 사용하셨나요?', curV()==='A' ? METHODS.slice(0,3) : METHODS);
     if (done && curV()==='B') q += optQ('qty_best','금액, 수량을 정할 때 어떤 방법이 가장 편하다고 느끼시나요?',METHODS);
   }
   if (t.id==='T4') q += scaleQ('seq','주문 취소를 하기 위한 과정은 얼마나 쉬웠나요?','매우 어려웠어요','매우 쉬웠어요');
@@ -559,7 +559,7 @@ function rSurvey(){
 }
 
 /* 화면 평가: 모든 문항을 같은 방향(그렇다 = 불편)으로 맞춤. 점수는 평균(1~5, 낮을수록 좋음) */
-const SUS = ['화면이 복잡해서 내용에 집중하기 어려웠어요','이 화면에는 이해가 안 되는 용어가 많았어요','이 화면을 쓰려면 추가적인 검색이 필요할 것 같아요','이 화면을 쓰기 전에 배워야 할 게 많았어요',
+const SUS = ['화면이 복잡해서 내용에 집중하기 어려웠어요','화면에는 이해가 안 되는 용어가 많았어요','화면을 쓰려면 추가적인 검색이 필요할 것 같아요','화면을 쓰기 전에 배워야 할 게 많았어요',
   '수량을 입력하는 과정이 번거로웠어요','가격이나 금액을 정하는 과정이 번거로웠어요','주문을 취소하는 과정이 번거로웠어요'];
 function rSus(){
   mountProto(null);
@@ -568,7 +568,7 @@ function rSus(){
     <h1 class="title" style="font-size:20px">방금 쓴 화면 전체를 떠올리며 답해 주세요</h1>
     <p class="q-help" style="margin:0 0 8px">1은 전혀 아니에요, 5는 매우 그래요</p>
     ${SUS.map((s,i)=>`<div class="sus-row"><p>${s}</p><div class="scale s5">${[1,2,3,4,5].map(v=>`<button type="button" class="chip" data-q="s${i+1}" data-v="${v}" aria-pressed="false">${v}</button>`).join('')}</div></div>`).join('')}
-    <div class="q" style="margin-top:8px"><label class="q-label" for="sus-etc">기타: 그 밖에 불편했던 점이 있다면 적어 주세요</label><textarea class="field" id="sus-etc" placeholder="없다면 비워 두셔도 돼요"></textarea></div>
+    <div class="q" style="margin-top:8px"><label class="q-label" for="sus-etc">그 밖에 불편했던 점이 있다면 적어 주세요</label><textarea class="field" id="sus-etc" placeholder="없다면 비워 두셔도 돼요"></textarea></div>
     <div class="actions"><button class="btn btn-primary" id="go" disabled>다음</button></div>`;
   bindChips(a, ()=>$('#go').disabled = Object.keys(a).length<SUS.length);
   $('#go').onclick=()=>{
