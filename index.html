@@ -41,6 +41,14 @@ button:focus-visible,textarea:focus-visible,input:focus-visible{outline:2px soli
 .app{min-height:100%;box-sizing:border-box;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,440px);gap:48px;align-items:stretch;
   max-width:1200px;margin:0 auto;padding-block:32px;padding-left:max(40px,env(safe-area-inset-left,0px));padding-right:max(40px,env(safe-area-inset-right,0px))}
 
+/* 배경 글씨: A안 AS IS, B안 TO BE (배경과 거의 같은 색) */
+.ver-bg{position:fixed;left:-14px;top:84px;z-index:0;pointer-events:none;user-select:none;writing-mode:vertical-rl;
+  font-family:"Helvetica Neue",Arial,var(--font);font-weight:700;font-size:132px;line-height:1;letter-spacing:.06em;white-space:nowrap;color:var(--ver-ink)}
+:root{--ver-ink:rgba(25,31,40,.045)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--ver-ink:rgba(255,255,255,.04)}}
+:root[data-theme="dark"]{--ver-ink:rgba(255,255,255,.04)}
+@media (max-width:860px){.ver-bg{display:none}}
+.app{position:relative;z-index:1}
 /* 목업 무대 */
 .stage{display:flex;align-items:center;justify-content:center;min-width:0}
 .phone{position:relative;width:min(100%,399px,calc((100vh - 64px) * 399 / 836));aspect-ratio:399/836;border-radius:56px;padding:3px;box-sizing:border-box;
@@ -284,6 +292,7 @@ textarea.field::placeholder{color:var(--fg-3)}
 .ph b{color:#4E5968;font-size:16px}
 </style>
 
+<div class="ver-bg" id="verBg" aria-hidden="true"></div>
 <main class="app">
   <section class="stage" aria-label="테스트 화면">
     <div class="phone">
@@ -423,6 +432,8 @@ function bindChips(ans, onChange){
 
 function render(){
   veil.hidden = S.phase==='task';
+  { const inV = ['taskIntro','task','survey','sus'].includes(S.phase); const v = S.order && S.order[S.vIdx];
+    $('#verBg').textContent = inV ? (v==='A' ? 'AS IS' : v==='B' ? 'TO BE' : '') : ''; }
   /* Clarity 히트맵을 화면별로 나눠 보려고 단계마다 주소를 바꿈 (예: ?screen=A-T2-task) */
   try {
     const v = S.order && S.order[S.vIdx], n = 'T'+(S.tIdx+1);
