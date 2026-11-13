@@ -137,6 +137,14 @@ const css = `
 .ka .k-dlg .bt button{flex:1;font-size:17px;font-weight:700;background:#EFEFF1}
 .ka .k-dlg .bt button.ok{flex:1.6;background:#C9527E;color:#fff!important}
 .ka .k-dlg .bt button.ok.yl{background:#F2C94C}
+/* 숫자 자간: 기본(-1%)보다 4% 더 좁게 */
+.ka .k-row,.ka .k-num .val,.ka .k-amt .r,.ka .k-ono,.ka .k-sheet .sp,.ka .k-sheet .lim b,.ka .k-sheet .fb .vv,.ka .k-sheet .kp button,
+.ka .k-tbl td,.ka .k-dlg td:last-child,.ka .k-banner .m,.ka .k-banner .q,.ka .km .k-info.on span,.ka .km .k-tbox{letter-spacing:-.05em}
+.ka .k-px b,.ka .k-px small{letter-spacing:-.06em}
+/* 호가 체결: 매도 맨 아래·매수 맨 위 호가에 검은 둥근 테두리가 잠깐 생김 */
+.ka .k-row .p{position:relative}
+.ka .k-row .p.fill::after{content:"";position:absolute;inset:3px 2px;border:1.5px solid #111;border-radius:5px;pointer-events:none;animation:kfill .7s ease-out forwards}
+@keyframes kfill{0%,55%{opacity:1}100%{opacity:0}}
 .ka .k-dlgdim{position:absolute;inset:0;background:rgba(0,0,0,.4);z-index:30}
 .ka .k-toast{position:absolute;left:50%;bottom:92px;transform:translateX(-50%);background:rgba(60,60,64,.92);color:#fff;font-size:14px;padding:10px 20px;border-radius:22px;white-space:nowrap;z-index:40}
 .ka .k-banner{position:absolute;left:8px;right:8px;top:28px;height:58px;background:#C42C6C;color:#fff;border-radius:4px;z-index:25;display:flex;align-items:center;padding:0 10px;box-shadow:0 2px 6px rgba(0,0,0,.25)}
@@ -196,6 +204,8 @@ window.PROTOTYPES.A = { mount(root, taskId, H){
   const PREV=31000, CUR=31750, AVAIL=1000000, TICK=50, UPL=40300, DNL=21700;
   const SELL=[[32000,2184],[31950,1032],[31900,845],[31850,312],[31800,128],[31750,291]];
   const BUY=[[31700,1540],[31650,2876],[31600,7178],[31550,1023],[31500,122],[31450,310]];
+  const VOL={}; SELL.concat(BUY).forEach(([p,v])=>{ VOL[p]=v; });
+  const ASK1=SELL[SELL.length-1][0], BID1=BUY[0][0];
   const MAXV=7178, ACCT='5512-3344 [위탁종합]';
   const KINDS=['보통(지정가)','시장가','조건부지정가','최유리지정가','최우선지정가'];
   const OTHER=[{name:'삼성전자',qty:3,rate:4.21,pl:12180},{name:'NAVER',qty:1,rate:-2.35,pl:-4700},{name:'현대차',qty:2,rate:1.10,pl:5060}];
@@ -216,6 +226,26 @@ window.PROTOTYPES.A = { mount(root, taskId, H){
 
   const mid=Math.random().toString(36).slice(2); root.dataset.mid=mid;
 
+  /* 호가 움직임: 가격은 고정, 잔량만 살짝 변함. 가끔 매도1·매수1 호가에서 체결이 일어나 검은 테두리가 생기고 잔량이 줄어듦 */
+  let jseed=11; const jr=()=>((jseed=jseed*16807%2147483647)/2147483647);
+  const paintVol=p=>{ const r=root.querySelector(`#kbook .k-row[data-hoga="${p}"]`); if(!r) return null;
+    const n=r.querySelector('.v .n'), bar=r.querySelector('.v i'); if(n) n.textContent=won(VOL[p]); if(bar) bar.style.width=Math.min(100,Math.round(VOL[p]/MAXV*100))+'%'; return r; };
+  let tickN=0;
+  const ticker=setInterval(()=>{
+    if (root.dataset.mid!==mid || !root.isConnected || !root.querySelector('.ka')){ clearInterval(ticker); return; }
+    tickN++;
+    const ps=Object.keys(VOL);
+    for (let k=0;k<2;k++){ const p=ps[Math.floor(jr()*ps.length)];
+      VOL[p]=Math.max(5, VOL[p]+(jr()<.5?-1:1)*Math.max(1,Math.round(VOL[p]*jr()*0.04))); paintVol(+p); }
+    if (tickN%2===0 || jr()<.35){
+      const p = jr()<.5 ? ASK1 : BID1;
+      VOL[p]=Math.max(5, VOL[p]-(1+Math.floor(jr()*Math.min(40,VOL[p]*0.08))));
+      if (jr()<.25) VOL[p]+=Math.floor(jr()*30);
+      const r=paintVol(p); const pc=r&&r.querySelector('.p');
+      if (pc){ pc.classList.remove('fill'); void pc.offsetWidth; pc.classList.add('fill'); }
+    }
+  }, 900);
+
   /* ── 화면 조각 ── */
   const top=()=>`<div class="k-top"><div class="k-sb"><span>9:41</span><span>▂▄▆ ◔ 47</span></div>
     <div class="k-nav"><button class="back" data-act="a_nav_back">←</button><button class="t on" data-act="a_nav_order">키움주문</button><button class="t" data-act="a_nav_hoga">호가주문</button><button class="t" data-act="a_nav_auto">자동감시주문</button><button class="t" data-act="a_nav_exec">체결</button><button class="more" data-act="a_nav_more">⋮</button></div></div>
@@ -228,8 +258,8 @@ window.PROTOTYPES.A = { mount(root, taskId, H){
     <div class="k-bnav"><button class="menu" data-act="a_menu"><b></b>메뉴</button>${['관심종목','현재가','주문','차트','계좌'].map(n=>`<button class="n ${n==='주문'?'on':''}" data-act="a_bnav_${n}">${n}</button>`).join('')}</div><div class="k-home"></div>`;
 
   function bookHtml(){
-    const row=(p,v,side)=>`<button class="k-row ${side} ${p===CUR?'cur':''} ${!isMkt()&&+st.price===p?'pick':''}" data-hoga="${p}"><span class="p ${cls(p)}">${won(p)}</span><span class="v"><i style="width:${Math.round(v/MAXV*100)}%"></i>${won(v)}</span></button>`;
-    return SELL.map(([p,v])=>row(p,v,'s')).join('')+BUY.map(([p,v])=>row(p,v,'b')).join('');
+    const row=(p,v,side)=>`<button class="k-row ${side} ${p===CUR?'cur':''} ${!isMkt()&&+st.price===p?'pick':''}" data-hoga="${p}"><span class="p ${cls(p)}">${won(p)}</span><span class="v"><i style="width:${Math.min(100,Math.round(v/MAXV*100))}%"></i><span class="n">${won(v)}</span></span></button>`;
+    return SELL.map(([p])=>row(p,VOL[p],'s')).join('')+BUY.map(([p])=>row(p,VOL[p],'b')).join('');
   }
   function buyPane(){
     const amt = (+st.qty>0) ? (isMkt()?CUR:+st.price)*st.qty : 0;

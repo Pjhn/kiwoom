@@ -99,9 +99,11 @@ textarea.field::placeholder{color:var(--fg-3)}
 .feedback label{display:block;font-size:15px;font-weight:600;margin-bottom:2px}
 .feedback p{margin:0 0 10px;font-size:13px;color:var(--fg-3)}
 .fb-row{display:flex;gap:8px;align-items:flex-end}
-.fb-row textarea{flex:1;min-width:0;resize:none;height:48px;box-sizing:border-box;border:0;background:var(--surface-2);border-radius:var(--r-sm);padding:13px 14px;
+.fb-row textarea{flex:1;min-width:0;resize:none;height:48px;max-height:120px;overflow:hidden;scrollbar-width:none;box-sizing:border-box;border:0;background:var(--surface-2);border-radius:var(--r-sm);padding:13px 14px;
   font:inherit;font-size:15px;color:var(--fg)}
 .fb-row textarea::placeholder{color:var(--fg-3)}
+.fb-row textarea::-webkit-scrollbar{display:none}
+.fb-row textarea::-webkit-resizer{display:none}
 .btn-send{height:48px;padding:0 18px;border-radius:var(--r-sm);background:var(--accent-soft);color:var(--accent);font-weight:600;font-size:15px;flex:none}
 .btn-send:disabled{opacity:.45;cursor:default}
 .sent{font-size:13px;color:var(--accent);margin-top:8px}
@@ -277,7 +279,7 @@ textarea.field::placeholder{color:var(--fg-3)}
       <div class="screen" id="screen">
         <div class="device" id="device"></div>
         <div class="notch" aria-hidden="true"></div>
-        <div class="veil" id="veil">안내를 읽고 시작하기를 눌러 주세요</div>
+        <div class="veil" id="veil">안내를 읽고 시작하기를 눌러 주십시오</div>
       </div>
     </div>
   </section>
@@ -399,17 +401,28 @@ function scaleQ(name, label, lo, hi, n=7){
 function optQ(name, label, opts){
   return `<div class="q"><span class="q-label">${label}</span><div class="opts">${opts.map(o=>`<button type="button" class="chip" data-q="${name}" data-v="${o}" aria-pressed="false">${o}</button>`).join('')}</div></div>`;
 }
+function multiQ(name, label, opts){
+  return `<div class="q"><span class="q-label">${label}</span><p class="q-help">해당하는 것을 모두 골라 주세요</p><div class="opts">${opts.map(o=>`<button type="button" class="chip" data-q="${name}" data-m="1" data-v="${o}" aria-pressed="false">${o}</button>`).join('')}</div></div>`;
+}
 function bindChips(ans, onChange){
   card.querySelectorAll('.chip[data-q]').forEach(b=>b.addEventListener('click',()=>{
     const q=b.dataset.q;
-    card.querySelectorAll(`.chip[data-q="${q}"]`).forEach(x=>x.setAttribute('aria-pressed','false'));
-    b.setAttribute('aria-pressed','true'); ans[q]=b.dataset.v; onChange&&onChange();
+    if (b.dataset.m){
+      const on = b.getAttribute('aria-pressed')!=='true';
+      b.setAttribute('aria-pressed', String(on));
+      ans[q] = Array.from(card.querySelectorAll(`.chip[data-q="${q}"][aria-pressed="true"]`)).map(x=>x.dataset.v);
+      if (!ans[q].length) delete ans[q];
+    } else {
+      card.querySelectorAll(`.chip[data-q="${q}"]`).forEach(x=>x.setAttribute('aria-pressed','false'));
+      b.setAttribute('aria-pressed','true'); ans[q]=b.dataset.v;
+    }
+    onChange&&onChange();
   }));
 }
 
 function render(){
   veil.hidden = S.phase==='task';
-  if (S.phase!=='task') veil.textContent = ({done:'참여해 주셔서 감사합니다', survey:'질문에 답해 주세요', sus:'질문에 답해 주세요', final:'질문에 답해 주세요'})[S.phase] || '안내를 읽고 시작하기를 눌러 주세요';
+  if (S.phase!=='task') veil.textContent = ({done:'참여해 주셔서 감사합니다', survey:'질문에 답해 주세요', sus:'질문에 답해 주세요', final:'질문에 답해 주세요'})[S.phase] || '안내를 읽고 시작하기를 눌러 주십시오';
   ({intro:rIntro, pre:rPre, taskIntro:rTaskIntro, task:rTask, survey:rSurvey, sus:rSus, final:rFinal, done:rDone})[S.phase]();
   card.scrollTop = 0;
 }
@@ -417,12 +430,12 @@ function render(){
 function rIntro(){
   mountProto(null);
   card.innerHTML = `
-    <div class="step"><span class="step-badge">시작</span><span class="step-count">약 20분</span></div>
-    <h1 class="title">주식 주문 화면을 써 보고 의견을 들려주세요</h1>
-    <p class="sub">두 가지 주문 화면으로 같은 과업 5개를 해 보고, 과업마다 짧은 질문에 답해요. 정답을 맞히는 시험이 아니라 화면을 평가하는 거예요. 막히면 언제든 넘어가셔도 돼요.</p>
-    <div class="hint">${infoIcon}<span>화면 속 가격과 계좌는 모두 테스트용이에요. 실제로 주문되지 않아요.</span></div>
-    <label class="check"><input type="checkbox" id="c1"><span>화면을 누른 기록과 화면 녹화가 익명으로 수집되는 것에 동의해요. 녹화 도구(Microsoft Clarity)가 쿠키를 사용해요.</span></label>
-    <label class="check"><input type="checkbox" id="c2"><span>만 18세 이상이에요.</span></label>
+    <div class="step"><span class="step-badge">시작</span><span class="step-count">약 7분</span></div>
+    <h1 class="title">키움 증권 UX 개선 프로젝트 - UT</h1>
+    <p class="sub">테스트 소요시간은 약 7분 정도입니다. 우측 화면에 나타나는 미션을 읽고 좌측 모바일 화면에서 수행 부탁드립니다. 본 테스트의 내용은 전부 익명으로 처리되며 키움 증권 앱의 개선 전 후의 사용성을 비교하기 위한 용도로만 사용됩니다.</p>
+    <div class="hint">${infoIcon}<span>화면 속 가격과 계좌는 모두 테스트용입니다. 실제로 주문되지 않습니다.</span></div>
+    <label class="check"><input type="checkbox" id="c1"><span>화면을 누른 기록과 화면 녹화가 익명으로 수집되는 것에 동의합니다. 녹화 도구(Microsoft Clarity)가 쿠키를 사용합니다.</span></label>
+    <label class="check"><input type="checkbox" id="c2"><span>만 18세 이상입니다.</span></label>
     <div class="actions"><button class="btn btn-primary" id="go" disabled>시작하기</button></div>`;
   const upd=()=>$('#go').disabled=!($('#c1').checked&&$('#c2').checked);
   $('#c1').onchange=upd; $('#c2').onchange=upd;
@@ -432,15 +445,14 @@ function rIntro(){
 function rPre(){
   const a = {};
   card.innerHTML = `
-    <div class="step"><span class="step-badge">사전 질문</span><span class="step-count">3문항</span></div>
+    <div class="step"><span class="step-badge">사전 질문</span><span class="step-count">2문항</span></div>
     ${optQ('exp','주식 투자를 한 지 얼마나 됐나요?',['해 본 적 없어요','1년 미만','1~3년','3년 이상'])}
-    ${optQ('freq','주식을 얼마나 자주 사고파나요?',['거의 안 해요','한 달에 1~3번','일주일에 1번','일주일에 2번 이상'])}
     ${optQ('kiwoom','키움증권 앱을 써 봤나요?',['지금 쓰고 있어요','써 본 적 있어요','써 본 적 없어요'])}
     <div class="actions"><button class="btn btn-primary" id="go" disabled>다음</button></div>`;
-  bindChips(a, ()=>$('#go').disabled = !(a.exp&&a.freq&&a.kiwoom));
+  bindChips(a, ()=>$('#go').disabled = !(a.exp&&a.kiwoom));
   $('#go').onclick=()=>{
     S.pre=a;
-    const expert = a.exp==='3년 이상' && a.freq==='일주일에 2번 이상';
+    const expert = a.exp==='3년 이상';
     const novice = a.exp==='해 본 적 없어요' || a.exp==='1년 미만' || a.kiwoom==='써 본 적 없어요';
     S.segment = expert ? '숙련' : novice ? '입문' : '중간';
     cTrack('set','segment',S.segment); cTrack('set','order',S.order.join(''));
@@ -487,26 +499,48 @@ function finishTask(result, detail){
   cTrack('event','task_'+result);
   send('events',{ version:curV(), task:t.id, events:EVENTS });
   S.last=lastResult; S.phase='survey'; save();
-  setTimeout(render, result==='skip'?0:700);
+  setTimeout(render, result==='skip'?0:300);
 }
 
+/* 과업별 질문: main은 "얼마나 쉬웠나요" 자리, hassle은 번거로움(5점), terms는 과업 2 용어 질문 */
+const SURVEY = {
+  T1:{ main:'이 과업은 얼마나 쉬웠나요?', hassle:[['h_qty','수량 입력이 번거로웠어요']] },
+  T2:{ terms:true, hassle:[['h_price','가격 입력이 번거로웠어요'],['h_qty','수량 입력이 번거로웠어요']] },
+  T3:{ main:'사용할 금액을 정하는 과정은 얼마나 쉬웠나요?', hassle:[['h_amount','금액을 설정하는 과정이 번거로웠어요']] },
+  T4:{ main:'주문 취소를 하기 위한 과정은 얼마나 쉬웠나요?' },
+  T5:{ main:'체결 후 보유 주식을 확인하는 과정은 얼마나 쉬웠나요?' },
+};
+const TERM_ISSUES = ['뜻을 몰라 무엇을 골라야 할지 망설였어요','앱 밖에서 뜻을 따로 찾아봤어요','뜻을 짐작해서 그냥 진행했어요','잘못 주문할까 봐 불안했어요','주문을 끝까지 하지 못했어요','특별한 불편은 없었어요'];
+function likert5(name, text){
+  return `<div class="sus-row"><p>${text}</p><div class="scale s5">${[1,2,3,4,5].map(v=>`<button type="button" class="chip" data-q="${name}" data-v="${v}" aria-pressed="false">${v}</button>`).join('')}</div><div class="scale-ends"><span>전혀 아니에요</span><span>매우 그래요</span></div></div>`;
+}
 function rSurvey(){
-  const t = curT(), a = {}, r = lastResult||S.last||{};
-  const isOrder = t.order && r.result!=='skip';
-  let extra = '';
-  if (t.id==='T1' && r.result!=='skip') extra += optQ('outside','주문하다가 앱 밖에서 정보를 찾아보고 싶었나요?',['예','아니요']);
-  if (t.id==='T3' && r.result!=='skip') extra += optQ('calc','계산기나 외부 검색을 사용했나요?',['예','아니요']);
-  if (t.id==='T5' && r.result!=='skip') extra += scaleQ('reuse','다음에도 이 화면으로 주문하고 싶나요?','전혀 아니에요','꼭 그래요');
+  const t = curT(), a = {}, r = lastResult||S.last||{}, cfg = SURVEY[t.id]||{};
+  const done = r.result!=='skip';
+  const isOrder = t.order && done;
+  let html = '';
+  if (cfg.main) html += scaleQ('seq', cfg.main, '매우 어려웠어요','매우 쉬웠어요');
+  if (cfg.terms){
+    html += optQ('terms','모르는 용어가 있었나요?',['있었어요','없었어요']);
+    html += `<div id="terms-more" hidden>${multiQ('terms_issue','모르는 용어로 주문과정에서 어떤 불편함을 겪으셨나요?',TERM_ISSUES)}</div>`;
+  }
+  if (isOrder) html += scaleQ('conf','방금 주문이 내가 의도한 대로 들어갔다고 확신하나요?','전혀 아니에요','확실해요');
+  if (done && cfg.hassle) html += `<div class="q">${cfg.hassle.map(([k,txt])=>likert5(k,txt)).join('')}</div>`;
+  if (t.id==='T1' && done) html += optQ('outside','주문하다가 앱 밖에서 정보를 찾아보고 싶었나요?',['예','아니요']);
+  if (t.id==='T5' && done) html += scaleQ('reuse','다음에도 이 화면으로 주문하고 싶나요?','전혀 아니에요','꼭 그래요');
   card.innerHTML = `${header('과업 '+(S.tIdx+1)+' 질문')}
-    <h1 class="title" style="font-size:20px">${r.result==='skip'?'괜찮아요. 하나만 물어볼게요':'수고했어요. 몇 가지만 물어볼게요'}</h1>
-    ${scaleQ('seq','이 과업은 얼마나 쉬웠나요?','매우 어려웠어요','매우 쉬웠어요')}
-    ${isOrder?scaleQ('conf','방금 주문이 내가 의도한 대로 들어갔다고 확신하나요?','전혀 아니에요','확실해요'):''}
-    ${extra}
+    <h1 class="title" style="font-size:20px">${done?'수고했어요. 몇 가지만 물어볼게요':'괜찮아요. 몇 가지만 물어볼게요'}</h1>
+    ${html}
     <div class="actions"><button class="btn btn-primary" id="go" disabled>다음</button></div>`;
-  const need = Array.from(new Set(Array.from(card.querySelectorAll('.chip[data-q]')).map(b=>b.dataset.q)));
-  bindChips(a, ()=>$('#go').disabled = !need.every(q=>a[q]));
+  const more = $('#terms-more');
+  const need = () => Array.from(new Set(Array.from(card.querySelectorAll('.chip[data-q]')).filter(b=>!b.closest('[hidden]')).map(b=>b.dataset.q)));
+  bindChips(a, ()=>{
+    if (more){ more.hidden = a.terms!=='있었어요'; if (more.hidden){ delete a.terms_issue; more.querySelectorAll('.chip').forEach(x=>x.setAttribute('aria-pressed','false')); } }
+    $('#go').disabled = !need().every(q=>a[q]);
+  });
   $('#go').onclick=()=>{
-    const row = { ...r, ...a, segment:S.segment, order:S.order.join('') };
+    const ans = { ...a }; if (Array.isArray(ans.terms_issue)) ans.terms_issue = ans.terms_issue.join(' | ');
+    const row = { ...r, ...ans, segment:S.segment, order:S.order.join('') };
     S.results.push(row); send('task', row);
     S.tIdx++;
     if (S.tIdx>=TASKS.length){ S.phase='sus'; } else { S.phase='taskIntro'; }
@@ -514,20 +548,27 @@ function rSurvey(){
   };
 }
 
-const SUS = ['이 화면을 자주 쓰고 싶어요','이 화면은 쓸데없이 복잡했어요','이 화면은 쓰기 쉬웠어요','이 화면을 쓰려면 다른 사람의 도움이 필요할 것 같아요','이 화면의 기능들이 잘 어우러져 있었어요',
-  '이 화면에는 이해가 안 되는 용어가 많았어요','대부분의 사람이 이 화면을 금방 익힐 것 같아요','이 화면은 쓰기 번거로웠어요','주문 과정에서 어려움은 없었어요','이 화면을 쓰기 전에 배워야 할 게 많았어요'];
+/* 화면 평가: 모든 문항을 같은 방향(높을수록 불편)으로 맞춰 한쪽으로 몰아 답할 수 있게 함. 점수는 평균(1~5, 높을수록 불편) */
+const EVAL = [
+  ['e_complex','화면이 복잡해서 내용에 집중하기 어려웠어요'],
+  ['e_search','이 화면을 쓰려면 추가적인 검색이 필요할 것 같아요'],
+  ['e_terms','화면에 이해하기 어려운 용어가 있었어요'],
+  ['e_stuck','주문 과정에서 막히는 부분이 있었어요'],
+  ['e_learn','이 화면을 쓰기 전에 따로 익혀야 할 것이 있었어요'],
+  ['e_reuse','다음에 주문할 때 이 화면을 다시 쓰기는 망설여질 것 같아요'],
+];
 function rSus(){
   mountProto(null);
   const a={};
-  card.innerHTML = `<div class="step"><span class="step-badge">${S.vIdx===0?'첫 번째':'두 번째'} 화면 평가</span><span class="step-count">10문항</span></div>
+  card.innerHTML = `<div class="step"><span class="step-badge">${S.vIdx===0?'첫 번째':'두 번째'} 화면 평가</span><span class="step-count">${EVAL.length}문항</span></div>
     <h1 class="title" style="font-size:20px">방금 쓴 화면 전체를 떠올리며 답해 주세요</h1>
     <p class="q-help" style="margin:0 0 8px">1은 전혀 아니에요, 5는 매우 그래요</p>
-    ${SUS.map((s,i)=>`<div class="sus-row"><p>${s}</p><div class="scale s5">${[1,2,3,4,5].map(v=>`<button type="button" class="chip" data-q="s${i+1}" data-v="${v}" aria-pressed="false">${v}</button>`).join('')}</div></div>`).join('')}
+    ${EVAL.map(([k,txt])=>`<div class="sus-row"><p>${txt}</p><div class="scale s5">${[1,2,3,4,5].map(v=>`<button type="button" class="chip" data-q="${k}" data-v="${v}" aria-pressed="false">${v}</button>`).join('')}</div></div>`).join('')}
     <div class="actions"><button class="btn btn-primary" id="go" disabled>다음</button></div>`;
-  bindChips(a, ()=>$('#go').disabled = Object.keys(a).length<10);
+  bindChips(a, ()=>$('#go').disabled = Object.keys(a).length<EVAL.length);
   $('#go').onclick=()=>{
-    let sc=0; for(let i=1;i<=10;i++){ const v=+a['s'+i]; sc += i%2 ? v-1 : 5-v; }
-    send('sus',{ version:curV(), ...a, score:sc*2.5 });
+    const avg = EVAL.reduce((t,[k])=>t+(+a[k]),0)/EVAL.length;
+    send('sus',{ version:curV(), ...a, score:Math.round(avg*100)/100 });
     S.vIdx++; S.tIdx=0;
     S.phase = S.vIdx>=S.order.length ? 'final' : 'taskIntro';
     save(); render();
@@ -589,13 +630,14 @@ function mountProto(task, preview){
 function whereText(){
   const ph=S.phase, t=TASKS[S.tIdx], vn=(S.order&&S.order[S.vIdx])==='A'?'A안(현행)':'B안(개선안)', tn=t?`과업 ${S.tIdx+1}「${t.title}」`:'';
   return ({ intro:'시작 화면(안내와 동의)', pre:'사전 질문', taskIntro:`${vn} ${tn} 시작 전 안내`, task:`${vn} ${tn} 진행 중`,
-    survey:`${vn} ${tn} 직후 질문`, sus:`${vn} 화면 평가(10문항)`, final:'마지막 질문', done:'완료 화면' })[ph] || ph;
+    survey:`${vn} ${tn} 직후 질문`, sus:`${vn} 화면 평가`, final:'마지막 질문', done:'완료 화면' })[ph] || ph;
 }
 const fbt=$('#fb-text'), fbs=$('#fb-send'), fbo=$('#fb-sent');
-fbt.addEventListener('input',()=>{fbs.disabled=!fbt.value.trim();fbo.hidden=true});
+const fbGrow=()=>{ fbt.style.height='48px'; fbt.style.height=Math.min(120,fbt.scrollHeight)+'px'; fbt.style.overflowY=fbt.scrollHeight>120?'auto':'hidden'; };
+fbt.addEventListener('input',()=>{fbs.disabled=!fbt.value.trim();fbo.hidden=true;fbGrow()});
 $('#fb').addEventListener('submit',e=>{e.preventDefault();const v=fbt.value.trim();if(!v)return;
   send('feedback',{ where:whereText(), text:v, version:S.phase==='intro'||S.phase==='pre'?'':curV(), task:TASKS[S.tIdx]?TASKS[S.tIdx].id:'', phase:S.phase });
-  fbt.value='';fbs.disabled=true;fbo.hidden=false});
+  fbt.value='';fbGrow();fbs.disabled=true;fbo.hidden=false});
 const cb=$('#contact'), cp=$('#contact-pop');
 cp.innerHTML = `<b>개발자 문의</b>${CONFIG.contact?CONFIG.contact:'문의처를 준비하고 있어요.'}<br><span style="color:var(--fg-3);font-size:13px">참가 코드: ${S.pid}</span>`;
 cb.onclick=()=>{cp.hidden=!cp.hidden;cb.setAttribute('aria-expanded',String(!cp.hidden))};
