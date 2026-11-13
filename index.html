@@ -108,7 +108,8 @@ textarea.field::placeholder{color:var(--fg-3)}
 .btn-send{height:48px;padding:0 18px;border-radius:var(--r-sm);background:var(--accent-soft);color:var(--accent);font-weight:600;font-size:15px;flex:none}
 .btn-send:disabled{opacity:.45;cursor:default}
 .sent{font-size:13px;color:var(--accent);margin-top:8px}
-.blur-t{display:flex;align-items:center;justify-content:flex-end;gap:8px;font-size:13px;color:var(--fg-3);margin:-4px 0 14px;cursor:pointer}
+.blur-t{position:absolute;left:50%;top:calc(50% + 26px);transform:translateX(-50%);z-index:55;display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:#4E5968;background:#fff;padding:7px 10px 7px 14px;border-radius:20px;box-shadow:0 2px 10px rgba(0,0,0,.12);cursor:pointer;white-space:nowrap}
+.blur-t[hidden]{display:none}
 .blur-t input{position:absolute;opacity:0;width:1px;height:1px}
 .blur-t i{width:36px;height:22px;border-radius:11px;background:var(--line);position:relative;transition:background .2s;flex:none}
 .blur-t i::after{content:"";position:absolute;left:3px;top:3px;width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.2);transition:transform .2s}
@@ -289,6 +290,7 @@ textarea.field::placeholder{color:var(--fg-3)}
         <div class="device" id="device"></div>
         <div class="notch" aria-hidden="true"></div>
         <div class="veil" id="veil">안내를 읽고 시작하기를 눌러 주세요</div>
+        <label class="blur-t" id="blurWrap" hidden><span>화면 흐리게</span><input type="checkbox" id="blurT" checked><i></i></label>
       </div>
     </div>
   </section>
@@ -420,6 +422,7 @@ function bindChips(ans, onChange){
 
 function render(){
   veil.hidden = S.phase==='task';
+  $('#blurWrap').hidden = S.phase!=='survey';
   if (S.phase!=='task') veil.textContent = ({done:'모든 테스트가 완료되었습니다', survey:'질문에 답해 주세요', sus:'질문에 답해 주세요', final:'질문에 답해 주세요'})[S.phase] || (S.phase==='intro'?'안내를 읽고 시작하기를 눌러 주십시오':'안내를 읽고 시작하기를 눌러 주세요');
   ({intro:rIntro, pre:rPre, taskIntro:rTaskIntro, task:rTask, survey:rSurvey, sus:rSus, final:rFinal, done:rDone})[S.phase]();
   card.scrollTop = 0;
@@ -501,6 +504,7 @@ function finishTask(result, detail){
 }
 
 let blurOn = true;
+document.addEventListener('change', e => { if (e.target.id==='blurT'){ blurOn = e.target.checked; veil.hidden = !blurOn; } });
 function multiQ(name, label, opts, hidden){
   return `<div class="q" data-mq="${name}" ${hidden?'hidden':''}><span class="q-label">${label}</span><p class="q-help" style="margin:-4px 0 10px">해당하는 것을 모두 골라 주세요</p><div class="opts">${opts.map(o=>`<button type="button" class="chip multi" data-m="${name}" data-v="${o}" aria-pressed="false">${o}</button>`).join('')}</div></div>`;
 }
@@ -527,7 +531,6 @@ function rSurvey(){
   if (isOrder) q += scaleQ('conf','방금 주문이 내가 의도한 대로 들어갔다고 확신하나요?','전혀 아니에요','확실해요');
   card.innerHTML = `${header('과업 '+(S.tIdx+1)+' 질문')}
     <h1 class="title" style="font-size:20px">${done?'수고했어요. 몇 가지만 물어볼게요':'괜찮아요. 몇 가지만 물어볼게요'}</h1>
-    <label class="blur-t"><span>왼쪽 화면 흐리게</span><input type="checkbox" id="blurT" ${blurOn?'checked':''}><i></i></label>
     ${q}
     <div class="actions"><button class="btn btn-primary" id="go" disabled>다음</button></div>`;
   const need = Array.from(new Set(Array.from(card.querySelectorAll('.chip[data-q]')).map(b=>b.dataset.q)));
@@ -544,8 +547,7 @@ function rSurvey(){
     b.setAttribute('aria-pressed', set.has(v)?'true':'false'); check();
   }));
   bindChips(a, check);
-  veil.hidden = !blurOn;
-  $('#blurT').onchange = e => { blurOn = e.target.checked; veil.hidden = !blurOn; };
+  veil.hidden = !blurOn; $('#blurT').checked = blurOn;
   $('#go').onclick=()=>{
     Object.keys(multi).forEach(n=>{ a[n] = shown(n) ? Array.from(multi[n]).join(' | ') : ''; });
     const row = { ...r, ...a, segment:S.segment, order:S.order.join('') };
