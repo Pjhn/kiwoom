@@ -43,10 +43,10 @@ button:focus-visible,textarea:focus-visible,input:focus-visible{outline:2px soli
 
 /* 배경 글씨: A안 AS IS, B안 TO BE (배경과 거의 같은 색) */
 .ver-bg{position:fixed;left:-14px;top:84px;z-index:0;pointer-events:none;user-select:none;writing-mode:vertical-rl;
-  font-family:"Helvetica Neue",Arial,var(--font);font-weight:700;font-size:132px;line-height:1;letter-spacing:.06em;white-space:nowrap;color:var(--ver-ink)}
-:root{--ver-ink:rgba(25,31,40,.045)}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--ver-ink:rgba(255,255,255,.04)}}
-:root[data-theme="dark"]{--ver-ink:rgba(255,255,255,.04)}
+  font-family:"Arial Black","Helvetica Neue",Arial,var(--font);font-weight:900;font-size:132px;line-height:1;letter-spacing:.03em;white-space:nowrap;color:var(--ver-ink)}
+:root{--ver-ink:rgba(52,96,170,.075)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--ver-ink:rgba(150,180,235,.06)}}
+:root[data-theme="dark"]{--ver-ink:rgba(150,180,235,.06)}
 @media (max-width:860px){.ver-bg{display:none}}
 .app{position:relative;z-index:1}
 /* 목업 무대 */
