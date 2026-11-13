@@ -159,7 +159,7 @@ textarea.field::placeholder{color:var(--fg-3)}
 .h-row.hs .v{color:var(--blue);background:#EEF4FF}
 .h-row.hb .v{color:var(--m);background:var(--m-soft)}
 .h-row.cur{height:52px}
-.h-row.cur .p{font-size:20px;font-weight:700}
+.h-row.cur .p{font-size:20px;font-weight:700;letter-spacing:-.1em}
 .h-row:hover{background:var(--g0)}
 .d-form{flex:1;min-width:0;display:flex;flex-direction:column;gap:10px}
 .seg{display:flex;background:var(--g0);border-radius:8px;padding:3px}
@@ -190,7 +190,7 @@ textarea.field::placeholder{color:var(--fg-3)}
 .tg[aria-checked="true"]{background:var(--m)}
 .tg[aria-checked="true"]::after{left:17px}
 .est{text-align:right;margin-top:10px;font-size:13px;color:var(--g3)}
-.est b{display:block;font-size:20px;color:#191F28}.est b small{font-size:14px;font-weight:500}
+.est b{display:block;font-size:20px;color:#191F28;letter-spacing:-.06em}.est b small{font-size:14px;font-weight:500}
 .buy{height:48px;border-radius:8px;background:var(--m);color:#fff!important;font-size:17px;font-weight:700;width:100%;box-shadow:0 6px 16px rgba(230,0,126,.25)}
 .d-tabs{display:flex;padding:0 16px;border-top:8px solid #F7F8FA}
 .d-tabs button{flex:1;padding:14px 0 10px;font-size:15px;color:var(--g3);position:relative}
@@ -254,8 +254,12 @@ textarea.field::placeholder{color:var(--fg-3)}
 .opt b{font-size:16px}.opt small{font-size:13px;color:var(--g3)}
 .opt.on b{color:var(--m)}
 .err{position:absolute;left:50%;bottom:40px;transform:translateX(-50%);background:#3A3F47;color:#fff;font-size:13px;padding:10px 14px;border-radius:8px;white-space:nowrap;z-index:45}
-.coach-ring{position:absolute;border-radius:14px;box-shadow:0 0 0 1.5px rgba(255,255,255,.95),0 0 14px 3px rgba(255,255,255,.55),0 0 0 9999px rgba(0,0,0,.5);z-index:42;pointer-events:none;transition:all .2s}
+.coach-ring{position:absolute;border-radius:14px;will-change:left,top,width,height;box-shadow:0 0 0 1.5px rgba(255,255,255,.95),0 0 14px 3px rgba(255,255,255,.55),0 0 0 9999px rgba(0,0,0,.5);z-index:42;pointer-events:none;transition:all .2s}
 .coach{position:absolute;left:16px;right:16px;background:#fff;border-radius:20px;padding:20px 20px 16px;z-index:43;box-shadow:0 10px 30px rgba(0,0,0,.18)}
+.coach.mv{transition:top .38s cubic-bezier(.3,.7,.2,1)}
+.coach.mv .tail{transition:left .38s cubic-bezier(.3,.7,.2,1)}
+.coach.mv h4,.coach.mv p{animation:cfade .38s ease-out}
+@keyframes cfade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
 .coach .tail{position:absolute;width:16px;height:16px;background:#fff;transform:rotate(45deg);border-radius:2px}
 .coach .tail.up{top:-7px}.coach .tail.down{bottom:-7px}
 .coach .dots{display:flex;gap:4px;justify-content:flex-end;margin-bottom:6px}
@@ -494,13 +498,14 @@ function rSurvey(){
   const isOrder = t.order && r.result!=='skip';
   let extra = '';
   if (t.id==='T1' && r.result!=='skip') extra += optQ('outside','주문하다가 앱 밖에서 정보를 찾아보고 싶었나요?',['예','아니요']);
-  if (t.id==='T3') extra += scaleQ('amount_ease','금액을 설정하는 과정은 얼마나 쉬웠나요?','매우 어려웠어요','매우 쉬웠어요');
-  if (t.id==='T5' && r.result!=='skip') extra += scaleQ('reuse','다음에도 이 화면으로 주문하고 싶나요?','전혀 아니에요','꼭 그래요');
-  const EASY = { T1:'이 과업은 얼마나 쉬웠나요?', T3:'사용할 금액을 정하는 과정은 얼마나 쉬웠나요?', T4:'주문 취소를 하기 위한 과정은 얼마나 쉬웠나요?', T5:'체결 후 보유 주식을 확인하는 과정은 얼마나 쉬웠나요?' };
+  if (t.id==='T3' && r.result!=='skip') extra += optQ('qty_method','수량을 정할 때 어떤 방법이 더 편했나요?',['비율로 정하기(막대, % 버튼)','숫자 직접 입력','비슷해요','둘 다 쓰지 않았어요']);
+  const EASY = { T1:'이 과업은 얼마나 쉬웠나요?', T4:'주문 취소를 하기 위한 과정은 얼마나 쉬웠나요?' };
   const TERM = ['주문 유형(지정가, 시장가 등) 중 무엇을 골라야 할지 몰랐어요','버튼이나 항목이 무슨 기능인지 몰라 망설였어요','뜻을 짐작하느라 주문이 늦어졌어요','잘못 주문할까 봐 불안했어요','그 밖의 불편함이 있었어요'];
   const first = t.id==='T2'
     ? optQ('term','모르는 용어가 있었나요?',['예','아니요'])
       + `<div class="q" id="term-pain" hidden><span class="q-label">모르는 용어로 주문 과정에서 어떤 불편함을 겪으셨나요?</span><p class="q-help" style="margin:-4px 0 10px">해당하는 것을 모두 골라 주세요</p><div class="opts">${TERM.map(o=>`<button type="button" class="chip multi" data-m="term_pain" data-v="${o}" aria-pressed="false">${o}</button>`).join('')}</div></div>`
+    : t.id==='T3' ? scaleQ('amount_ease','금액을 설정하는 과정은 얼마나 쉬웠나요?','매우 어려웠어요','매우 쉬웠어요')
+    : t.id==='T5' ? scaleQ('find_holdings','체결 후 보유 주식을 확인하는 탭을 빠르게 찾을 수 있었나요?','전혀 못 찾았어요','바로 찾았어요')
     : t.id==='T1' ? scaleQ('start_clear','처음 주문을 시작할 때 어디부터 눌러야 할지 바로 알 수 있었나요?','전혀 몰랐어요','바로 알았어요')
     : scaleQ('seq', EASY[t.id]||'이 과업은 얼마나 쉬웠나요?','매우 어려웠어요','매우 쉬웠어요');
   card.innerHTML = `${header('과업 '+(S.tIdx+1)+' 질문')}
@@ -560,13 +565,11 @@ function rFinal(){
     ${two?optQ('pref','다시 주문한다면 어느 화면을 쓰고 싶나요?',['첫 번째 화면','두 번째 화면','비슷해요']):''}
     ${two?`<div class="q"><label class="q-label" for="why">그렇게 고른 이유는요?</label><textarea class="field" id="why" placeholder="자유롭게 적어 주세요"></textarea></div>`:''}
     <div class="q"><label class="q-label" for="o1">가장 막혔던 순간은 언제였나요?</label><textarea class="field" id="o1" placeholder="없었다면 비워 두셔도 돼요"></textarea></div>
-    <div class="q"><label class="q-label" for="o2">주문 내용을 확인하는 화면이 번거롭거나 느리게 느껴졌나요?</label><textarea class="field" id="o2"></textarea></div>
-    <div class="q"><label class="q-label" for="o3">수량을 정할 때 막대(비율)와 직접 입력 중 무엇이 편했나요?</label><textarea class="field" id="o3"></textarea></div>
     <div class="actions"><button class="btn btn-primary" id="go" ${two?'disabled':''}>제출하기</button></div>`;
   bindChips(a, ()=>$('#go').disabled=false);
   $('#go').onclick=()=>{
     const pref = a.pref==='첫 번째 화면'?S.order[0]: a.pref==='두 번째 화면'?S.order[1]: (a.pref||'');
-    send('final',{ pref, pref_raw:a.pref||'', why:($('#why')||{}).value||'', stuck:$('#o1').value, confirm_slow:$('#o2').value, qty_method:$('#o3').value, total_ms:Date.now()-S.startedAt });
+    send('final',{ pref, pref_raw:a.pref||'', why:($('#why')||{}).value||'', stuck:$('#o1').value, total_ms:Date.now()-S.startedAt });
     S.phase='done'; save(); render();
   };
 }
@@ -575,8 +578,7 @@ function rDone(){
   card.innerHTML = `<div class="step"><span class="step-badge">완료</span><span class="step-count">${totalSteps()} / ${totalSteps()}</span></div>
     <div class="bar"><span style="width:100%"></span></div>
     <h1 class="title">모든 테스트가 완료되었습니다</h1>
-    <p class="sub">보내 주신 답변은 주문 화면 UX를 개선하는 데 사용됩니다. 테스트에 참여해 주셔서 감사합니다.</p>
-    <div class="hint" style="flex-direction:column;gap:4px"><span>참가 코드</span><span class="done-code">${S.pid}</span></div>`;
+    <p class="sub">보내 주신 답변은 주문 화면 UX를 개선하는 데 사용됩니다. 테스트에 참여해 주셔서 감사합니다.</p>`;
 }
 
 /* ═════════ 프로토타입 연결 ═════════ */
@@ -629,8 +631,8 @@ cb.onclick=()=>{cp.hidden=!cp.hidden;cb.setAttribute('aria-expanded',String(!cp.
 window.PROTOTYPES = window.PROTOTYPES || {};
 window.PROTOTYPES.B = { mount(root, taskId, H){
   const PREV = 31000, CUR = 31750, AVAIL = 1000000, TICK = 50;
-  const SELL = [[32000,2184],[31950,1032],[31900,845],[31850,312],[31800,128],[31750,291]];
-  const BUY  = [[31700,1540],[31650,2876],[31600,7178],[31550,1023],[31500,122],[31450,310]];
+  const SELL = [[32000,2184],[31950,1032],[31900,845],[31850,312],[31800,128]];
+  const BUY  = [[31750,291],[31700,1540],[31650,2876],[31600,7178],[31550,1023],[31500,122],[31450,310]];
   const st = { side:'buy', type:'지정가', price:'', qty:'', pct:0, frac:false, margin:false, chart:false, tab:'pending', chip:'all',
     pending:[], holdings:[], history:[], toast:null, sheet:null, coach:-1, priceTouched:false, confirmCancel:0 };
   // 과업별 시작 상태
@@ -800,13 +802,23 @@ window.PROTOTYPES.B = { mount(root, taskId, H){
     const sc = +root.dataset.scale||1, d=root.getBoundingClientRect(), r=el.getBoundingClientRect();
     const x=(r.left-d.left)/sc, y=(r.top-d.top)/sc, w=r.width/sc, h=r.height/sc;
     const br = getComputedStyle(el).borderRadius;
-    Object.assign(ring.style,{left:x+'px',top:y+'px',width:w+'px',height:h+'px',borderRadius:(br&&br!=='0px')?br:'4px'});
-    const cb = root.querySelector('#coach'), tail = root.querySelector('#tail'); if(!cb) return;
-    const bh = cb.offsetHeight, below = y+h+14+bh < 800;
-    cb.style.top = (below ? y+h+16 : y-16-bh) + 'px';
-    tail.className = 'tail ' + (below?'up':'down');
-    tail.style.left = Math.max(24, Math.min(375-32-24, x+w/2-16-8)) + 'px';
+    const cb = root.querySelector('#coach'), tail = root.querySelector('#tail');
+    const bh = cb ? cb.offsetHeight : 0, below = y+h+14+bh < 800;
+    const next = { ring:{left:x+'px',top:y+'px',width:w+'px',height:h+'px',borderRadius:(br&&br!=='0px')?br:'4px'},
+      top:(below ? y+h+16 : y-16-bh)+'px', tail:Math.max(24, Math.min(375-32-24, x+w/2-16-8))+'px', dir:'tail '+(below?'up':'down') };
+    const prev = coachAnim ? lastCoach : null; coachAnim = false;
+    if (prev){
+      ring.style.transition='none'; Object.assign(ring.style, prev.ring);
+      if (cb){ cb.style.top=prev.top; tail.className=prev.dir; tail.style.left=prev.tail; }
+      void ring.offsetWidth;
+      ring.style.transition='all .38s cubic-bezier(.3,.7,.2,1)';
+      if (cb) cb.classList.add('mv');
+    }
+    Object.assign(ring.style, next.ring);
+    if (cb){ cb.style.top=next.top; tail.className=next.dir; tail.style.left=next.tail; }
+    lastCoach = next;
   }
+  let coachAnim = false, lastCoach = null;
 
   let scrollY = 0, hogaY = null;
   function draw(){
@@ -875,8 +887,8 @@ window.PROTOTYPES.B = { mount(root, taskId, H){
     const a = e.target.closest('[data-act]'); if (!a) { if(!e.target.closest('input,#slider,#lwc')) L('blank'); return; }
     const act = a.dataset.act;
     switch(act){
-      case 'guide_next': L('guide_next',st.coach+1); st.coach = st.coach>=COACH.length-1 ? -1 : st.coach+1; if(st.coach===3||st.coach===4){ const sc=root.querySelector('.d-scroll'); sc.scrollTop=140; scrollY=140; } if(st.coach<0){scrollY=0;} draw(); return;
-      case 'guide_prev': L('guide_prev',st.coach+1); st.coach=Math.max(0,st.coach-1); draw(); return;
+      case 'guide_next': L('guide_next',st.coach+1); coachAnim = st.coach<COACH.length-1; st.coach = st.coach>=COACH.length-1 ? -1 : st.coach+1; if(st.coach===3||st.coach===4){ const sc=root.querySelector('.d-scroll'); sc.scrollTop=140; scrollY=140; } if(st.coach<0){scrollY=0;} draw(); return;
+      case 'guide_prev': L('guide_prev',st.coach+1); coachAnim = true; st.coach=Math.max(0,st.coach-1); draw(); return;
       case 'guide_skip': L('guide_skip',st.coach+1); st.coach=-1; scrollY=0; draw(); return;
       case 'seg_buy': L(act); return;
       case 'seg_sell': L(act); flash('이 테스트에서는 구매만 할 수 있어요'); return;
