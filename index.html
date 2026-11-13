@@ -775,7 +775,7 @@ window.PROTOTYPES.B = { mount(root, taskId, H){
       : `<input id="f-price" disabled value="${st.type==='시장가'?'시장가로 주문':won(CUR)+' (현재가)'}" aria-label="가격">`;
     return `
       <div class="seg"><button class="${st.side==='buy'?'on':''}" data-act="seg_buy">구매</button><button class="${st.side==='sell'?'on':''}" data-act="seg_sell">판매</button></div>
-      <button class="f-box f-type" data-act="type_open" id="g-type"><span>${st.type}</span><span class="q">${ic.q}${ic.chev}</span></button>
+      <button class="f-box f-type" data-act="type_open" id="g-type"><span>${st.type}</span><span class="q">${ic.chev}</span></button>
       <div class="f-box ${st.focus==='price'?'focus':''}" id="g-price">${priceField}<button class="pm" data-act="price_minus" aria-label="가격 내리기">−</button><button class="pm" data-act="price_plus" aria-label="가격 올리기">+</button></div>
       <div class="f-box ${st.focus==='qty'?'focus':''}" id="g-qty"><input id="f-qty" inputmode="numeric" placeholder="수량 입력" value="${st.qty||''}" aria-label="수량">${st.qty?'<span class="unit">주</span>':''}<button class="pm" data-act="qty_minus" aria-label="수량 줄이기">−</button><button class="pm" data-act="qty_plus" aria-label="수량 늘리기">+</button></div>
       ${sliderHtml()}
