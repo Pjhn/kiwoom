@@ -108,6 +108,13 @@ textarea.field::placeholder{color:var(--fg-3)}
 .btn-send{height:48px;padding:0 18px;border-radius:var(--r-sm);background:var(--accent-soft);color:var(--accent);font-weight:600;font-size:15px;flex:none}
 .btn-send:disabled{opacity:.45;cursor:default}
 .sent{font-size:13px;color:var(--accent);margin-top:8px}
+.blur-t{display:flex;align-items:center;justify-content:flex-end;gap:8px;font-size:13px;color:var(--fg-3);margin:-4px 0 14px;cursor:pointer}
+.blur-t input{position:absolute;opacity:0;width:1px;height:1px}
+.blur-t i{width:36px;height:22px;border-radius:11px;background:var(--line);position:relative;transition:background .2s;flex:none}
+.blur-t i::after{content:"";position:absolute;left:3px;top:3px;width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.2);transition:transform .2s}
+.blur-t input:checked+i{background:var(--accent)}
+.blur-t input:checked+i::after{transform:translateX(14px)}
+.blur-t input:focus-visible+i{outline:2px solid var(--accent);outline-offset:2px}
 
 .contact{position:fixed;left:max(24px,calc(env(safe-area-inset-left,0px) + 16px));bottom:calc(24px + env(safe-area-inset-bottom,0px));z-index:80;
   display:flex;align-items:center;gap:6px;height:40px;padding:0 14px 0 12px;border-radius:20px;background:var(--surface);color:var(--fg-2);font-size:13px;font-weight:600;
@@ -490,43 +497,57 @@ function finishTask(result, detail){
   cTrack('event','task_'+result);
   send('events',{ version:curV(), task:t.id, events:EVENTS });
   S.last=lastResult; S.phase='survey'; save();
-  setTimeout(render, result==='skip'?0:300);
+  setTimeout(render, result==='skip'?0:1000);
 }
 
+let blurOn = true;
+function multiQ(name, label, opts, hidden){
+  return `<div class="q" data-mq="${name}" ${hidden?'hidden':''}><span class="q-label">${label}</span><p class="q-help" style="margin:-4px 0 10px">해당하는 것을 모두 골라 주세요</p><div class="opts">${opts.map(o=>`<button type="button" class="chip multi" data-m="${name}" data-v="${o}" aria-pressed="false">${o}</button>`).join('')}</div></div>`;
+}
 function rSurvey(){
   const t = curT(), a = {}, r = lastResult||S.last||{};
-  const isOrder = t.order && r.result!=='skip';
-  let extra = '';
-  if (t.id==='T1' && r.result!=='skip') extra += optQ('outside','주문하다가 앱 밖에서 정보를 찾아보고 싶었나요?',['예','아니요']);
-  if (t.id==='T3' && r.result!=='skip') extra += optQ('qty_method','수량을 정할 때 어떤 방법이 더 편했나요?',['비율로 정하기(막대, % 버튼)','숫자 직접 입력','비슷해요','둘 다 쓰지 않았어요']);
-  const EASY = { T1:'이 과업은 얼마나 쉬웠나요?', T4:'주문 취소를 하기 위한 과정은 얼마나 쉬웠나요?' };
-  const TERM = ['주문 유형(지정가, 시장가 등) 중 무엇을 골라야 할지 몰랐어요','버튼이나 항목이 무슨 기능인지 몰라 망설였어요','뜻을 짐작하느라 주문이 늦어졌어요','잘못 주문할까 봐 불안했어요','그 밖의 불편함이 있었어요'];
-  const first = t.id==='T2'
-    ? optQ('term','모르는 용어가 있었나요?',['예','아니요'])
-      + `<div class="q" id="term-pain" hidden><span class="q-label">모르는 용어로 주문 과정에서 어떤 불편함을 겪으셨나요?</span><p class="q-help" style="margin:-4px 0 10px">해당하는 것을 모두 골라 주세요</p><div class="opts">${TERM.map(o=>`<button type="button" class="chip multi" data-m="term_pain" data-v="${o}" aria-pressed="false">${o}</button>`).join('')}</div></div>`
-    : t.id==='T3' ? scaleQ('amount_ease','금액을 설정하는 과정은 얼마나 쉬웠나요?','매우 어려웠어요','매우 쉬웠어요')
-    : t.id==='T5' ? scaleQ('find_holdings','체결 후 보유 주식을 확인하는 탭을 빠르게 찾을 수 있었나요?','전혀 못 찾았어요','바로 찾았어요')
-    : t.id==='T1' ? scaleQ('start_clear','처음 주문을 시작할 때 어디부터 눌러야 할지 바로 알 수 있었나요?','전혀 몰랐어요','바로 알았어요')
-    : scaleQ('seq', EASY[t.id]||'이 과업은 얼마나 쉬웠나요?','매우 어려웠어요','매우 쉬웠어요');
+  const done = r.result!=='skip';
+  const isOrder = t.order && done;
+  const METHODS = ['+, - 버튼 입력','숫자 직접 입력','% 버튼','슬라이더 바'];
+  const TERM_HOW = ['물음표(?)나 안내를 눌러 확인했어요','화면의 다른 정보를 보고 짐작했어요','앱 밖에서 찾아보고 싶었어요','해결하지 못한 채로 진행했어요','기타'];
+  let q = '';
+  if (t.id==='T1'){
+    q += scaleQ('start_clear','처음 주문을 시작할 때 어디부터 눌러야 할지 바로 알 수 있었나요?','전혀 몰랐어요','바로 알았어요');
+    q += optQ('term','주문하면서 모르는 용어가 있었나요?',['예','아니요']);
+    q += multiQ('term_how','모르는 용어는 어떻게 해결하셨나요?',TERM_HOW,true);
+  }
+  if (t.id==='T2') q += scaleQ('input_ease','수량 또는 가격 입력은 쉬웠나요?','매우 어려웠어요','매우 쉬웠어요');
+  if (t.id==='T3'){
+    q += scaleQ('amount_ease','금액을 설정하는 과정은 얼마나 쉬웠나요?','매우 어려웠어요','매우 쉬웠어요');
+    if (done) q += multiQ('qty_method','금액, 수량을 정할 때 어떤 방법을 사용하셨나요?', curV()==='A' ? METHODS.slice(0,3) : METHODS, false);
+    if (done && curV()==='B') q += optQ('qty_best','금액, 수량을 정할 때 어떤 방법이 가장 편하다고 느끼시나요?',METHODS);
+  }
+  if (t.id==='T4') q += scaleQ('seq','주문 취소를 하기 위한 과정은 얼마나 쉬웠나요?','매우 어려웠어요','매우 쉬웠어요');
+  if (t.id==='T5') q += scaleQ('find_holdings','체결 후 보유 주식을 확인하는 탭을 빠르게 찾을 수 있었나요?','전혀 못 찾았어요','바로 찾았어요');
+  if (isOrder) q += scaleQ('conf','방금 주문이 내가 의도한 대로 들어갔다고 확신하나요?','전혀 아니에요','확실해요');
   card.innerHTML = `${header('과업 '+(S.tIdx+1)+' 질문')}
-    <h1 class="title" style="font-size:20px">${r.result==='skip'?'괜찮아요. 하나만 물어볼게요':'수고했어요. 몇 가지만 물어볼게요'}</h1>
-    ${first}
-    ${isOrder?scaleQ('conf','방금 주문이 내가 의도한 대로 들어갔다고 확신하나요?','전혀 아니에요','확실해요'):''}
-    ${extra}
+    <h1 class="title" style="font-size:20px">${done?'수고했어요. 몇 가지만 물어볼게요':'괜찮아요. 몇 가지만 물어볼게요'}</h1>
+    <label class="blur-t"><span>왼쪽 화면 흐리게</span><input type="checkbox" id="blurT" ${blurOn?'checked':''}><i></i></label>
+    ${q}
     <div class="actions"><button class="btn btn-primary" id="go" disabled>다음</button></div>`;
   const need = Array.from(new Set(Array.from(card.querySelectorAll('.chip[data-q]')).map(b=>b.dataset.q)));
-  const multi = new Set();
+  const multi = {};
+  const shown = n => { const el=card.querySelector(`[data-mq="${n}"]`); return el && !el.hidden; };
   const check = ()=>{
-    const tp = $('#term-pain'); if (tp) tp.hidden = a.term!=='예';
-    $('#go').disabled = !need.every(q=>a[q]) || (a.term==='예' && !multi.size);
+    const th = card.querySelector('[data-mq="term_how"]'); if (th) th.hidden = a.term!=='예';
+    const mOk = Array.from(card.querySelectorAll('[data-mq]')).every(el=>el.hidden || (multi[el.dataset.mq]||new Set()).size);
+    $('#go').disabled = !need.every(k=>a[k]) || !mOk;
   };
   card.querySelectorAll('.chip.multi').forEach(b=>b.addEventListener('click',()=>{
-    const v=b.dataset.v; if (multi.has(v)) multi.delete(v); else multi.add(v);
-    b.setAttribute('aria-pressed', multi.has(v)?'true':'false'); check();
+    const n=b.dataset.m, v=b.dataset.v, set=multi[n]||(multi[n]=new Set());
+    if (set.has(v)) set.delete(v); else set.add(v);
+    b.setAttribute('aria-pressed', set.has(v)?'true':'false'); check();
   }));
   bindChips(a, check);
+  veil.hidden = !blurOn;
+  $('#blurT').onchange = e => { blurOn = e.target.checked; veil.hidden = !blurOn; };
   $('#go').onclick=()=>{
-    if (t.id==='T2') a.term_pain = a.term==='예' ? Array.from(multi).join(' | ') : '';
+    Object.keys(multi).forEach(n=>{ a[n] = shown(n) ? Array.from(multi[n]).join(' | ') : ''; });
     const row = { ...r, ...a, segment:S.segment, order:S.order.join('') };
     S.results.push(row); send('task', row);
     S.tIdx++;
