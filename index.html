@@ -166,7 +166,8 @@ textarea.field::placeholder{color:var(--fg-3)}
 .h-row .v{font-size:11px;min-width:16px;text-align:right;padding:2px 3px;border-radius:2px}
 .h-row.hs .v{color:var(--blue);background:#EEF4FF}
 .h-row.hb .v{color:var(--m);background:var(--m-soft)}
-.h-row.cur{height:52px}
+.h-row.cur{height:52px;cursor:default}
+.h-row.cur:hover{background:none}
 .h-row.cur .p{font-size:20px;font-weight:700;letter-spacing:-.1em}
 .h-row:hover{background:var(--g0)}
 .d-form{flex:1;min-width:0;display:flex;flex-direction:column;gap:10px}
@@ -730,8 +731,10 @@ window.PROTOTYPES.B = { mount(root, taskId, H){
   function syncPct(){ const px=priceNum(); st.pct = px&&st.qty ? Math.min(maxPct(), Math.round(px*st.qty/AVAIL*100)) : 0; }
 
   function hogaHtml(){
-    const row=(p,v,cls)=>`<button class="h-row ${cls} ${p===CUR?'cur':''}" data-hoga="${p}"><span><span class="p">${won(p)}</span>${p===CUR?'':`<span class="c">+${pct(p)}%</span>`}</span><span class="v">${won(v)}</span></button>`;
-    return SELL.map(([p])=>row(p,vols[p],'hs')).join('') + BUY.map(([p])=>row(p,vols[p],'hb')).join('');
+    const row=(p,v,cls)=>`<button class="h-row ${cls}" data-hoga="${p}"><span><span class="p">${won(p)}</span><span class="c">+${pct(p)}%</span></span><span class="v">${won(v)}</span></button>`;
+    return SELL.map(([p])=>row(p,vols[p],'hs')).join('')
+      + `<div class="h-row cur" aria-label="마지막 체결가"><span class="p">${won(CUR)}</span></div>`
+      + BUY.map(([p])=>row(p,vols[p],'hb')).join('');
   }
 
   function listHtml(){
@@ -864,7 +867,7 @@ window.PROTOTYPES.B = { mount(root, taskId, H){
       ${st.err?`<div class="err">${st.err}</div>`:''}
       ${sheetHtml()}${coachHtml()}`;
     const sc2 = root.querySelector('.d-scroll'); sc2.scrollTop = scrollY;
-    const hg2 = root.querySelector('.d-hoga'); hg2.scrollTop = hogaY==null ? (hg2.scrollHeight-hg2.clientHeight)/2 - 20 : hogaY;
+    const hg2 = root.querySelector('.d-hoga'); const curEl = hg2.querySelector('.h-row.cur'); hg2.scrollTop = hogaY==null ? (curEl ? curEl.offsetTop - (hg2.clientHeight-curEl.offsetHeight)/2 : 0) : hogaY;
     bindInputs(); mountChart(); placeRing();
   }
 
