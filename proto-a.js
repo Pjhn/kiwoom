@@ -187,6 +187,9 @@ const css = `
 .ka .k-mc{flex:1;background:#F2C94C;color:#fff!important;font-size:18px;font-weight:800}
 .ka .k-mm{flex:1;background:#5CAA5E;color:#fff!important;font-size:18px;font-weight:800}
 .ka .k-dlg .k-tbl{max-height:220px;margin:8px 0}
+.ka .k-row .p,.ka .k-row .v,.ka .k-px b,.ka .k-px small,.ka .k-num .val,.ka .k-tbl td,.ka .k-sheet .sp,.ka .k-sheet .lim b,.ka .k-sheet .fb .vv,.ka .k-dlg td,.ka .k-amt .r,.ka .k-ono,.ka .km .k-tbox,.ka .k-acct .a2{letter-spacing:-.05em}
+.ka .k-row .p{position:relative}
+.ka .k-row .p.ex::after{content:"";position:absolute;inset:4px 2px;border:1.5px solid #111;border-radius:5px;pointer-events:none}
 .ka .k-ybar{height:48px;flex:none;background:#F2C94C;color:#fff!important;font-size:18px;font-weight:800;width:100%}
 `;
 if (!document.getElementById('ka-css')){ const s=document.createElement('style'); s.id='ka-css'; s.textContent=css; document.head.appendChild(s); }
@@ -215,6 +218,21 @@ window.PROTOTYPES.A = { mount(root, taskId, H){
   if (taskId==='T5'){ st.holdings=[{name:'카카오',qty:7,avg:32800}]; st.banner={price:32800,qty:7}; }
 
   const mid=Math.random().toString(36).slice(2); root.dataset.mid=mid;
+  /* 호가 체결 효과 */
+  const EXR=[SELL[SELL.length-1], BUY[0]];
+  function paintRow(r, ex){
+    const el=root.querySelector(`[data-hoga="${r[0]}"]`); if(!el) return;
+    el.querySelector('.v b').textContent=won(r[1]); el.querySelector('.v i').style.width=Math.min(100,Math.round(r[1]/MAXV*100))+'%';
+    if (ex){ const pc=el.querySelector('.p'); pc.classList.add('ex'); setTimeout(()=>pc.classList.remove('ex'),350); }
+  }
+  const exTimer=setInterval(()=>{
+    if (root.dataset.mid!==mid || !root.isConnected){ clearInterval(exTimer); return; }
+    if (!root.querySelector('#kbook')) return;
+    const r=EXR[Math.random()<.5?0:1];
+    r[1]=Math.max(40, r[1]-(1+Math.floor(Math.random()*25))); if (r[1]<80) r[1]+=150+Math.floor(Math.random()*200);
+    paintRow(r,true);
+    if (Math.random()<.5){ const o=[...SELL,...BUY][Math.floor(Math.random()*12)]; if(!EXR.includes(o)){ o[1]=Math.max(20,o[1]+Math.floor(Math.random()*41)-20); paintRow(o,false); } }
+  }, 900);
 
   /* ── 화면 조각 ── */
   const top=()=>`<div class="k-top"><div class="k-sb"><span>9:41</span><span>▂▄▆ ◔ 47</span></div>
@@ -228,7 +246,7 @@ window.PROTOTYPES.A = { mount(root, taskId, H){
     <div class="k-bnav"><button class="menu" data-act="a_menu"><b></b>메뉴</button>${['관심종목','현재가','주문','차트','계좌'].map(n=>`<button class="n ${n==='주문'?'on':''}" data-act="a_bnav_${n}">${n}</button>`).join('')}</div><div class="k-home"></div>`;
 
   function bookHtml(){
-    const row=(p,v,side)=>`<button class="k-row ${side} ${p===CUR?'cur':''} ${!isMkt()&&+st.price===p?'pick':''}" data-hoga="${p}"><span class="p ${cls(p)}">${won(p)}</span><span class="v"><i style="width:${Math.round(v/MAXV*100)}%"></i>${won(v)}</span></button>`;
+    const row=(p,v,side)=>`<button class="k-row ${side} ${p===CUR?'cur':''} ${!isMkt()&&+st.price===p?'pick':''}" data-hoga="${p}"><span class="p ${cls(p)}">${won(p)}</span><span class="v"><i style="width:${Math.min(100,Math.round(v/MAXV*100))}%"></i><b style="font-weight:inherit">${won(v)}</b></span></button>`;
     return SELL.map(([p,v])=>row(p,v,'s')).join('')+BUY.map(([p,v])=>row(p,v,'b')).join('');
   }
   function buyPane(){
