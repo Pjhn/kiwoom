@@ -395,8 +395,8 @@ if (!S || params.has('reset')) {
   store.set(KEY, S);
 }
 const save = () => store.set(KEY, S);
-/* B안 사용 안내: 입문자에게만, B안 첫 과업 전에 한 번 */
-const introPhase = () => (S.order[S.vIdx]==='B' && S.segment==='입문' && !S.guideDone) ? 'guide' : 'taskIntro';
+/* B안 사용 안내: 모든 참가자에게, B안 첫 과업 전에 한 번 */
+const introPhase = () => (S.order[S.vIdx]==='B' && !S.guideDone) ? 'guide' : 'taskIntro';
 if (S.phase==='task') S.phase='taskIntro';
 const totalSteps = () => S.order.length * TASKS.length;
 const stepNo = () => S.vIdx*TASKS.length + S.tIdx + 1;
