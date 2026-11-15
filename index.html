@@ -250,15 +250,11 @@ textarea.field::placeholder{color:var(--fg-3)}
 .l-item .t small{display:block;font-size:13px;color:var(--g3);margin-top:3px}
 .l-item .badge{font-size:11px;font-weight:600;color:var(--m);background:var(--m-soft);border-radius:4px;padding:1px 5px;margin-left:4px}
 .l-item .x{height:32px;padding:0 12px;border-radius:6px;background:var(--g0);font-size:13px;font-weight:600}
-.l-item.fresh{margin:0 -16px;padding-left:16px;padding-right:16px;position:relative;isolation:isolate;overflow:hidden;background:none}
-/* 오로라: 분홍 빛 덩어리 몇 개가 천천히 흘러가며 겹침 */
-.l-item.fresh::before{content:"";position:absolute;inset:-40% -20%;z-index:-1;pointer-events:none;filter:blur(18px);opacity:.9;
-  background:radial-gradient(40% 60% at 20% 50%,rgba(255,102,178,.38),transparent 70%),radial-gradient(35% 55% at 55% 40%,rgba(255,170,215,.45),transparent 70%),radial-gradient(30% 50% at 85% 60%,rgba(230,0,126,.18),transparent 70%);
-  background-size:180% 100%;animation:aurora 6s ease-in-out infinite alternate}
-.l-item.fresh::after{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;background:linear-gradient(105deg,transparent 30%,rgba(255,255,255,.55) 48%,transparent 66%);background-size:250% 100%;animation:shine 3.2s ease-in-out infinite}
-.l-item.fresh:active::before{animation-duration:1.6s;opacity:1}
-@keyframes aurora{0%{background-position:0% 50%;transform:translateX(-4%) scaleY(1)}50%{transform:translateX(3%) scaleY(1.15)}100%{background-position:100% 50%;transform:translateX(6%) scaleY(.95)}}
-@keyframes shine{0%{background-position:120% 0}60%,100%{background-position:-60% 0}}
+.l-item.fresh{background:linear-gradient(90deg,var(--m-soft),transparent 70%);margin:0 -16px;padding-left:16px;padding-right:16px;
+  background-size:160% 100%;animation:freshBreath 3.6s ease-in-out infinite alternate;transition:filter .2s}
+.l-item.fresh:active{filter:saturate(1.4) brightness(.98)}
+/* 은은하게: 분홍 그라데이션이 천천히 조금 밀려났다 돌아옴 */
+@keyframes freshBreath{from{background-position:0% 0}to{background-position:45% 0}}
 .l-item .amt{text-align:right}.l-item .amt b{font-size:16px}.l-item .amt small{display:block;color:var(--blue);font-size:13px}
 .empty{display:flex;flex-direction:column;align-items:center;gap:10px;padding:56px 0;color:var(--g2);font-size:14px}
 .empty i{width:44px;height:56px;border-radius:6px;background:linear-gradient(160deg,#E2E5E9,#B7BDC4)}
@@ -925,17 +921,16 @@ window.PROTOTYPES.B = { mount(root, taskId, H){
 
   const COACH = [
     ['g-type','어떻게 살지 먼저 골라요','<b>지정가</b>는 원하는 가격을 직접 정하고, <b>현재가</b>는 지금 가격으로, <b>시장가</b>는 가격 상관없이 가장 빨리 사요.'],
-    ['g-price','얼마에 살지 적어요','적은 가격 이하로 팔려는 사람이 있으면 구매돼요. 지금 가격보다 너무 낮으면 오래 기다릴 수 있어요.'],
-    ['g-qty','몇 주 살지 정해요','<b>소수점</b>을 고르면 1주보다 적게, 0.5주처럼 나눠서 살 수도 있어요.'],
-    ['g-avail','쓸 수 있는 돈을 확인해요','<b>미수거래</b>는 돈을 빌려서 사는 방식이에요. 갚지 못하면 강제로 팔릴 수 있어서, 처음엔 꺼 두는 걸 권해요.'],
-    ['g-buy','금액을 확인하고 구매해요','<b>예상 구매금액</b>이 맞는지 보고 구매하기를 누르세요. 한 번 더 확인한 뒤에 주문돼요.'],
+    ['g-price','얼마에 살지 가격을 입력해요','작성한 가격 이하로 팔려는 사람이 있으면 구매돼요. 지금 가격보다 너무 낮으면 오래 기다릴 수 있어요.'],
+    ['g-qty','몇 주를 구매할지 적어요','<b>소수점 거래</b>를 고르면 1주보다 적게, 0.5주처럼 나눠서 살 수도 있어요.'],
+    ['g-buy','금액을 확인하고 구매해요','<b>예상 금액</b>이 맞는지 보고 구매하기를 누르세요. 한 번 더 확인한 뒤에 주문하세요.'],
   ];
   function coachHtml(){
     if (st.coach<0) return '';
     const [,t,b] = COACH[st.coach], last = st.coach===COACH.length-1;
     const dots = COACH.map((_,i)=>`<i class="${i===st.coach?'on':''}"></i>`).join('');
     return `<div class="coach-ring" id="ring"></div><div class="coach" id="coach"><span class="tail" id="tail"></span><div class="dots">${dots}</div><h4>${t}</h4><p>${b}</p>
-      <div class="row2">${last?'<button class="skip" data-act="guide_prev">이전</button>':'<button class="skip" data-act="guide_skip">건너뛰기</button>'}<button class="next" data-act="guide_next">${last?'시작하기':'다음'}</button></div></div>`;
+      <div class="row2">${last?'<button class="skip" data-act="guide_prev">이전</button>':'<button class="skip" data-act="guide_skip">건너뛰기</button>'}<button class="next" data-act="guide_next">${last?'확인':'다음'}</button></div></div>`;
   }
   function placeRing(){
     const ring = root.querySelector('#ring'); if(!ring) return;
@@ -1028,7 +1023,7 @@ window.PROTOTYPES.B = { mount(root, taskId, H){
     const a = e.target.closest('[data-act]'); if (!a) { if(!e.target.closest('input,#slider,#lwc')) L('blank'); return; }
     const act = a.dataset.act;
     switch(act){
-      case 'guide_next': L('guide_next',st.coach+1); coachAnim = st.coach<COACH.length-1; st.coach = st.coach>=COACH.length-1 ? -1 : st.coach+1; if(st.coach===3||st.coach===4){ const sc=root.querySelector('.d-scroll'); sc.scrollTop=140; scrollY=140; } if(st.coach<0){scrollY=0;} draw(); if(st.coach<0 && H.onGuideEnd) H.onGuideEnd('done', COACH.length); return;
+      case 'guide_next': L('guide_next',st.coach+1); coachAnim = st.coach<COACH.length-1; st.coach = st.coach>=COACH.length-1 ? -1 : st.coach+1; if(st.coach===3){ const sc=root.querySelector('.d-scroll'); sc.scrollTop=140; scrollY=140; } if(st.coach<0){scrollY=0;} draw(); if(st.coach<0 && H.onGuideEnd) H.onGuideEnd('done', COACH.length); return;
       case 'guide_prev': L('guide_prev',st.coach+1); coachAnim = true; st.coach=Math.max(0,st.coach-1); draw(); return;
       case 'guide_skip': { const at=st.coach+1; L('guide_skip',at); st.coach=-1; scrollY=0; draw(); if(H.onGuideEnd) H.onGuideEnd('skip', at); return; }
       case 'seg_buy': L(act); return;
