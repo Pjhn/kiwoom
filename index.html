@@ -1,4 +1,6 @@
 <title>주문 흐름 UT</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="claude:viewport-fit-sides" content="cover">
 <script type="text/javascript">
     (function(c,l,a,r,i,t,y){
@@ -34,7 +36,7 @@
   --phone:#000000; color-scheme:dark}
 
 html,body{height:100%}
-body{background:var(--bg);color:var(--fg);font-family:var(--font);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased;word-break:keep-all}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--font);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased;word-break:keep-all}
 button{font:inherit;cursor:pointer;border:0;background:none;color:inherit;padding:0}
 button:focus-visible,textarea:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
@@ -131,6 +133,26 @@ textarea.field::placeholder{color:var(--fg-3)}
   .card{padding:22px;overflow:visible}
   .phone{width:min(100%,395px);aspect-ratio:395/832;padding:3px;border-radius:48px}
   .screen{border-width:7px;border-radius:45px}
+}
+.task-pill,.task-panel{display:none}
+@media (max-width:860px){
+  body:not(.full) .stage{display:none}
+  body.full{background:#fff}
+  body.full .side, body.full .contact, body.full .contact-pop{display:none}
+  body.full .app{display:flex;padding:0;gap:0;min-height:100dvh;align-items:center;justify-content:center;background:#fff}
+  body.full .stage{width:100%;height:100dvh}
+  body.full .phone{width:100vw;height:100dvh;aspect-ratio:auto;padding:0;border-radius:0;background:none;box-shadow:none}
+  body.full .phone::before, body.full .phone::after, body.full .notch{display:none}
+  body.full .screen{border:0;border-radius:0}
+  body.full .task-pill{display:flex;position:fixed;top:calc(env(safe-area-inset-top,0px) + 4px);left:50%;transform:translateX(-50%);z-index:90;align-items:center;gap:6px;
+    height:30px;padding:0 12px;border-radius:15px;background:rgba(25,31,40,.86);color:#fff;font-size:12px;font-weight:600;white-space:nowrap;box-shadow:0 2px 10px rgba(0,0,0,.18)}
+  body.full .task-panel:not([hidden]){display:block;position:fixed;top:calc(env(safe-area-inset-top,0px) + 40px);left:12px;right:12px;z-index:90;background:var(--surface);color:var(--fg);
+    border-radius:16px;padding:18px 18px 14px;box-shadow:0 10px 32px rgba(0,23,51,.22)}
+  .task-panel h2{margin:0 0 6px;font-size:17px;line-height:1.4}
+  .task-panel p{margin:0 0 12px;font-size:14px;color:var(--fg-2)}
+  .task-panel .row{display:flex;gap:8px;justify-content:flex-end}
+  .task-panel .row button{height:40px;padding:0 14px;border-radius:10px;font-size:14px;font-weight:600;background:var(--surface-2);color:var(--fg-2)}
+  .task-panel .row .ok{background:var(--accent);color:var(--on-accent)}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 
@@ -279,7 +301,7 @@ textarea.field::placeholder{color:var(--fg-3)}
 .coach p b{color:#191F28;font-weight:700}
 .coach .row2{display:flex;justify-content:space-between;align-items:center}
 .coach .skip{font-size:15px;color:#4E5968;padding:8px 4px}
-.coach .next{height:42px;padding:0 20px;border-radius:10px;background:#2B2F36;color:#fff!important;font-weight:600;font-size:15px}
+.coach .next{height:42px;padding:0 20px;border-radius:10px;background:var(--m);color:#fff!important;font-weight:600;font-size:15px}
 .ph{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:#8B95A1;font-size:14px;text-align:center;padding:40px}
 .ph b{color:#4E5968;font-size:16px}
 </style>
@@ -315,6 +337,8 @@ textarea.field::placeholder{color:var(--fg-3)}
   개발자 문의
 </button>
 <div class="contact-pop" id="contact-pop" hidden></div>
+<button class="task-pill" id="taskPill" type="button" aria-expanded="false"></button>
+<div class="task-panel" id="taskPanel" hidden></div>
 
 <script>
 /* ═════════ 설정: 배포 전에 채우기 ═════════ */
@@ -342,7 +366,7 @@ const TASKS = [
     judge:o => o.type==='지정가' && o.price===31700 && o.qty===7 },
   { id:'T3', title:'50만 원어치만 구매해 주세요', sub:'50만 원에 딱 맞출 필요는 없어요. 가격은 원하는 대로 정해도 괜찮아요.', order:true,
     judge:o => Math.abs(o.price*o.qty-500000) <= o.price },
-  { id:'T4', title:'방금 넣은 주문 가격이 잘못됐어요. 그 주문만 취소해 주세요', sub:'다른 주문은 그대로 두어야 해요.', order:false },
+  { id:'T4', title:'31,870원에 넣은 주문은 가격이 잘못됐어요. 그 주문만 취소해 주세요', sub:'다른 주문은 그대로 두어야 해요.', order:false },
   { id:'T5', title:'주문이 체결됐어요. 구매한 주식이 어떻게 됐는지 확인해 보세요', sub:'확인했다고 생각되면 다음 안내가 나와요.', order:false },
 ];
 
@@ -352,12 +376,14 @@ let S = store.get(KEY);
 if (!S || params.has('reset')) {
   const code = Array.from({length:4},()=> 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[Math.floor(Math.random()*32)]).join('');
   const only = (params.get('v')||'').toUpperCase();
-  let order = ['A','B']; // 현행(A) 먼저, 개선안(B) 다음으로 고정
+  let order = Math.random()<0.5 ? ['A','B'] : ['B','A']; // 참가자마다 A/B 순서를 무작위로
   if (only==='A' || only==='B') order = [only];
   S = { pid:code, order, phase:'intro', vIdx:0, tIdx:0, pre:{}, segment:'', results:[], startedAt:Date.now() };
   store.set(KEY, S);
 }
 const save = () => store.set(KEY, S);
+/* B안 사용 안내: 입문자에게만, B안 첫 과업 전에 한 번 */
+const introPhase = () => (S.order[S.vIdx]==='B' && S.segment==='입문' && !S.guideDone) ? 'guide' : 'taskIntro';
 if (S.phase==='task') S.phase='taskIntro';
 const totalSteps = () => S.order.length * TASKS.length;
 const stepNo = () => S.vIdx*TASKS.length + S.tIdx + 1;
@@ -422,17 +448,19 @@ function bindChips(ans, onChange){
 }
 
 function render(){
-  veil.hidden = S.phase==='task';
+  veil.hidden = S.phase==='task' || S.phase==='guide';
+  document.body.classList.toggle('full', S.phase==='task' || S.phase==='guide'); fit();
+  setPill();
   /* Clarity 히트맵을 화면별로 나눠 보려고 단계마다 주소를 바꿈 (예: ?screen=A-T2-task) */
   try {
     const v = S.order && S.order[S.vIdx], n = 'T'+(S.tIdx+1);
-    const key = ({ intro:'intro', pre:'pre', taskIntro:`${v}-${n}-intro`, task:`${v}-${n}-task`, survey:`${v}-${n}-survey`, sus:`${v}-rating`, final:'final', done:'done' })[S.phase] || S.phase;
+    const key = ({ intro:'intro', pre:'pre', guide:`${v}-guide`, guideSurvey:`${v}-guide-survey`, taskIntro:`${v}-${n}-intro`, task:`${v}-${n}-task`, survey:`${v}-${n}-survey`, sus:`${v}-rating`, final:'final', done:'done' })[S.phase] || S.phase;
     if (new URLSearchParams(location.search).get('screen') !== key) history.pushState(null, '', location.pathname + '?screen=' + key);
   } catch(e){}
-  $('#blurWrap').hidden = S.phase!=='survey';
-  if (S.phase!=='task') veil.textContent = ({done:'모든 테스트가 완료되었습니다', survey:'질문에 답해 주세요', sus:'질문에 답해 주세요', final:'질문에 답해 주세요'})[S.phase] || (S.phase==='intro'?'안내를 읽고 시작하기를 눌러 주십시오':'안내를 읽고 시작하기를 눌러 주세요');
-  ({intro:rIntro, pre:rPre, taskIntro:rTaskIntro, task:rTask, survey:rSurvey, sus:rSus, final:rFinal, done:rDone})[S.phase]();
-  card.scrollTop = 0;
+  $('#blurWrap').hidden = S.phase!=='survey' && S.phase!=='guideSurvey';
+  if (S.phase!=='task') veil.textContent = ({done:'모든 테스트가 완료되었습니다', survey:'질문에 답해 주세요', guideSurvey:'질문에 답해 주세요', sus:'질문에 답해 주세요', final:'질문에 답해 주세요'})[S.phase] || (S.phase==='intro'?'안내를 읽고 시작하기를 눌러 주십시오':'안내를 읽고 시작하기를 눌러 주세요');
+  ({intro:rIntro, pre:rPre, guide:rGuide, guideSurvey:rGuideSurvey, taskIntro:rTaskIntro, task:rTask, survey:rSurvey, sus:rSus, final:rFinal, done:rDone})[S.phase]();
+  card.scrollTop = 0; window.scrollTo(0,0);
 }
 
 function rIntro(){
@@ -440,7 +468,7 @@ function rIntro(){
   card.innerHTML = `
     <div class="step"><span class="step-badge">시작</span><span class="step-count">약 7분</span></div>
     <h1 class="title">키움 증권 UX 개선 프로젝트 - UT</h1>
-    <p class="sub">테스트 소요시간은 약 7분 정도입니다. 우측 화면에 나타나는 미션을 읽고 좌측 모바일 화면에서 수행 부탁드립니다. 본 테스트의 내용은 전부 익명으로 처리되며 키움 증권 앱의 개선 전 후의 사용성을 비교하기 위한 용도로만 사용됩니다.</p>
+    <p class="sub">테스트 소요시간은 약 7분 정도입니다. 우측 화면에 나타나는 미션을 읽고 좌측 모바일 화면에서 수행 부탁드립니다. 본 테스트의 내용은 전부 익명으로 처리되며 두 가지 주문 화면의 사용성을 비교하기 위한 용도로만 사용됩니다.</p>
     <div class="hint">${infoIcon}<span>화면 속 가격과 계좌는 모두 테스트용이며, 실제로 주문되지 않습니다.</span></div>
     <label class="check"><input type="checkbox" id="c1"><span>화면을 누른 기록과 화면 녹화가 익명으로 수집되는 것에 동의합니다. 녹화 도구(Microsoft Clarity)는 쿠키를 사용합니다.</span></label>
     <label class="check"><input type="checkbox" id="c2"><span>만 18세 이상입니다.</span></label>
@@ -465,7 +493,7 @@ function rPre(){
     S.segment = expert ? '숙련' : novice ? '입문' : '중간';
     cTrack('set','segment',S.segment); cTrack('set','order',S.order.join(''));
     send('pre',{...a, order:S.order.join(''), device: matchMedia('(pointer:coarse)').matches?'mobile':'desktop'});
-    S.phase='taskIntro'; save(); render();
+    S.phase=introPhase(); save(); render();
   };
 }
 
@@ -492,6 +520,36 @@ function rTask(){
     <p class="sub">${t.sub}</p>
     <div class="actions"><button class="btn btn-ghost" id="skip">잘 모르겠어요, 다음으로 넘어갈게요</button></div>`;
   $('#skip').onclick=()=>finishTask('skip',{});
+}
+
+
+let guideT0 = 0, guideEnd = null;
+function rGuide(){
+  guideT0 = Date.now();
+  mountProto(TASKS[0], false, true);
+  card.innerHTML = `<div class="step"><span class="step-badge">사용 안내</span><span class="step-count">과업 시작 전</span></div>
+    <h1 class="title">주문 화면 사용 안내를 먼저 볼게요</h1>
+    <p class="sub">왼쪽 화면에 뜨는 안내를 끝까지 보거나 건너뛰면 다음으로 넘어가요.</p>`;
+}
+function onGuideEnd(how, step){
+  if (S.phase!=='guide') return;
+  guideEnd = { version:curV(), task:'GUIDE', result:how, ms:Date.now()-guideT0, guide_step:step };
+  S.guideEnd = guideEnd; S.phase='guideSurvey'; save();
+  setTimeout(render, 600);
+}
+function rGuideSurvey(){
+  const a = {}, r = guideEnd || S.guideEnd || {};
+  card.innerHTML = `<div class="step"><span class="step-badge">사용 안내 질문</span><span class="step-count">1문항</span></div>
+    <h1 class="title" style="font-size:20px">방금 본 안내에 대해 물어볼게요</h1>
+    ${scaleQ('guide_help','방금 본 사용 안내가 화면을 이해하는 데 도움이 되었나요?','전혀 도움이 안 됐어요','많이 도움이 됐어요')}
+    <div class="actions"><button class="btn btn-primary" id="go" disabled>다음</button></div>`;
+  bindChips(a, ()=>$('#go').disabled = !a.guide_help);
+  veil.hidden = !blurOn; $('#blurT').checked = blurOn;
+  $('#go').onclick=()=>{
+    const row = { ...r, ...a, segment:S.segment, order:S.order.join('') };
+    S.results.push(row); send('task', row);
+    S.guideDone = true; S.phase='taskIntro'; save(); render();
+  };
 }
 
 let lastResult=null;
@@ -582,7 +640,7 @@ function rSus(){
     let sc=0; for(let i=1;i<=SUS.length;i++) sc += +a['s'+i];
     send('sus',{ version:curV(), ...a, score:Math.round(sc/SUS.length*100)/100, etc:$('#sus-etc').value.trim() });
     S.vIdx++; S.tIdx=0;
-    S.phase = S.vIdx>=S.order.length ? 'final' : 'taskIntro';
+    S.phase = S.vIdx>=S.order.length ? 'final' : introPhase();
     save(); render();
   };
 }
@@ -614,10 +672,22 @@ function rDone(){
 /* ═════════ 프로토타입 연결 ═════════ */
 let proto=null;
 const PROTO_READY = () => !!proto;
-function fit(){ const s = $('#screen').clientWidth/375; device.style.transform = `scale(${s})`; device.dataset.scale = s; }
+const fullMQ = matchMedia('(max-width:860px)');
+function fit(){
+  const sc = $('#screen'), W = sc.clientWidth, H = sc.clientHeight;
+  const full = fullMQ.matches && document.body.classList.contains('full') && H > 0;
+  let s = W/375, left = 0, h = '';
+  if (full){
+    /* 폰 전체 화면. B안은 화면 높이에 맞춰 늘고 줄어듦. A안은 812 높이 고정이라 비율을 지켜 가운데에 맞춤 */
+    if (curV()==='B') h = (H/s)+'px';
+    else { s = Math.min(W/375, H/812); left = (W-375*s)/2; }
+  }
+  device.style.height = h; device.style.left = left ? left+'px' : '';
+  device.style.transform = `scale(${s})`; device.dataset.scale = s;
+}
 new ResizeObserver(fit).observe($('#screen')); fit();
 
-function mountProto(task, preview){
+function mountProto(task, preview, guideOnly){
   proto = null;
   if (!task){ device.innerHTML = `<div class="ph"><b>주문 화면</b>과업을 시작하면 여기에 화면이 나와요</div>`; return; }
   const v = curV();
@@ -631,14 +701,33 @@ function mountProto(task, preview){
     onOrder(o){ if(S.phase!=='task'||!task.order) return; const ok = task.judge(o); finishTask(ok?'success':'fail',{ o_type:o.type, o_price:o.price, o_qty:o.qty, o_amount:o.price*o.qty, ...(o.meta||{}) }); },
     onCancel(c){ if(S.phase!=='task'||task.id!=='T4') return; finishTask(c.ok?'success':'fail',{ cancel_target:c.target }); },
     onHoldings(via){ if(S.phase!=='task'||task.id!=='T5') return; finishTask('success',{ via }); },
-    guide: task.id==='T1',
+    onGuideEnd,
+    guide: !!guideOnly,
   });
 }
+
+
+/* 폰: 과업 중에는 프로토타입이 화면을 꽉 채우고, 위쪽 버튼으로 과업 내용을 다시 봄 */
+const pill=$('#taskPill'), panel=$('#taskPanel');
+function setPill(){
+  panel.hidden = true; pill.setAttribute('aria-expanded','false');
+  if (S.phase==='task'){
+    const t=curT();
+    pill.innerHTML = `과업 ${S.tIdx+1} 내용 보기 <span aria-hidden="true">▾</span>`;
+    panel.innerHTML = `<h2>${t.title}</h2>${t.sub?`<p>${t.sub}</p>`:''}<div class="row"><button type="button" id="p-skip">잘 모르겠어요, 넘어갈게요</button><button type="button" class="ok" id="p-close">닫기</button></div>`;
+    $('#p-skip').onclick=()=>{ panel.hidden=true; finishTask('skip',{}); };
+  } else if (S.phase==='guide'){
+    pill.innerHTML = `사용 안내 <span aria-hidden="true">▾</span>`;
+    panel.innerHTML = `<h2>주문 화면 사용 안내</h2><p>화면에 뜨는 안내를 끝까지 보거나 건너뛰면 다음으로 넘어가요.</p><div class="row"><button type="button" class="ok" id="p-close">닫기</button></div>`;
+  } else return;
+  $('#p-close').onclick=()=>{ panel.hidden=true; pill.setAttribute('aria-expanded','false'); };
+}
+pill.addEventListener('click',()=>{ panel.hidden=!panel.hidden; pill.setAttribute('aria-expanded', String(!panel.hidden)); });
 
 /* ═════════ 피드백·문의 ═════════ */
 function whereText(){
   const ph=S.phase, t=TASKS[S.tIdx], vn=(S.order&&S.order[S.vIdx])==='A'?'A안(현행)':'B안(개선안)', tn=t?`과업 ${S.tIdx+1}「${t.title}」`:'';
-  return ({ intro:'시작 화면(안내와 동의)', pre:'사전 질문', taskIntro:`${vn} ${tn} 시작 전 안내`, task:`${vn} ${tn} 진행 중`,
+  return ({ intro:'시작 화면(안내와 동의)', pre:'사전 질문', guide:'B안 사용 안내', guideSurvey:'B안 사용 안내 직후 질문', taskIntro:`${vn} ${tn} 시작 전 안내`, task:`${vn} ${tn} 진행 중`,
     survey:`${vn} ${tn} 직후 질문`, sus:`${vn} 화면 평가(7문항과 기타)`, final:'마지막 질문', done:'완료 화면' })[ph] || ph;
 }
 const fbt=$('#fb-text'), fbs=$('#fb-send'), fbo=$('#fb-sent');
@@ -919,9 +1008,9 @@ window.PROTOTYPES.B = { mount(root, taskId, H){
     const a = e.target.closest('[data-act]'); if (!a) { if(!e.target.closest('input,#slider,#lwc')) L('blank'); return; }
     const act = a.dataset.act;
     switch(act){
-      case 'guide_next': L('guide_next',st.coach+1); coachAnim = st.coach<COACH.length-1; st.coach = st.coach>=COACH.length-1 ? -1 : st.coach+1; if(st.coach===3||st.coach===4){ const sc=root.querySelector('.d-scroll'); sc.scrollTop=140; scrollY=140; } if(st.coach<0){scrollY=0;} draw(); return;
+      case 'guide_next': L('guide_next',st.coach+1); coachAnim = st.coach<COACH.length-1; st.coach = st.coach>=COACH.length-1 ? -1 : st.coach+1; if(st.coach===3||st.coach===4){ const sc=root.querySelector('.d-scroll'); sc.scrollTop=140; scrollY=140; } if(st.coach<0){scrollY=0;} draw(); if(st.coach<0 && H.onGuideEnd) H.onGuideEnd('done', COACH.length); return;
       case 'guide_prev': L('guide_prev',st.coach+1); coachAnim = true; st.coach=Math.max(0,st.coach-1); draw(); return;
-      case 'guide_skip': L('guide_skip',st.coach+1); st.coach=-1; scrollY=0; draw(); return;
+      case 'guide_skip': { const at=st.coach+1; L('guide_skip',at); st.coach=-1; scrollY=0; draw(); if(H.onGuideEnd) H.onGuideEnd('skip', at); return; }
       case 'seg_buy': L(act); return;
       case 'seg_sell': L(act); flash('이 테스트에서는 구매만 할 수 있어요'); return;
       case 'type_open': L(act); st.sheet={kind:'type'}; draw(); return;
