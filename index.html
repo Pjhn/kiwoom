@@ -168,8 +168,11 @@ textarea.field::placeholder{color:var(--fg-3)}
 .device{letter-spacing:-.02em}
 /* B안 글꼴: Pretendard, 자간 -2%, 행간 120%로 통일 */
 .device[data-v="B"], .device[data-v="B"] *{font-family:"Pretendard",-apple-system,sans-serif!important;letter-spacing:-.02em!important;line-height:1.2!important}
-/* 안내와 다이얼로그의 내용 부분은 행간 140% */
-.device[data-v="B"] .coach p, .device[data-v="B"] .coach p *, .device[data-v="B"] .sheet .lead, .device[data-v="B"] .sheet .total, .device[data-v="B"] .sheet .dup, .device[data-v="B"] .sheet .dup *, .device[data-v="B"] .opt small, .device[data-v="B"] .cf-amt{line-height:1.4!important}
+/* 안내와 다이얼로그의 내용 부분은 행간 150% */
+.device[data-v="B"] .coach p, .device[data-v="B"] .coach p *, .device[data-v="B"] .sheet .lead, .device[data-v="B"] .sheet .total, .device[data-v="B"] .sheet .dup, .device[data-v="B"] .sheet .dup *, .device[data-v="B"] .opt small, .device[data-v="B"] .cf-amt{line-height:1.5!important}
+/* 구매 확인 문장(카카오 주식을 / 31,750원에 / 1주 구매할게요)과 다이얼로그 제목은 행간을 넓게 */
+.device[data-v="B"] .cf-l, .device[data-v="B"] .cf-l *{line-height:1.5!important}
+.device[data-v="B"] .sheet h3, .device[data-v="B"] .coach h4{line-height:1.4!important}
 .d-scroll{position:absolute;top:44px;left:0;right:0;bottom:0;overflow-y:auto;overflow-x:hidden;scrollbar-width:none}
 .d-scroll::-webkit-scrollbar{display:none}
 .d-status{position:absolute;top:0;left:0;right:0;height:44px;display:flex;justify-content:space-between;align-items:center;padding:0 28px 0 40px;font-size:16px;font-weight:600;background:#fff;z-index:5}
