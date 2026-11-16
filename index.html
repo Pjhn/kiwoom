@@ -137,6 +137,9 @@ textarea.field::placeholder{color:var(--fg-3)}
 .task-pill,.task-panel{display:none}
 @media (max-width:860px){
   body:not(.full) .stage{display:none}
+  /* 폰: 개발자 문의 버튼이 질문·의견 칸을 가리지 않게 페이지 맨 아래에 둠 */
+  .contact{position:static;margin:-72px 0 24px max(16px,env(safe-area-inset-left,0px))}
+  .contact-pop{position:static;margin:0 16px 24px}
   body.full{background:#fff}
   body.full .side, body.full .contact, body.full .contact-pop{display:none}
   body.full .app{display:flex;padding:0;gap:0;min-height:100dvh;align-items:center;justify-content:center;background:#fff}
