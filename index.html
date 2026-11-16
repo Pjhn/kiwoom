@@ -244,6 +244,7 @@ textarea.field::placeholder{color:var(--fg-3)}
 @keyframes glow{0%,100%{text-shadow:0 0 0 rgba(230,0,126,0)}50%{text-shadow:0 0 6px rgba(230,0,126,.75),0 0 14px rgba(230,0,126,.45)}}
 .d-tabs .on{color:#191F28;font-weight:700}
 .d-tabs .on::after{content:"";position:absolute;left:18%;right:18%;bottom:0;height:2px;background:var(--m)}
+.d-tabs .on.glow{color:var(--m)}
 .d-list{min-height:260px;padding:8px 16px 40px}
 .l-bar{display:flex;align-items:center;gap:6px;margin:6px 0 4px}
 .l-chip{height:30px;padding:0 10px;border-radius:6px;font-size:13px;color:var(--g3)}
@@ -781,7 +782,7 @@ window.PROTOTYPES.B = { mount(root, taskId, H){
   if (taskId==='T4'){
     st.pending = [{id:'old',price:31700,qty:7,state:'체결대기'},{id:'new',price:31870,qty:7,state:'체결대기',fresh:true}];
     st.price=31870; st.qty=7;
-    st.toast = {text:'카카오 구매 주문을 접수했어요', btn:'대기 보기', act:'toast_view'};
+    st.toast = {text:'카카오 구매 주문을 접수했어요', btn:'대기 보기', act:'toast_view'}; st.pendGlow = true;
   }
   if (taskId==='T5'){
     st.holdings=[{avg:32800,qty:7}]; st.history=[{price:32800,qty:7,state:'체결'}];
@@ -976,7 +977,7 @@ window.PROTOTYPES.B = { mount(root, taskId, H){
           <button class="d-icon" data-act="hdr_ai" aria-label="AI">${ic.spark}</button><button class="d-icon ${st.chart?'on':''}" data-act="chart_toggle" aria-label="차트">${ic.bars}</button></div>
         ${st.chart?`<div class="d-chart"><div id="lwc" style="height:180px"></div><div class="d-tf"><span>15분 ⌄</span><span class="on">일</span><span>주</span><span>월</span><span>년</span><span class="r">⤢ ⚙</span></div></div>`:''}
         <div class="d-main"><div class="d-hoga" id="hoga">${hogaHtml()}</div><div class="d-form">${formHtml()}</div></div>
-        <div class="d-tabs"><button class="${st.tab==='pending'?'on':''}" data-act="tab_pending">대기</button><button class="${st.tab==='holdings'?'on':''} ${st.holdGlow?'glow':''}" data-act="tab_holdings">보유</button><button class="${st.tab==='history'?'on':''}" data-act="tab_history">내역</button></div>
+        <div class="d-tabs"><button class="${st.tab==='pending'?'on':''} ${st.pendGlow?'glow':''}" data-act="tab_pending">대기</button><button class="${st.tab==='holdings'?'on':''} ${st.holdGlow?'glow':''}" data-act="tab_holdings">보유</button><button class="${st.tab==='history'?'on':''}" data-act="tab_history">내역</button></div>
         <div class="d-list">${listHtml()}</div>
       </div>
       ${st.toast?`<div class="toast">${ic.check}<span>${st.toast.text}</span><button data-act="${st.toast.act}">${st.toast.btn}</button></div>`:''}
@@ -1048,9 +1049,9 @@ window.PROTOTYPES.B = { mount(root, taskId, H){
         st.pending.push({id:'p'+Date.now(),price:o.price,qty:o.qty,state:'체결대기',fresh:true}); st.history.push({price:o.price,qty:o.qty,state:'접수'});
         st.toast={text:'카카오 구매 주문을 접수했어요',btn:'대기 보기',act:'toast_view'}; st.tab='pending'; draw();
         H.onOrder({...o, meta:{ confirm_cancel:st.confirmCancel, chart_open:st.chart, margin:st.margin }}); return; }
-      case 'toast_view': L(act); st.toast=null; st.tab='pending'; draw(); scrollToList(); return;
+      case 'toast_view': L(act); st.pendGlow=false; st.toast=null; st.tab='pending'; draw(); scrollToList(); return;
       case 'toast_holdings': L(act); st.toast=null; st.holdGlow=false; st.tab='holdings'; draw(); scrollToList(); H.onHoldings('toast'); return;
-      case 'tab_pending': L(act); st.tab='pending'; draw(); return;
+      case 'tab_pending': L(act); st.pendGlow=false; st.tab='pending'; draw(); return;
       case 'tab_holdings': L(act); st.holdGlow=false; st.tab='holdings'; draw(); H.onHoldings('tab'); return;
       case 'tab_history': L(act); st.tab='history'; draw(); return;
       case 'chip_all': case 'chip_cur': L(act); st.chip=act==='chip_all'?'all':'cur'; draw(); return;
