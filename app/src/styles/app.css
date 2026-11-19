@@ -50,7 +50,8 @@
 }
 .account-btn { height: 32px; display: flex; align-items: center; gap: 8px; padding: 0 12px 0 0; font-size: 14px; }
 .account-dot { width: 8px; height: 8px; border-radius: 50%; background: linear-gradient(135deg, #e33692, #f09948); }
-.side-panel-btn { background: var(--surface-secondary); padding: 4px; border-radius: 2px; }
+.side-panel-btn { padding: 4px; border-radius: 2px; }
+.side-panel-btn[aria-pressed="true"] { background: var(--surface-secondary); }
 
 /* ---------- 주문 패널 섹션 ---------- */
 .trade { position: relative; height: 527px; margin-top: 1px; background: #fff; overflow: hidden; }
@@ -173,7 +174,7 @@
 /* 슬라이더 */
 .slider-wrap { position: relative; }
 .slider { position: relative; height: 18px; touch-action: none; cursor: pointer; outline: none; }
-.slider .track { position: absolute; left: 0; right: 0; top: 7px; height: 4px; border-radius: 2px; background: var(--gray-500); }
+.slider .track { position: absolute; left: 0; right: 0; top: 7px; height: 4px; border-radius: 2px; background: var(--surface-secondary); }
 .slider .fill { position: absolute; left: 0; top: 7px; height: 4px; border-radius: 2px; }
 .slider.buy .fill { background: var(--side-buy); }
 .slider.sell .fill { background: var(--side-sell); }
@@ -262,27 +263,7 @@
 @keyframes glowPulse { 50% { opacity: .65; } }
 .oi-body { position: relative; flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; }
 .oi-empty { position: absolute; inset: 0; }
-.oi-empty .empty-art { position: absolute; left: calc(50% - 54px + 0.5px); top: 72px; width: 108px; height: 108px; }
-.empty-art img { position: absolute; inset: 0; z-index: 1; clip-path: polygon(0 0, 60% 0, 60% 17%, 71% 17%, 71% 31%, 100% 31%, 100% 100%, 0 100%); }
-.empty-art .sheet {
-  position: absolute; z-index: 0; left: 35px; width: 41px; height: 30px; border-radius: 3px;
-  background: linear-gradient(#fff, #f1f3f5); box-shadow: 0 0 0 .5px rgba(0,0,0,.08), 0 1px 3px rgba(0,0,0,.08);
-}
-.empty-art .s1 { top: 12px; transform: rotate(-3deg); }
-.empty-art .s2 { top: 9px; left: 37px; transform: rotate(2deg); }
-.empty-art .s3 { top: 6px; left: 36px; transform: rotate(-1deg); }
-.empty-art.play .sheet { animation: sheetAway .7s cubic-bezier(.4,0,.6,1) forwards; }
-.empty-art.play .s3 { animation-delay: .25s; }
-.empty-art.play .s2 { animation-delay: .4s; --rx: 70px; --ry: -46px; --rz: 34deg; }
-.empty-art.play .s1 { animation-delay: .55s; --rx: 52px; --ry: -60px; --rz: 18deg; }
-.empty-art.play img { animation: curlUp .45s cubic-bezier(.3,.7,.3,1) .8s forwards; }
-@keyframes sheetAway {
-  0% { opacity: 1; }
-  25% { transform: translate(2px, -8px) rotate(4deg); opacity: 1; }
-  100% { transform: translate(var(--rx, 64px), var(--ry, -54px)) rotate(var(--rz, 28deg)) scale(.7); opacity: 0; }
-}
-@keyframes curlUp { to { clip-path: polygon(0 0, 100% 0, 100% 0, 100% 0, 100% 0, 100% 0, 100% 100%, 0 100%); } }
-@media (prefers-reduced-motion: reduce) { .empty-art .sheet { display: none; } .empty-art img { clip-path: none; } .empty-art.play img { animation: none; } }
+.oi-empty img { position: absolute; left: calc(50% - 54px + 0.5px); top: 72px; }
 .oi-empty p { position: absolute; left: 0; right: 0; top: calc(50% - 12px); text-align: center; font-size: 14px; line-height: 1.4; color: var(--placeholder); }
 
 .oi-filter { display: flex; align-items: center; justify-content: space-between; padding: 8px 16px; }
@@ -495,6 +476,6 @@
 
 /* ---------- 예상금액: 바뀐 자리만 살짝 올라오기 ---------- */
 .tick-num { display: inline-flex; font-variant-numeric: tabular-nums; }
-.tick-d { display: inline-block; animation: tickUp .22s cubic-bezier(.2,.8,.3,1) both; }
+.tick-d { display: inline-block; animation: tickUp .6s cubic-bezier(.25,.8,.3,1) both; }
 @keyframes tickUp { from { opacity: 0; transform: translateY(.35em); } }
 @media (prefers-reduced-motion: reduce) { .tick-d { animation: none; } }
