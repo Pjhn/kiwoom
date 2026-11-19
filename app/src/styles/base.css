@@ -1,0 +1,28 @@
+@font-face { font-family: Pretendard; font-weight: 400; font-display: swap; src: url('../assets/fonts/Pretendard-Regular.woff2') format('woff2'); }
+@font-face { font-family: Pretendard; font-weight: 500; font-display: swap; src: url('../assets/fonts/Pretendard-Medium.woff2') format('woff2'); }
+@font-face { font-family: Pretendard; font-weight: 600; font-display: swap; src: url('../assets/fonts/Pretendard-SemiBold.woff2') format('woff2'); }
+@font-face { font-family: Pretendard; font-weight: 700; font-display: swap; src: url('../assets/fonts/Pretendard-Bold.woff2') format('woff2'); }
+
+*, *::before, *::after { box-sizing: border-box; }
+html, body, #root { margin: 0; height: 100%; }
+body {
+  font-family: Pretendard, system-ui, sans-serif;
+  color: var(--text-primary);
+  background: var(--gray-200);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+button { font: inherit; color: inherit; border: 0; background: none; padding: 0; cursor: pointer; }
+input { font: inherit; color: inherit; }
+.num { font-variant-numeric: tabular-nums; }
+
+/* 모바일 프레임: 폰에서는 꽉 차고, 데스크톱에서는 375px 가운데 */
+.device {
+  width: 100%;
+  max-width: var(--grid-mobile-frame-width);
+  min-height: 100%;
+  margin: 0 auto;
+  background: var(--bg-default);
+  position: relative;
+  overflow-x: hidden;
+}
