@@ -12,6 +12,14 @@
 }
 .app.framed { align-items: flex-start; padding: 0; }
 .app.framed .device { width: var(--frame-w); height: min(100dvh, 1097px); box-shadow: 0 0 24px rgba(0,0,0,.12); }
+.phone { display: contents; }
+/* 아이폰 목업: 창 높이에 맞춰 zoom 으로 통째로 줄인다 */
+.app.mock { height: 100dvh; align-items: center; background: #e9ecef; overflow: hidden; }
+.app.mock .phone {
+  display: block; padding: 12px; border-radius: 58px; background: #1b1d1f;
+  box-shadow: 0 0 0 2px #3a3d40, 0 24px 60px rgba(0,0,0,.25);
+}
+.app.mock .device { height: 812px; border-radius: 46px; box-shadow: none; }
 .scroller { flex: 1; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; overflow-anchor: none; scrollbar-width: none; }
 .scroller::-webkit-scrollbar { display: none; }
 
