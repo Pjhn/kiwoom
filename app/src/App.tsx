@@ -128,8 +128,8 @@ export default function App() {
     return () => clearTimeout(t);
   }, [showTip]);
 
-  const toast = useCallback((text: string, action: string, onAction: () => void) => {
-    setSnack({ id: seq.current++, text, action, onAction });
+  const toast = useCallback((text: string, action: string, onAction: () => void, name?: string) => {
+    setSnack({ id: seq.current++, text, action, onAction, name });
   }, []);
 
   const scrollToInfo = () => {
@@ -162,42 +162,47 @@ export default function App() {
     });
   }, []);
 
+  /** 체결 완료 알림: 구매는 보유, 판매는 내역으로 안내 */
+  const announceDone = useCallback(
+    (o: Order) => {
+      const name = stockById(o.stockId).name;
+      const verb = o.side === 'buy' ? '구매' : '판매';
+      const to: InfoTab = o.side === 'buy' ? 'holdings' : 'history';
+      setGlowTab(to);
+      toast(
+        `${verb}가 완료됐어요`,
+        o.side === 'buy' ? '보유 확인' : '내역 보기',
+        () => {
+          setSnack(null);
+          setTab(to);
+          setGlowTab(null);
+          if (to === 'holdings') setShowTip(true);
+          scrollToInfo();
+        },
+        name,
+      );
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [toast],
+  );
+
   const fillTo = useCallback(
     (id: number, filled: number) => {
       const o = openRef.current.find((x) => x.id === id);
       if (!o || cancelled.current.has(id)) return;
       const target = Math.min(o.qty, filled);
       applyFill(o, target - o.filled);
-      const name = stockById(o.stockId).name;
-      const verb = o.side === 'buy' ? '구매' : '판매';
       if (target >= o.qty) {
         flyAway([id], o.side === 'buy' ? 'holdings' : 'history', () => {
           setOpen((list) => list.filter((x) => x.id !== id));
           setHistory((h) => [{ ...o, filled: o.qty, status: 'filled', time: now(), isNew: false }, ...h]);
         });
-        if (o.side === 'buy') {
-          setGlowTab('holdings');
-          toast(`${name} ${verb}가 완료됐어요`, '보유 확인', () => {
-            setSnack(null);
-            setTab('holdings');
-            setGlowTab(null);
-            setShowTip(true);
-            scrollToInfo();
-          });
-        } else {
-          setGlowTab('history');
-          toast(`${name} ${verb}가 완료됐어요`, '내역 보기', () => {
-            setSnack(null);
-            setTab('history');
-            setGlowTab(null);
-            scrollToInfo();
-          });
-        }
+        announceDone(o);
       } else {
         setOpen((list) => list.map((x) => (x.id === id ? { ...x, filled: target, status: 'partial' } : x)));
       }
     },
-    [applyFill, toast, flyAway],
+    [applyFill, announceDone, flyAway],
   );
 
   const submit = () => {
@@ -260,16 +265,41 @@ export default function App() {
       time: now(),
       isNew: true,
     };
-    setOpen((l) => [order, ...l]);
     setConfirming(false);
-    setTab('pending');
     setShowTip(false);
     const verb = side === 'buy' ? '구매' : '판매';
-    toast(`${stock.name} ${verb} 주문을 접수했어요`, '대기 보기', () => {
+
+    // 바로 체결될 수 있는 가격이면 상대 호가 물량만큼 그 자리에서 체결한다
+    const levels = side === 'buy' ? [...market.asks].reverse() : market.bids; // 유리한 호가부터
+    let got = 0;
+    let cost = 0;
+    for (const lv of levels) {
+      if (side === 'buy' ? lv.price > effPrice : lv.price < effPrice) break;
+      const take = Math.min(qty - got, lv.volume);
+      got += take;
+      cost += take * lv.price;
+      if (got >= qty) break;
+    }
+    if (got > 0) {
+      const avgPrice = Math.round(cost / got);
+      applyFill({ ...order, price: avgPrice }, got);
+      if (got >= qty) {
+        setHistory((h) => [{ ...order, price: avgPrice, filled: qty, status: 'filled', isNew: false }, ...h]);
+        announceDone(order);
+        setTab(side === 'buy' ? 'holdings' : 'history'); // 대기를 거치지 않고 바로 보유(판매는 내역)로
+        return;
+      }
+      order.filled = got;
+      order.status = 'partial';
+    }
+
+    setOpen((l) => [order, ...l]);
+    setTab('pending');
+    toast(`${verb} 주문을 접수했어요`, '대기 보기', () => {
       setSnack(null);
       setTab('pending');
       scrollToInfo();
-    });
+    }, stock.name);
     setTimeout(() => setOpen((l) => l.map((x) => (x.id === id ? { ...x, isNew: false } : x))), 3000);
   };
 

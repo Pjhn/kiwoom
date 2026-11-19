@@ -310,13 +310,17 @@
 /* ---------- 스낵바 ---------- */
 .snack {
   position: absolute; left: 24px; right: 24px; top: 23px; height: 48px; z-index: 20;
+  display: flex; align-items: center; gap: 16px; padding: 0 16px 0 64px;
   background: var(--blue-400); border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,.2);
   animation: snackIn .25s ease-out;
 }
 .framed .snack { top: 70px; }
 .snack img { position: absolute; left: 20px; top: 10px; }
-.snack p { position: absolute; left: 64px; top: 50%; transform: translateY(-50%); font-size: 14px; color: #fff; white-space: nowrap; }
-.snack button { position: absolute; right: 16px; top: 0; height: 48px; font-size: 14px; font-weight: 600; color: #7abaff; }
+.snack p { flex: 1; min-width: 0; display: flex; font-size: 14px; color: #fff; white-space: nowrap; }
+.snack .snack-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.snack .snack-rest { flex: none; white-space: pre; }
+.snack p > .snack-rest:only-child { flex: 1; overflow: hidden; text-overflow: ellipsis; }
+.snack button { flex: none; height: 48px; font-size: 14px; font-weight: 600; color: #7abaff; }
 @keyframes snackIn { from { opacity: 0; transform: translateY(-8px); } }
 
 /* ---------- 확인 바텀 시트 ---------- */

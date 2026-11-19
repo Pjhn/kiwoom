@@ -87,13 +87,17 @@ export function ConfirmSheet({
   );
 }
 
-export type Snack = { id: number; text: string; action: string; onAction: () => void };
+/** name 이 있으면 text 앞에 붙고, 길면 종목 이름만 ... 으로 줄인다 */
+export type Snack = { id: number; text: string; action: string; onAction: () => void; name?: string };
 
 export function SnackBar({ snack }: { snack: Snack }) {
   return (
     <div className="snack" role="status" key={snack.id}>
       <img src={check} alt="" />
-      <p>{snack.text}</p>
+      <p>
+        {snack.name && <span className="snack-name">{snack.name}</span>}
+        <span className="snack-rest">{snack.name ? ` ${snack.text}` : snack.text}</span>
+      </p>
       <button onClick={snack.onAction}>{snack.action}</button>
     </div>
   );
