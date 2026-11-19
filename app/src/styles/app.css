@@ -60,7 +60,7 @@
 .status-time { width: 108px; text-align: center; font-size: 17px; font-weight: 600; letter-spacing: -0.02em; padding-top: 2px; }
 .status-icons { display: flex; gap: 6px; align-items: center; padding-top: 2px; }
 .home-indicator {
-  position: absolute; left: 0; right: 0; bottom: 0; height: 32px; background: #fff;
+  position: absolute; left: 0; right: 0; bottom: 0; height: 32px; background: transparent;
   display: flex; justify-content: center; pointer-events: none; z-index: 40;
 }
 .home-indicator span { position: absolute; top: 21px; width: 134px; height: 5px; border-radius: 10px; background: #343a40; left: calc(50% - 67px + 0.5px); }
