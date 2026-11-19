@@ -12,17 +12,26 @@ import { CASH, STOCKS, type Market, type Stock, bestAsk, bestBid, fmt, krxTick, 
 import { autoPrice, isUserPriced, typeLabel, type OrderType } from './lib/orderTypes';
 import { useMarket } from './lib/useMarket';
 
-function useFramed() {
+/**
+ * 넓은 화면: 아이폰 목업 안에 띄우고, 창이 낮으면 화면 높이를 줄여 폰 전체가 한 번에 보이게 한다 ('mock').
+ * (zoom 이나 transform 으로 줄이면 차트의 터치 좌표가 어긋나서 높이만 맞춘다)
+ * ?frame=1: Figma 대조용 375 x 창 높이 평면 프레임 ('flat'), ?frame=0: 프레임 없음.
+ */
+type FrameMode = 'mock' | 'flat' | false;
+const SCREEN_H = 812; // 아이폰 화면 높이
+const BEZEL = 12;
+function useFrame(): { mode: FrameMode; screenH: number } {
   const q = new URLSearchParams(location.search).get('frame');
-  const [wide, setWide] = useState(() => window.innerWidth >= 500);
+  const read = () => ({ wide: window.innerWidth >= 500, h: window.innerHeight });
+  const [win, setWin] = useState(read);
   useEffect(() => {
-    const on = () => setWide(window.innerWidth >= 500);
+    const on = () => setWin(read());
     window.addEventListener('resize', on);
     return () => window.removeEventListener('resize', on);
   }, []);
-  if (q === '1') return true;
-  if (q === '0') return false;
-  return wide;
+  const mode: FrameMode = q === '1' ? 'flat' : q === '0' ? false : win.wide ? 'mock' : false;
+  const screenH = Math.max(560, Math.min(SCREEN_H, win.h - 32 - BEZEL * 2));
+  return { mode, screenH };
 }
 
 const now = () => {
@@ -36,7 +45,8 @@ const initialStock = () => {
 };
 
 export default function App() {
-  const framed = useFramed();
+  const { mode: frameMode, screenH } = useFrame();
+  const framed = frameMode !== false;
   const [stock, setStock] = useState<Stock>(initialStock);
   const market = useMarket(stock);
   const marketRef = useRef<Market>(market);
@@ -383,8 +393,9 @@ export default function App() {
         : { left: 19, top: 6 };
 
   return (
-    <div className={`app ${framed ? 'framed' : ''}`}>
-      <div className="device">
+    <div className={`app ${framed ? 'framed' : ''} ${frameMode === 'mock' ? 'mock' : ''}`}>
+      <div className="phone">
+      <div className="device" style={frameMode === 'mock' ? { height: screenH } : undefined}>
         {framed && <StatusBar />}
         <div className="scroller" ref={scrollerRef}>
           <TopAppBar name={stock.name} live={market.live} onSearch={() => setPickerOpen(true)} />
@@ -461,6 +472,7 @@ export default function App() {
           />
         )}
         {pickerOpen && <StockPicker current={stock} onPick={changeStock} onClose={() => setPickerOpen(false)} />}
+      </div>
       </div>
     </div>
   );
