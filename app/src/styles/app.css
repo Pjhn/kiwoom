@@ -48,7 +48,7 @@
   height: 40px; background: #fff; padding: 0 16px;
   display: flex; align-items: center; justify-content: space-between;
 }
-.account-btn { height: 32px; display: flex; align-items: center; gap: 8px; padding: 0 12px 0 0; font-size: 14px; }
+.account-btn { height: 32px; display: flex; align-items: center; gap: 8px; padding: 0 12px 0 0; font-size: 14px; font-weight: 500; color: var(--text-secondary); }
 .account-dot { width: 8px; height: 8px; border-radius: 50%; background: linear-gradient(135deg, #e33692, #f09948); }
 .side-panel-btn { padding: 4px; border-radius: 2px; }
 .side-panel-btn[aria-pressed="true"] { background: var(--surface-secondary); }
