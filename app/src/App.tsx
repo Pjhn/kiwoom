@@ -1,3 +1,4 @@
+import { setChartZoom } from './lib/zoomFix';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { HomeIndicator, StatusBar, SubBar, TopAppBar } from './components/Chrome';
 import { CompactOrderBook, WideOrderBook } from './components/OrderBook';
@@ -13,14 +14,13 @@ import { autoPrice, isUserPriced, typeLabel, type OrderType } from './lib/orderT
 import { useMarket } from './lib/useMarket';
 
 /**
- * 넓은 화면: 아이폰 목업 안에 띄우고, 창이 낮으면 화면 높이를 줄여 폰 전체가 한 번에 보이게 한다 ('mock').
- * (zoom 이나 transform 으로 줄이면 차트의 터치 좌표가 어긋나서 높이만 맞춘다)
+ * 넓은 화면: 아이폰 13 미니 목업(375 x 812) 안에 띄우고, 창이 낮으면 비율 그대로 통째로 줄인다 ('mock').
+ * 문서 전체(html)에 zoom 을 걸어야 차트의 터치 좌표가 어긋나지 않는다.
  * ?frame=1: Figma 대조용 375 x 창 높이 평면 프레임 ('flat'), ?frame=0: 프레임 없음.
  */
 type FrameMode = 'mock' | 'flat' | false;
-const SCREEN_H = 812; // 아이폰 화면 높이
-const BEZEL = 12;
-function useFrame(): { mode: FrameMode; screenH: number } {
+const PHONE_H = 812 + 11 * 2 + 4 * 2; // 화면 + 베젤 + 금속 테
+function useFrame(): { mode: FrameMode; viewH: number } {
   const q = new URLSearchParams(location.search).get('frame');
   const read = () => ({ wide: window.innerWidth >= 500, h: window.innerHeight });
   const [win, setWin] = useState(read);
@@ -30,8 +30,17 @@ function useFrame(): { mode: FrameMode; screenH: number } {
     return () => window.removeEventListener('resize', on);
   }, []);
   const mode: FrameMode = q === '1' ? 'flat' : q === '0' ? false : win.wide ? 'mock' : false;
-  const screenH = Math.max(560, Math.min(SCREEN_H, win.h - 32 - BEZEL * 2));
-  return { mode, screenH };
+  const scale = mode === 'mock' ? Math.min(1, (win.h - 32) / PHONE_H) : 1;
+  useEffect(() => {
+    const root = document.documentElement.style as CSSStyleDeclaration & { zoom: string };
+    root.zoom = scale < 1 ? String(scale) : '';
+    setChartZoom(scale);
+    return () => {
+      root.zoom = '';
+      setChartZoom(1);
+    };
+  }, [scale]);
+  return { mode, viewH: win.h / scale };
 }
 
 const now = () => {
@@ -45,7 +54,7 @@ const initialStock = () => {
 };
 
 export default function App() {
-  const { mode: frameMode, screenH } = useFrame();
+  const { mode: frameMode, viewH } = useFrame();
   const framed = frameMode !== false;
   const [stock, setStock] = useState<Stock>(initialStock);
   const market = useMarket(stock);
@@ -393,9 +402,12 @@ export default function App() {
         : { left: 19, top: 6 };
 
   return (
-    <div className={`app ${framed ? 'framed' : ''} ${frameMode === 'mock' ? 'mock' : ''}`}>
+    <div
+      className={`app ${framed ? 'framed' : ''} ${frameMode === 'mock' ? 'mock' : ''}`}
+      style={frameMode === 'mock' ? { height: viewH } : undefined}
+    >
       <div className="phone">
-      <div className="device" style={frameMode === 'mock' ? { height: screenH } : undefined}>
+      <div className="device">
         {framed && <StatusBar />}
         <div className="scroller" ref={scrollerRef}>
           <TopAppBar name={stock.name} live={market.live} onSearch={() => setPickerOpen(true)} />
