@@ -401,7 +401,7 @@ export function OrderInfo(p: Props) {
                 right={<DateMenu value={range} onChange={setRange} />}
               />
               {historyList.length === 0 && <FilteredEmpty />}
-              <ul className="oi-list">
+              <ul className="oi-list history-list">
                 {historyList.map((o, i) => (
                   <li
                     key={o.id}
