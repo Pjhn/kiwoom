@@ -3,7 +3,7 @@ import { type BookRow, type Market, type Stock, type Tick, krxTick, snap } from 
 import { type AggTrade, type Depth, getDepth, getTicker, getTrades, subscribe } from './binance';
 import { loadUsdKrw, usdKrw } from './fx';
 
-const LEVELS = 6;
+const LEVELS = 10;
 
 function rand(seed: number) {
   let a = seed >>> 0;
@@ -15,7 +15,7 @@ function rand(seed: number) {
   };
 }
 
-/** 원화 호가 단위로 묶은 6단계 호가 */
+/** 원화 호가 단위로 묶은 10단계 호가 */
 function ladder(price: number, vol: (p: number, side: 'ask' | 'bid', i: number) => number) {
   const t = krxTick(price);
   const asks: BookRow[] = [];
@@ -103,7 +103,7 @@ function bookFromDepth(d: Depth, fx: number, last: number) {
   // 반올림으로 겹친 단계는 매수 쪽에서 뺀다
   const minAsk = askPrices[0] ?? last;
   bidPrices = bidPrices.filter((p) => p < minAsk);
-  // 6단계가 안 되면 호가 단위로 채운다
+  // 10단계가 안 되면 호가 단위로 채운다
   while (askPrices.length < LEVELS) {
     const top = askPrices[askPrices.length - 1] ?? last;
     askPrices.push(top + krxTick(top));

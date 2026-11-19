@@ -6,8 +6,10 @@ import { loadUsdKrw } from './fx';
 
 const BINANCE_INTERVAL: Record<Interval, string> = {
   '1분': '1m',
+  '3분': '3m',
   '5분': '5m',
   '15분': '15m',
+  '30분': '30m',
   '60분': '1h',
   일: '1d',
   주: '1w',
@@ -25,7 +27,7 @@ function toYears(c: Candle[]): Candle[] {
     m.set(
       key,
       cur
-        ? { ...cur, high: Math.max(cur.high, k.high), low: Math.min(cur.low, k.low), close: k.close }
+        ? { ...cur, high: Math.max(cur.high, k.high), low: Math.min(cur.low, k.low), close: k.close, volume: cur.volume + k.volume }
         : { ...k, time: key },
     );
   }
@@ -52,20 +54,21 @@ export function useCandles(stock: Stock, interval: Interval) {
         const fx = await loadUsdKrw();
         const rows = await getKlines(sym, bi);
         if (!alive) return;
-        const conv = (t: number, o: string, h: string, l: string, c: string): Candle => ({
+        const conv = (t: number, o: string, h: string, l: string, c: string, v: string): Candle => ({
           time: Math.floor(t / 1000) + KST,
           open: snap(Number(o) * fx),
           high: snap(Number(h) * fx),
           low: snap(Number(l) * fx),
           close: snap(Number(c) * fx),
+          volume: Math.round(Number(v)),
         });
-        let list = rows.map((r) => conv(r[0], r[1], r[2], r[3], r[4]));
+        let list = rows.map((r) => conv(r[0], r[1], r[2], r[3], r[4], r[5]));
         if (interval === '년') list = toYears(list);
         setCandles(list);
         if (interval === '년') return;
         stop = subscribe([`${sym.toLowerCase()}@kline_${bi}`], (_s, data) => {
-          const k = (data as { k: { t: number; o: string; h: string; l: string; c: string } }).k;
-          const c = conv(k.t, k.o, k.h, k.l, k.c);
+          const k = (data as { k: { t: number; o: string; h: string; l: string; c: string; v: string } }).k;
+          const c = conv(k.t, k.o, k.h, k.l, k.c, k.v);
           setCandles((prev) => {
             if (!prev.length) return [c];
             const last = prev[prev.length - 1];

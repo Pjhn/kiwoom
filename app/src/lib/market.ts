@@ -16,8 +16,8 @@ export const STOCKS: Stock[] = [
     id: 'hynix',
     name: 'SK하이닉스',
     binance: 'SKHYNIXUSDT',
-    mockPrice: 712000,
-    mockPrevClose: 698000,
+    mockPrice: 1184000,
+    mockPrevClose: 1162000,
     logo: { bg: '#EA002C', fg: '#fff', text: 'SK' },
   },
   {
@@ -62,9 +62,9 @@ export type Market = {
   high: number;
   low: number;
   volume: number;
-  /** 매도 호가, 가격 내림차순 6개 (마지막이 매도 1호가) */
+  /** 매도 호가, 가격 내림차순 10개 (마지막이 매도 1호가) */
   asks: BookRow[];
-  /** 매수 호가, 가격 내림차순 6개 (처음이 매수 1호가) */
+  /** 매수 호가, 가격 내림차순 10개 (처음이 매수 1호가) */
   bids: BookRow[];
   ticks: Tick[];
   strength: number;

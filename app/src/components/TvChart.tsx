@@ -1,31 +1,52 @@
 import { useEffect, useRef } from 'react';
 import {
+  AreaSeries,
   CandlestickSeries,
   ColorType,
   CrosshairMode,
+  HistogramSeries,
   LineSeries,
   createChart,
   type IChartApi,
   type ISeriesApi,
+  type SeriesType,
   type UTCTimestamp,
 } from 'lightweight-charts';
 import { type Candle, type Interval, movingAverage } from '../lib/candles';
 
+export type ChartSettings = {
+  type: 'candle' | 'line' | 'area';
+  ma: { 20: boolean; 60: boolean; 120: boolean };
+  volume: boolean;
+  grid: boolean;
+};
+export const DEFAULT_SETTINGS: ChartSettings = {
+  type: 'candle',
+  ma: { 20: true, 60: false, 120: false },
+  volume: false,
+  grid: true,
+};
+export const MA_COLORS = { 20: '#f59f00', 60: '#20c997', 120: '#7950f2' } as const;
+
 const fmtPrice = (p: number) =>
   p >= 1000 ? Math.round(p).toLocaleString('ko-KR') : p.toLocaleString('ko-KR', { maximumFractionDigits: 4 });
+const ts = (t: number) => t as UTCTimestamp;
 
-/** TradingView Lightweight Charts 캔들 차트 한 칸 */
-export function TvChart({ candles, interval }: { candles: Candle[]; interval: Interval }) {
+/** TradingView Lightweight Charts 한 칸. 터치(마우스) 위치를 중심으로 격자가 빛난다 */
+export function TvChart({ candles, interval, settings }: { candles: Candle[]; interval: Interval; settings: ChartSettings }) {
+  const wrap = useRef<HTMLDivElement>(null);
   const box = useRef<HTMLDivElement>(null);
   const chart = useRef<IChartApi | null>(null);
-  const candleSeries = useRef<ISeriesApi<'Candlestick'> | null>(null);
-  const maSeries = useRef<ISeriesApi<'Line'> | null>(null);
+  const main = useRef<ISeriesApi<SeriesType> | null>(null);
+  const vol = useRef<ISeriesApi<'Histogram'> | null>(null);
+  const mas = useRef<Partial<Record<20 | 60 | 120, ISeriesApi<'Line'>>>>({});
 
+  // 차트 종류가 바뀌면 다시 만든다
   useEffect(() => {
     const c = createChart(box.current!, {
       autoSize: true,
       layout: {
-        background: { type: ColorType.Solid, color: '#ffffff' },
+        background: { type: ColorType.Solid, color: 'transparent' },
         textColor: '#606b76',
         fontSize: 11,
         fontFamily: 'Pretendard, system-ui, sans-serif',
@@ -37,36 +58,113 @@ export function TvChart({ candles, interval }: { candles: Candle[]; interval: In
       crosshair: { mode: CrosshairMode.Normal },
       localization: { locale: 'ko-KR', priceFormatter: fmtPrice },
     });
-    candleSeries.current = c.addSeries(CandlestickSeries, {
-      upColor: '#e5007d',
-      downColor: '#0354ad',
-      borderVisible: false,
-      wickUpColor: '#e5007d',
-      wickDownColor: '#0354ad',
-      priceLineColor: '#343a40',
-    });
-    maSeries.current = c.addSeries(LineSeries, {
-      color: '#f59f00',
-      lineWidth: 1,
-      priceLineVisible: false,
-      lastValueVisible: false,
-      crosshairMarkerVisible: false,
-    });
+    if (settings.type === 'candle') {
+      main.current = c.addSeries(CandlestickSeries, {
+        upColor: '#e5007d',
+        downColor: '#0354ad',
+        borderVisible: false,
+        wickUpColor: '#e5007d',
+        wickDownColor: '#0354ad',
+        priceLineColor: '#343a40',
+      });
+    } else if (settings.type === 'line') {
+      main.current = c.addSeries(LineSeries, { color: '#e5007d', lineWidth: 2, priceLineColor: '#343a40' });
+    } else {
+      main.current = c.addSeries(AreaSeries, {
+        lineColor: '#e5007d',
+        topColor: 'rgba(229,0,125,.28)',
+        bottomColor: 'rgba(229,0,125,0)',
+        lineWidth: 2,
+        priceLineColor: '#343a40',
+      });
+    }
     chart.current = c;
     return () => {
       c.remove();
       chart.current = null;
+      main.current = null;
+      vol.current = null;
+      mas.current = {};
     };
-  }, []);
+  }, [settings.type]);
 
+  // 데이터와 보조 지표
   useEffect(() => {
-    if (!candleSeries.current || !maSeries.current || !chart.current) return;
+    const c = chart.current;
+    if (!c || !main.current) return;
     const intraday = interval.endsWith('분');
-    chart.current.applyOptions({ timeScale: { timeVisible: intraday, secondsVisible: false } });
-    candleSeries.current.setData(candles.map((k) => ({ ...k, time: k.time as UTCTimestamp })));
-    maSeries.current.setData(movingAverage(candles).map((m) => ({ ...m, time: m.time as UTCTimestamp })));
-    chart.current.timeScale().scrollToRealTime();
-  }, [candles, interval]);
+    c.applyOptions({
+      timeScale: { timeVisible: intraday, secondsVisible: false },
+      grid: {
+        vertLines: { visible: settings.grid, color: '#f1f3f5' },
+        horzLines: { visible: settings.grid, color: '#f1f3f5' },
+      },
+      rightPriceScale: { scaleMargins: { top: 0.18, bottom: settings.volume ? 0.26 : 0.08 } },
+    });
+    if (settings.type === 'candle') main.current.setData(candles.map((k) => ({ ...k, time: ts(k.time) })));
+    else main.current.setData(candles.map((k) => ({ time: ts(k.time), value: k.close })));
 
-  return <div className="tv-chart" ref={box} />;
+    // 이동평균선
+    for (const len of [20, 60, 120] as const) {
+      const on = settings.ma[len];
+      if (on && !mas.current[len]) {
+        mas.current[len] = c.addSeries(LineSeries, {
+          color: MA_COLORS[len],
+          lineWidth: 1,
+          priceLineVisible: false,
+          lastValueVisible: false,
+          crosshairMarkerVisible: false,
+        });
+      }
+      if (!on && mas.current[len]) {
+        c.removeSeries(mas.current[len]!);
+        delete mas.current[len];
+      }
+      mas.current[len]?.setData(movingAverage(candles, len).map((m) => ({ ...m, time: ts(m.time) })));
+    }
+    // 거래량
+    if (settings.volume && !vol.current) {
+      vol.current = c.addSeries(HistogramSeries, { priceScaleId: 'vol', priceFormat: { type: 'volume' }, lastValueVisible: false, priceLineVisible: false });
+      c.priceScale('vol').applyOptions({ scaleMargins: { top: 0.8, bottom: 0 } });
+    }
+    if (!settings.volume && vol.current) {
+      c.removeSeries(vol.current);
+      vol.current = null;
+    }
+    vol.current?.setData(
+      candles.map((k) => ({
+        time: ts(k.time),
+        value: k.volume,
+        color: k.close >= k.open ? 'rgba(229,0,125,.35)' : 'rgba(3,84,173,.35)',
+      })),
+    );
+  }, [candles, interval, settings]);
+
+  // 처음 데이터와 주기를 바꿀 때만 최근 봉으로 이동
+  useEffect(() => {
+    chart.current?.timeScale().scrollToRealTime();
+  }, [interval, settings.type, candles.length > 0]);
+
+  const move = (x: number, y: number) => {
+    const el = wrap.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    el.style.setProperty('--gx', `${x - r.left}px`);
+    el.style.setProperty('--gy', `${y - r.top}px`);
+    el.classList.add('glow-on');
+  };
+
+  return (
+    <div
+      className="tv-wrap"
+      ref={wrap}
+      onPointerMove={(e) => move(e.clientX, e.clientY)}
+      onPointerDown={(e) => move(e.clientX, e.clientY)}
+      onPointerLeave={() => wrap.current?.classList.remove('glow-on')}
+      onPointerUp={(e) => e.pointerType !== 'mouse' && wrap.current?.classList.remove('glow-on')}
+    >
+      <div className="grid-glow" aria-hidden />
+      <div className="tv-chart" ref={box} />
+    </div>
+  );
 }

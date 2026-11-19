@@ -1,4 +1,30 @@
+import { type MouseEvent, useLayoutEffect, useRef } from 'react';
 import { type BookRow, type Market, fmt, fmtPct, pctOf } from '../lib/market';
+
+/** 누른 자리에서 빛이 퍼지는 효과 */
+function lightUp(e: MouseEvent<HTMLElement>, side: 'ask' | 'bid' | 'mid') {
+  const el = e.currentTarget;
+  const r = el.getBoundingClientRect();
+  const glow = document.createElement('span');
+  glow.className = `tap-light ${side}`;
+  glow.style.left = `${e.clientX - r.left}px`;
+  glow.style.top = `${e.clientY - r.top}px`;
+  el.appendChild(glow);
+  glow.addEventListener('animationend', () => glow.remove());
+}
+
+// 호가 줄 높이가 고정이라 현재가 위치를 계산으로 정한다 (Figma 위치에 맞춰 처음 스크롤)
+const PAD = 40;
+const C_CUR = PAD + 10 * 35.4 + 9 * 14 + 13.6; // 좁은 호가 현재가 위치
+const W_CUR = PAD + 10 * 33.4 + 9 * 13 + 13.6; // 넓은 호가 현재가 위치
+
+function useInitialScroll(target: number, key: string) {
+  const ref = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    if (ref.current) ref.current.scrollTop = target;
+  }, [target, key]);
+  return ref;
+}
 
 type Props = { market: Market; onPick: (price: number) => void };
 
@@ -11,7 +37,14 @@ function priceClass(price: number, prev: number, side: 'ask' | 'bid') {
 
 function CompactRow({ row, side, market, onPick, of }: { row: BookRow; side: 'ask' | 'bid'; of: number } & Props) {
   return (
-    <button className={`cbook-row ${side}`} onClick={() => onPick(row.price)} aria-label={`${fmt(row.price)}원 선택`}>
+    <button
+      className={`cbook-row ${side}`}
+      onClick={(e) => {
+        lightUp(e, side);
+        onPick(row.price);
+      }}
+      aria-label={`${fmt(row.price)}원 선택`}
+    >
       <span className="cbook-left">
         <span className="cbook-slot">{row.price === market.open && <span className="quote-badge">시</span>}</span>
         <span className={`cbook-price ${priceClass(row.price, market.prevClose, side)}`}>
@@ -31,20 +64,29 @@ const maxVol = (m: Market) => Math.max(1, ...m.asks.map((r) => r.volume), ...m.b
 export function CompactOrderBook(props: Props) {
   const { market } = props;
   const of = maxVol(market);
+  const scroller = useInitialScroll(C_CUR - 220, market.stock.id);
   return (
     <div className="cbook">
+      <div className="book-scroll" ref={scroller}>
       <div className="cbook-asks">
         {market.asks.map((r) => (
           <CompactRow key={r.price} row={r} side="ask" of={of} {...props} />
         ))}
       </div>
-      <button className="cbook-current" onClick={() => props.onPick(market.price)}>
+      <button
+        className="cbook-current"
+        onClick={(e) => {
+          lightUp(e, 'mid');
+          props.onPick(market.price);
+        }}
+      >
         <span className="grad-price">{fmt(market.price)}</span>
       </button>
       <div className="cbook-bids">
         {market.bids.map((r) => (
           <CompactRow key={r.price} row={r} side="bid" of={of} {...props} />
         ))}
+      </div>
       </div>
       <div className="fade top" />
       <div className="fade bottom" />
@@ -54,7 +96,14 @@ export function CompactOrderBook(props: Props) {
 
 function WideRow({ row, side, market, onPick, of }: { row: BookRow; side: 'ask' | 'bid'; of: number } & Props) {
   return (
-    <button className={`wbook-row ${side}`} onClick={() => onPick(row.price)} aria-label={`${fmt(row.price)}원 선택`}>
+    <button
+      className={`wbook-row ${side}`}
+      onClick={(e) => {
+        lightUp(e, side);
+        onPick(row.price);
+      }}
+      aria-label={`${fmt(row.price)}원 선택`}
+    >
       <span className={`vol-bar ${side}`} style={{ width: barW(row.volume, 93, of) }}>
         <span>{fmt(row.volume)}</span>
       </span>
@@ -85,14 +134,24 @@ export function WideOrderBook(props: Props) {
   const { market: m } = props;
   const askOf = Math.max(1, ...m.asks.map((r) => r.volume));
   const bidOf = Math.max(1, ...m.bids.map((r) => r.volume));
+  const scroller = useInitialScroll(W_CUR - 237, m.stock.id);
+  const at = (y: number) => W_CUR - 237 + y; // Figma 기준 y를 스크롤 안 좌표로
   return (
     <div className="wbook">
+      <div className="book-scroll" ref={scroller}>
+      <div className="wbook-content">
       <div className="wbook-asks">
         {m.asks.map((r) => (
           <WideRow key={r.price} row={r} side="ask" of={askOf} {...props} />
         ))}
       </div>
-      <button className="wbook-current" onClick={() => props.onPick(m.price)}>
+      <button
+        className="wbook-current"
+        onClick={(e) => {
+          lightUp(e, 'mid');
+          props.onPick(m.price);
+        }}
+      >
         <span className="grad-price">{fmt(m.price)}</span>
       </button>
       <div className="wbook-bids">
@@ -102,25 +161,25 @@ export function WideOrderBook(props: Props) {
       </div>
 
       <div className="wbook-stats">
-        <div className="g" style={{ top: 27 }}>
+        <div className="g" style={{ top: at(27) }}>
           <Stat label="거래량" value={m.volume} />
         </div>
-        <div className="g" style={{ top: 58 }}>
+        <div className="g" style={{ top: at(58) }}>
           <Stat label="상한가" value={snapTo(m.prevClose * 1.3, m.prevClose)} />
           <Stat label="하한가" value={snapTo(m.prevClose * 0.7, m.prevClose)} />
         </div>
-        <div className="g" style={{ top: 110 }}>
+        <div className="g" style={{ top: at(110) }}>
           <Stat label="상승 VI" value={snapTo(m.prevClose * 1.1, m.prevClose)} />
           <Stat label="하락 VI" value={snapTo(m.prevClose * 0.9, m.prevClose)} />
         </div>
-        <div className="g bottom">
+        <div className="g bottom" style={{ top: at(0), height: 221 }}>
           <Stat label="시작" value={m.open} />
           <Stat label="최고" value={m.high} tone="up" />
           <Stat label="최저" value={m.low} tone="down" />
         </div>
       </div>
 
-      <div className="wbook-ticks">
+      <div className="wbook-ticks" style={{ top: at(277) }}>
         <p className="strength">
           <span>체결강도</span>
           <span className={m.strength >= 100 ? 'up' : 'down'}>{m.strength.toFixed(2)}%</span>
@@ -133,6 +192,8 @@ export function WideOrderBook(props: Props) {
             </li>
           ))}
         </ul>
+      </div>
+      </div>
       </div>
       <div className="fade top" />
       <div className="fade bottom" />

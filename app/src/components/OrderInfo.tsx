@@ -1,4 +1,4 @@
-import { Fragment, type ReactNode } from 'react';
+import { type CSSProperties, Fragment, type ReactNode, useLayoutEffect, useRef } from 'react';
 import filterIcon from '../assets/icons/filter.svg';
 import tooltipArrow from '../assets/icons/tooltip-arrow.svg';
 import emptyGraphic from '../assets/img/empty-graphic@3x.png';
@@ -83,19 +83,45 @@ type Props = {
   onCancel: (id: number) => void;
   onCancelAll: () => void;
   onHolding: (stockId: string) => void;
+  /** 날아가는 중인 대기 주문과 그 목적지 탭 */
+  leaving: Record<number, InfoTab>;
+  /** 종이가 도착한 탭 (튀는 효과) */
+  catchTab: { tab: InfoTab; n: number } | null;
 };
 
+const paper = (i: number) => ({ '--i': Math.min(i, 8) }) as CSSProperties;
+
 export function OrderInfo(p: Props) {
+  const root = useRef<HTMLElement>(null);
+  // 날아갈 대기 주문마다 목적지 탭까지의 거리를 잰다
+  useLayoutEffect(() => {
+    const el = root.current;
+    if (!el) return;
+    for (const [id, tab] of Object.entries(p.leaving)) {
+      const item = el.querySelector<HTMLElement>(`[data-id="${id}"]`);
+      const target = el.querySelector<HTMLElement>(`[data-tab="${tab}"]`);
+      if (!item || !target || item.dataset.flying) continue;
+      const a = item.getBoundingClientRect();
+      const b = target.getBoundingClientRect();
+      item.style.setProperty('--fx', `${b.left + b.width / 2 - (a.left + 39)}px`);
+      item.style.setProperty('--fy', `${b.top + b.height / 2 - (a.top + a.height / 2)}px`);
+      item.dataset.flying = '1';
+      item.classList.add('fly');
+    }
+  }, [p.leaving]);
+
   return (
-    <section className="order-info">
+    <section className="order-info" ref={root}>
       <div className="oi-tabs" role="tablist">
         {TABS.map((t, i) => (
           <Fragment key={t.key}>
             {i > 0 && <span className="oi-div" />}
             <button
               role="tab"
+              data-tab={t.key}
+              key={p.catchTab?.tab === t.key ? `c${p.catchTab.n}` : 'tab'}
               aria-selected={p.tab === t.key}
-              className={`oi-tab ${p.tab === t.key ? 'on' : ''} ${p.glowTab === t.key && p.tab !== t.key ? 'glow' : ''}`}
+              className={`oi-tab ${p.tab === t.key ? 'on' : ''} ${p.glowTab === t.key && p.tab !== t.key ? 'glow' : ''} ${p.catchTab?.tab === t.key ? 'catch' : ''}`}
               onClick={() => p.onTab(t.key)}
             >
               {t.label}
@@ -120,8 +146,8 @@ export function OrderInfo(p: Props) {
                 }
               />
               <ul className="oi-list">
-                {p.open.map((o) => (
-                  <li key={o.id} className={`oi-item ${o.isNew ? 'alert' : ''}`}>
+                {p.open.map((o, i) => (
+                  <li key={o.id} data-id={o.id} style={paper(i)} className={`oi-item paper ${o.isNew ? 'alert' : ''}`}>
                     <StockLogo stock={stockById(o.stockId)} size={46} ring={o.status === 'partial'} />
                     <div className="oi-text">
                       <p className="oi-title">
@@ -156,6 +182,7 @@ export function OrderInfo(p: Props) {
               {p.holdings.map((h, i) => (
                 <HoldingItem
                   key={h.stockId}
+                  index={i}
                   h={h}
                   price={p.priceOf(h.stockId)}
                   showTip={p.showTip && i === 0}
@@ -175,8 +202,8 @@ export function OrderInfo(p: Props) {
                 current={p.history.filter((o) => o.stockId === p.currentStockId).length}
               />
               <ul className="oi-list">
-                {p.history.map((o) => (
-                  <li key={o.id} className="oi-item">
+                {p.history.map((o, i) => (
+                  <li key={o.id} style={paper(i)} className="oi-item paper">
                     <StockLogo stock={stockById(o.stockId)} size={46} />
                     <div className="oi-text">
                       <p className="oi-title">
@@ -195,7 +222,19 @@ export function OrderInfo(p: Props) {
   );
 }
 
-function HoldingItem({ h, price, showTip, onClick }: { h: Holding; price: number; showTip: boolean; onClick: () => void }) {
+function HoldingItem({
+  h,
+  price,
+  showTip,
+  onClick,
+  index,
+}: {
+  h: Holding;
+  price: number;
+  showTip: boolean;
+  onClick: () => void;
+  index: number;
+}) {
   const stock = stockById(h.stockId);
   const value = price * h.qty;
   const cost = h.avg * h.qty;
@@ -203,7 +242,7 @@ function HoldingItem({ h, price, showTip, onClick }: { h: Holding; price: number
   const plPct = (pl / cost) * 100;
   const tone = pl > 0 ? 'up' : pl < 0 ? 'down' : '';
   return (
-    <div className="holding-wrap">
+    <div className="holding-wrap paper" style={paper(index)}>
       <button className="oi-item holding" onClick={onClick} aria-label={`${stock.name} 판매하기`}>
         {stock.id === 'kakao' ? (
           <img className="logo" src={kakaoHoldingLogo} alt="" width={46} height={46} />

@@ -51,6 +51,7 @@ export default function App() {
   const [orderType, setOrderType] = useState<OrderType>('limit');
   const [typesOpen, setTypesOpen] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [priceFlash, setPriceFlash] = useState(0);
 
   const [open, setOpen] = useState<Order[]>([]);
   const [history, setHistory] = useState<Order[]>([]);
@@ -59,6 +60,23 @@ export default function App() {
   const [glowTab, setGlowTab] = useState<InfoTab | null>(null);
   const [showTip, setShowTip] = useState(false);
   const [snack, setSnack] = useState<Snack | null>(null);
+  const [leaving, setLeaving] = useState<Record<number, InfoTab>>({});
+  const [catchTab, setCatchTab] = useState<{ tab: InfoTab; n: number } | null>(null);
+
+  const FLY_MS = 600;
+  /** 대기 주문을 목적지 탭으로 날려 보낸 뒤 처리한다 */
+  const flyAway = useCallback((ids: number[], to: InfoTab, then: () => void) => {
+    setLeaving((l) => ({ ...l, ...Object.fromEntries(ids.map((id) => [id, to])) }));
+    setTimeout(() => {
+      then();
+      setLeaving((l) => {
+        const n = { ...l };
+        ids.forEach((id) => delete n[id]);
+        return n;
+      });
+      setCatchTab((c) => ({ tab: to, n: (c?.n ?? 0) + 1 }));
+    }, FLY_MS);
+  }, []);
 
   // 종목별 마지막 가격 (보유 평가에 사용)
   const lastPrice = useRef<Record<string, number>>({});
@@ -66,6 +84,7 @@ export default function App() {
   const priceOf = (id: string) => lastPrice.current[id] ?? stockById(id).mockPrice;
 
   const seq = useRef(1);
+  const cancelled = useRef(new Set<number>());
   const openRef = useRef(open);
   openRef.current = open;
   const infoRef = useRef<HTMLDivElement>(null);
@@ -135,14 +154,16 @@ export default function App() {
   const fillTo = useCallback(
     (id: number, filled: number) => {
       const o = openRef.current.find((x) => x.id === id);
-      if (!o) return;
+      if (!o || cancelled.current.has(id)) return;
       const target = Math.min(o.qty, filled);
       applyFill(o, target - o.filled);
       const name = stockById(o.stockId).name;
       const verb = o.side === 'buy' ? '구매' : '판매';
       if (target >= o.qty) {
-        setOpen((list) => list.filter((x) => x.id !== id));
-        setHistory((h) => [{ ...o, filled: o.qty, status: 'filled', time: now(), isNew: false }, ...h]);
+        flyAway([id], o.side === 'buy' ? 'holdings' : 'history', () => {
+          setOpen((list) => list.filter((x) => x.id !== id));
+          setHistory((h) => [{ ...o, filled: o.qty, status: 'filled', time: now(), isNew: false }, ...h]);
+        });
         if (o.side === 'buy') {
           setGlowTab('holdings');
           toast(`${name} ${verb}가 완료됐어요`, '보유 확인', () => {
@@ -165,7 +186,7 @@ export default function App() {
         setOpen((list) => list.map((x) => (x.id === id ? { ...x, filled: target, status: 'partial' } : x)));
       }
     },
-    [applyFill, toast],
+    [applyFill, toast, flyAway],
   );
 
   const submit = () => {
@@ -243,17 +264,30 @@ export default function App() {
 
   const cancel = (id: number) => {
     const o = open.find((x) => x.id === id);
-    if (!o) return;
-    setOpen((l) => l.filter((x) => x.id !== id));
-    setHistory((h) => [{ ...o, status: 'cancelled', time: now(), isNew: false }, ...h]);
+    if (!o || leaving[id]) return;
+    cancelled.current.add(id); // 날아가는 동안 체결되지 않게
+    flyAway([id], 'history', () => {
+      setOpen((l) => l.filter((x) => x.id !== id));
+      setHistory((h) => [{ ...o, status: 'cancelled', time: now(), isNew: false }, ...h]);
+    });
   };
   const cancelAll = () => {
-    setHistory((h) => [...open.map((o) => ({ ...o, status: 'cancelled' as const, time: now(), isNew: false })), ...h]);
-    setOpen([]);
+    const list = open.filter((o) => !leaving[o.id]);
+    list.forEach((o) => cancelled.current.add(o.id));
+    flyAway(
+      list.map((o) => o.id),
+      'history',
+      () => {
+        const ids = new Set(list.map((o) => o.id));
+        setHistory((h) => [...list.map((o) => ({ ...o, status: 'cancelled' as const, time: now(), isNew: false })), ...h]);
+        setOpen((l) => l.filter((o) => !ids.has(o.id)));
+      },
+    );
   };
 
   const pickPrice = (p: number) => {
     setPrice(p);
+    setPriceFlash((n) => n + 1);
     if (!isUserPriced(orderType)) setOrderType('limit');
     if (!panelOpen) setPanelOpen(true);
   };
@@ -337,6 +371,7 @@ export default function App() {
                 orderType={orderType}
                 onOpenTypes={() => setTypesOpen(true)}
                 autoPrice={auto}
+                priceFlash={priceFlash}
               />
             )}
             <IconTabs view={view} onChange={setView} style={iconPos} />
@@ -355,6 +390,8 @@ export default function App() {
               onCancel={cancel}
               onCancelAll={cancelAll}
               onHolding={onHolding}
+              leaving={leaving}
+              catchTab={catchTab}
             />
           </div>
         </div>

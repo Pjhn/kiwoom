@@ -1,4 +1,5 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { SlotNumber } from './SlotNumber';
 import plus from '../assets/icons/plus.svg';
 import minus from '../assets/icons/minus.svg';
 import arrowDown16 from '../assets/icons/arrow-down-16.svg';
@@ -26,6 +27,8 @@ type Props = {
   onOpenTypes: () => void;
   /** 주문유형이 가격을 정할 때의 가격 */
   autoPrice: number;
+  /** 호가를 눌러 가격이 들어올 때마다 바뀌는 값 (빛 효과) */
+  priceFlash?: number;
 };
 
 const parseNum = (s: string) => {
@@ -40,6 +43,7 @@ function NumberField({
   onChange,
   onStep,
   label,
+  flash,
 }: {
   value: number | null;
   unit: string;
@@ -47,10 +51,19 @@ function NumberField({
   onChange: (v: number | null) => void;
   onStep: (dir: 1 | -1) => void;
   label: string;
+  flash?: number;
 }) {
   const text = value == null ? '' : fmt(value);
+  const box = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = box.current;
+    if (!flash || !el) return;
+    el.classList.remove('lit');
+    void el.offsetWidth; // 애니메이션 다시 시작
+    el.classList.add('lit');
+  }, [flash]);
   return (
-    <div className={`text-field ${value == null ? 'empty' : ''}`}>
+    <div ref={box} className={`text-field ${value == null ? 'empty' : ''}`}>
       <label className="tf-value">
         <span className="tf-mirror" aria-hidden>
           {text || placeholder}
@@ -180,6 +193,7 @@ export function OrderPanel(p: Props) {
               placeholder={`${verb}가 입력`}
               onChange={p.onPrice}
               onStep={p.onStepPrice}
+              flash={p.priceFlash}
             />
           ) : (
             <div className="text-field locked" aria-label={`${verb}가 ${typeLabel(p.orderType)}`}>
@@ -213,7 +227,7 @@ export function OrderPanel(p: Props) {
         <div className="estimate">
           <p className="label">예상 {verb}금액</p>
           <p className="value">
-            <span className="n">{fmt(total)}</span>
+            <SlotNumber className="n" value={total} />
             <span className="u">원</span>
           </p>
         </div>
