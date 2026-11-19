@@ -1,5 +1,6 @@
-import { type CSSProperties, Fragment, type ReactNode, useLayoutEffect, useRef, useState } from 'react';
+import { type CSSProperties, Fragment, type ReactNode, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import filterIcon from '../assets/icons/filter.svg';
+import checkMagenta from '../assets/icons/check-magenta-24.svg';
 import tooltipArrow from '../assets/icons/tooltip-arrow.svg';
 import emptyGraphic from '../assets/img/empty-graphic@3x.png';
 import { fmt, stockById } from '../lib/market';
@@ -45,6 +46,48 @@ const SORTS: { key: Sort; label: string }[] = [
   { key: 'value', label: '평가금액 순' },
   { key: 'profit', label: '수익률 순' },
 ];
+
+/** 정렬 드롭다운: 차트 분봉 메뉴와 같은 모양 */
+function SortMenu({ value, onChange }: { value: Sort; onChange: (s: Sort) => void }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const off = (e: PointerEvent) => {
+      if (!ref.current?.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('pointerdown', off);
+    return () => document.removeEventListener('pointerdown', off);
+  }, [open]);
+  return (
+    <div className="sort-wrap" ref={ref}>
+      <button className="sort-btn" onClick={() => setOpen((v) => !v)} aria-haspopup="listbox" aria-expanded={open}>
+        <img src={filterIcon} alt="" />
+        {SORTS.find((x) => x.key === value)!.label}
+      </button>
+      {open && (
+        <ul className="minute-menu sort-menu" role="listbox" aria-label="정렬">
+          {SORTS.map((o) => (
+            <li key={o.key}>
+              <button
+                role="option"
+                aria-selected={o.key === value}
+                className={o.key === value ? 'on' : ''}
+                onClick={() => {
+                  onChange(o.key);
+                  setOpen(false);
+                }}
+              >
+                {o.label}
+                {o.key === value && <img src={checkMagenta} alt="" width={16} height={16} />}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
 
 function FilterRow({
   count,
@@ -145,7 +188,6 @@ export function OrderInfo(p: Props) {
           : a.i - b.i,
     )
     .map((x) => x.h);
-  const nextSort = () => setSort((s) => SORTS[(SORTS.findIndex((x) => x.key === s) + 1) % SORTS.length].key);
   const filterProps = { scope, onScope: setScope };
   // 다른 탭으로 옮겨갈 대기 주문마다 목적지 탭 위치를 잰다
   useLayoutEffect(() => {
@@ -235,12 +277,7 @@ export function OrderInfo(p: Props) {
                 count={p.holdings.length}
                 current={p.holdings.filter((h) => h.stockId === p.currentStockId).length}
                 right={
-                  <button className="sort-btn" onClick={nextSort} aria-label="정렬 바꾸기">
-                    <img src={filterIcon} alt="" />
-                    <span key={sort} className="sort-label">
-                      {SORTS.find((x) => x.key === sort)!.label}
-                    </span>
-                  </button>
+                  <SortMenu value={sort} onChange={setSort} />
                 }
               />
               {holdList.length === 0 && <FilteredEmpty />}

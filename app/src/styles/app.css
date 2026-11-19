@@ -272,6 +272,9 @@
 .chip.on { background: var(--surface-secondary); color: var(--text-primary); font-weight: 600; }
 .outlined-sm { padding: 6px 10px; border: 1px solid var(--gray-500); border-radius: 4px; font-size: 14px; }
 .sort-btn { display: flex; align-items: center; gap: 4px; font-size: 14px; }
+.sort-wrap { position: relative; }
+.sort-menu { left: auto; right: -8px; min-width: 140px; }
+.sort-menu button { white-space: nowrap; }
 
 .oi-list { list-style: none; margin: 0; padding: 0; }
 .oi-item {
@@ -300,12 +303,12 @@
 .holding-r .v { font-size: 18px; font-weight: 600; }
 .holding-r .pl { font-size: 14px; }
 .tooltip {
-  position: absolute; left: 82px; top: calc(100% + 7px); z-index: 2;
+  position: absolute; left: 50%; top: calc(100% + 7px); z-index: 2; transform: translateX(-50%);
   padding: 10px 16px; background: #fff; border-radius: 4px; font-size: 14px; white-space: nowrap;
   filter: drop-shadow(0 0 8px rgba(0,0,0,.12)); animation: tipIn .25s ease-out;
 }
-.tooltip .arrow { position: absolute; top: -8px; left: 74px; }
-@keyframes tipIn { from { opacity: 0; transform: translateY(4px); } }
+.tooltip .arrow { position: absolute; top: -8px; left: 50%; transform: translateX(-50%); }
+@keyframes tipIn { from { opacity: 0; transform: translate(-50%, 4px); } }
 
 /* ---------- 스낵바 ---------- */
 .snack {
@@ -315,7 +318,7 @@
   animation: snackIn .25s ease-out;
 }
 .framed .snack { top: 70px; }
-.snack img { position: absolute; left: 20px; top: 10px; }
+.snack img { position: absolute; left: 20px; top: 10px; filter: drop-shadow(0 1px 3px rgba(31,183,79,.45)); }
 .snack p { flex: 1; min-width: 0; display: flex; font-size: 14px; color: #fff; white-space: nowrap; }
 .snack .snack-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .snack .snack-rest { flex: none; white-space: pre; }
