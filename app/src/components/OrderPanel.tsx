@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { SlotNumber } from './SlotNumber';
+import { TickNumber } from './TickNumber';
 import plus from '../assets/icons/plus.svg';
 import minus from '../assets/icons/minus.svg';
 import arrowDown16 from '../assets/icons/arrow-down-16.svg';
@@ -216,7 +216,7 @@ export function OrderPanel(p: Props) {
         <div className="estimate">
           <p className="label">예상 {verb}금액</p>
           <p className="value">
-            <SlotNumber className="n" value={total} />
+            <TickNumber className="n" value={total} />
             <span className="u">원</span>
           </p>
         </div>

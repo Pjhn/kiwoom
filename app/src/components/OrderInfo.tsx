@@ -1,4 +1,4 @@
-import { type CSSProperties, Fragment, type ReactNode, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { type CSSProperties, Fragment, type ReactNode, useLayoutEffect, useRef, useState } from 'react';
 import filterIcon from '../assets/icons/filter.svg';
 import tooltipArrow from '../assets/icons/tooltip-arrow.svg';
 import emptyGraphic from '../assets/img/empty-graphic@3x.png';
@@ -119,7 +119,6 @@ type Props = {
 };
 
 const paper = (i: number) => ({ '--i': Math.min(i, 8) }) as CSSProperties;
-const SUCK_MS = 340;
 
 function FilteredEmpty() {
   return <p className="oi-none paper">현재 종목은 비어있어요</p>;
@@ -127,36 +126,8 @@ function FilteredEmpty() {
 
 export function OrderInfo(p: Props) {
   const root = useRef<HTMLElement>(null);
-  const body = useRef<HTMLDivElement>(null);
   const [scope, setScope] = useState<Scope>('all');
   const [sort, setSort] = useState<Sort>('recent');
-  // 탭을 바꾸면 지금 목록이 새 탭 버튼으로 빨려 들어간 뒤 새 목록이 나온다
-  const [shown, setShown] = useState<InfoTab>(p.tab);
-  useLayoutEffect(() => {
-    if (p.tab === shown) return;
-    const el = body.current;
-    const target = root.current?.querySelector<HTMLElement>(`[data-tab="${p.tab}"]`);
-    const parts = el ? Array.from(el.querySelectorAll<HTMLElement>('.oi-filter, .oi-list > li, .holding-wrap, .oi-empty, .oi-none')) : [];
-    if (!target || parts.length === 0 || matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      setShown(p.tab);
-      return;
-    }
-    const t = target.getBoundingClientRect();
-    const tx = t.left + t.width / 2;
-    const ty = t.top + t.height / 2;
-    parts.forEach((n, i) => {
-      const r = n.getBoundingClientRect();
-      n.style.transformOrigin = `${tx - r.left}px ${ty - r.top}px`;
-      n.style.setProperty('--i', String(Math.min(i, 6)));
-      n.classList.add('suck');
-    });
-    const id = setTimeout(() => setShown(p.tab), SUCK_MS);
-    return () => clearTimeout(id);
-  }, [p.tab, shown]);
-  useEffect(() => {
-    root.current?.querySelectorAll('.suck').forEach((n) => n.classList.remove('suck'));
-  }, [shown]);
-
   const mine = (id: string) => scope === 'all' || id === p.currentStockId;
   const openList = p.open.filter((o) => mine(o.stockId));
   const historyList = p.history.filter((o) => mine(o.stockId));
@@ -174,7 +145,7 @@ export function OrderInfo(p: Props) {
     .map((x) => x.h);
   const nextSort = () => setSort((s) => SORTS[(SORTS.findIndex((x) => x.key === s) + 1) % SORTS.length].key);
   const filterProps = { scope, onScope: setScope };
-  // 날아갈 대기 주문마다 목적지 탭까지의 거리를 잰다
+  // 다른 탭으로 옮겨갈 대기 주문마다 목적지 탭 위치를 잰다
   useLayoutEffect(() => {
     const el = root.current;
     if (!el) return;
@@ -184,8 +155,8 @@ export function OrderInfo(p: Props) {
       if (!item || !target || item.dataset.flying) continue;
       const a = item.getBoundingClientRect();
       const b = target.getBoundingClientRect();
-      item.style.setProperty('--fx', `${b.left + b.width / 2 - (a.left + 39)}px`);
-      item.style.setProperty('--fy', `${b.top + b.height / 2 - (a.top + a.height / 2)}px`);
+      // 목적지 탭 가운데를 기준점으로 줄어들며 빨려 들어간다
+      item.style.transformOrigin = `${b.left + b.width / 2 - a.left}px ${b.top + b.height / 2 - a.top}px`;
       item.dataset.flying = '1';
       item.classList.add('fly');
     }
@@ -211,8 +182,8 @@ export function OrderInfo(p: Props) {
         ))}
       </div>
 
-      <div className="oi-body" ref={body} key={`${shown}-${scope}-${sort}`}>
-        {shown === 'pending' &&
+      <div className="oi-body" key={`${p.tab}-${scope}-${sort}`}>
+        {p.tab === 'pending' &&
           (p.open.length === 0 ? (
             <Empty text="주문 내역이 비어있어요" />
           ) : (
@@ -252,7 +223,7 @@ export function OrderInfo(p: Props) {
             </>
           ))}
 
-        {shown === 'holdings' &&
+        {p.tab === 'holdings' &&
           (p.holdings.length === 0 ? (
             <Empty text="보유한 주식이 없어요" />
           ) : (
@@ -284,7 +255,7 @@ export function OrderInfo(p: Props) {
             </>
           ))}
 
-        {shown === 'history' &&
+        {p.tab === 'history' &&
           (p.history.length === 0 ? (
             <Empty text="거래 내역이 비어있어요" />
           ) : (

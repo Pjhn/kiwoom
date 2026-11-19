@@ -312,20 +312,15 @@ export default function App() {
 
   const onHolding = (stockId: string) => {
     setShowTip(false);
-    const h = holdings.find((x) => x.stockId === stockId);
     if (stockId !== stock.id) {
       setStock(stockById(stockId));
       setPrice(null);
     }
     setSide('sell');
     setPanelOpen(true);
-    const pendingSell = open
-      .filter((o) => o.side === 'sell' && o.stockId === stockId)
-      .reduce((s, o) => s + (o.qty - o.filled), 0);
-    const can = Math.max(0, (h?.qty ?? 0) - pendingSell);
     if (stockId === stock.id && price == null) setPrice(market.price);
     if (stockId !== stock.id) setPrice(priceOf(stockId));
-    setQty(can > 0 ? can : null);
+    setQty(null); // 수량은 사용자가 직접 넣는다
     scrollerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
