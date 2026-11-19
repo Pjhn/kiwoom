@@ -74,7 +74,6 @@ export default function App() {
   // 바로 체결되어 보유(판매는 내역)에 새로 들어간 항목: 잠시 빛나고, 시간이 지나거나 탭을 떠나면 꺼진다
   const [fresh, setFresh] = useState<{ tab: InfoTab; key: string } | null>(null);
   const freshTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
-  const [showTip, setShowTip] = useState(false);
   const [snack, setSnack] = useState<Snack | null>(null);
   const [leaving, setLeaving] = useState<Record<number, InfoTab>>({});
   const [catchTab, setCatchTab] = useState<{ tab: InfoTab; n: number } | null>(null);
@@ -127,11 +126,12 @@ export default function App() {
     return () => clearTimeout(t);
   }, [snack]);
 
-  useEffect(() => {
-    if (!showTip) return;
-    const t = setTimeout(() => setShowTip(false), 5000);
-    return () => clearTimeout(t);
-  }, [showTip]);
+  /** 새로 들어온 항목을 잠시 빛낸다 (보유 항목이면 「터치하여 판매할 수 있어요」 툴팁도 같은 조건) */
+  const markFresh = (tab: InfoTab, key: string) => {
+    setFresh({ tab, key });
+    clearTimeout(freshTimer.current);
+    freshTimer.current = setTimeout(() => setFresh(null), 4000);
+  };
 
   const toast = useCallback((text: string, action: string, onAction: () => void, name?: string) => {
     setSnack({ id: seq.current++, text, action, onAction, name });
@@ -149,7 +149,6 @@ export default function App() {
     setTab(t);
     if (glowTab === t) setGlowTab(null);
     if (fresh && fresh.tab !== t) setFresh(null);
-    setShowTip(t === 'holdings' && holdings.length > 0);
   };
 
   const applyFill = useCallback((o: Order, delta: number) => {
@@ -183,7 +182,7 @@ export default function App() {
           setSnack(null);
           setTab(to);
           setGlowTab(null);
-          if (to === 'holdings') setShowTip(true);
+          markFresh(to, to === 'holdings' ? o.stockId : String(o.id));
           scrollToInfo();
         },
         name,
@@ -202,7 +201,7 @@ export default function App() {
       if (target >= o.qty) {
         flyAway([id], o.side === 'buy' ? 'holdings' : 'history', () => {
           setOpen((list) => list.filter((x) => x.id !== id));
-          setHistory((h) => [{ ...o, filled: o.qty, status: 'filled', time: now(), isNew: false }, ...h]);
+          setHistory((h) => [{ ...o, filled: o.qty, status: 'filled', time: now(), at: Date.now(), isNew: false }, ...h]);
         });
         announceDone(o);
       } else {
@@ -269,11 +268,10 @@ export default function App() {
       qty,
       filled: 0,
       status: 'pending',
-      time: now(),
+      time: now(), at: Date.now(),
       isNew: true,
     };
     setConfirming(false);
-    setShowTip(false);
     const verb = side === 'buy' ? '구매' : '판매';
 
     // 바로 체결될 수 있는 가격이면 상대 호가 물량만큼 그 자리에서 체결한다
@@ -296,9 +294,7 @@ export default function App() {
         announceDone(order, true);
         setGlowTab(null);
         setTab(to); // 대기를 거치지 않고 바로 보유(판매는 내역)로
-        setFresh({ tab: to, key: to === 'holdings' ? order.stockId : String(order.id) });
-        clearTimeout(freshTimer.current);
-        freshTimer.current = setTimeout(() => setFresh(null), 4000);
+        markFresh(to, to === 'holdings' ? order.stockId : String(order.id));
         return;
       }
       order.filled = got;
@@ -321,7 +317,7 @@ export default function App() {
     cancelled.current.add(id); // 날아가는 동안 체결되지 않게
     flyAway([id], 'history', () => {
       setOpen((l) => l.filter((x) => x.id !== id));
-      setHistory((h) => [{ ...o, status: 'cancelled', time: now(), isNew: false }, ...h]);
+      setHistory((h) => [{ ...o, status: 'cancelled', time: now(), at: Date.now(), isNew: false }, ...h]);
     });
   };
   const cancelAll = (only?: number[]) => {
@@ -332,7 +328,7 @@ export default function App() {
       'history',
       () => {
         const ids = new Set(list.map((o) => o.id));
-        setHistory((h) => [...list.map((o) => ({ ...o, status: 'cancelled' as const, time: now(), isNew: false })), ...h]);
+        setHistory((h) => [...list.map((o) => ({ ...o, status: 'cancelled' as const, time: now(), at: Date.now(), isNew: false })), ...h]);
         setOpen((l) => l.filter((o) => !ids.has(o.id)));
       },
     );
@@ -353,7 +349,6 @@ export default function App() {
   };
 
   const onHolding = (stockId: string) => {
-    setShowTip(false);
     if (stockId !== stock.id) {
       setStock(stockById(stockId));
       setPrice(null);
@@ -434,7 +429,6 @@ export default function App() {
               holdings={holdings}
               priceOf={priceOf}
               currentStockId={stock.id}
-              showTip={showTip}
               onCancel={cancel}
               onCancelAll={cancelAll}
               onHolding={onHolding}

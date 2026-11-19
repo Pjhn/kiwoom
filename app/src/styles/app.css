@@ -184,7 +184,7 @@
   position: absolute; top: 0; width: 18px; height: 18px; margin-left: -9px; border-radius: 50%;
   background: #fff; border: 2px solid var(--side-buy); transform: translateX(clamp(0px, 0px, 0px));
 }
-.slider .thumb { margin-left: 0; transform: translateX(-50%); }
+.slider .thumb { margin-left: 0; transform: translateX(-50%); box-shadow: 0 1px 4px rgba(0,0,0,.14); }
 .slider.sell .thumb { border-color: var(--side-sell); }
 .slider.empty .thumb { border: 1px solid var(--gray-200); transform: none; }
 .slider:focus-visible .thumb { box-shadow: 0 0 0 3px rgba(229,0,125,.2); }
@@ -275,6 +275,10 @@
 .sort-wrap { position: relative; }
 .sort-menu { left: auto; right: -8px; min-width: 140px; }
 .sort-menu button { white-space: nowrap; }
+.date-btn img { transition: transform .15s; }
+.date-btn img.flip { transform: rotate(180deg); }
+.date-pick { position: relative; }
+.date-pick input { position: absolute; left: 0; bottom: 0; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
 
 .oi-list { list-style: none; margin: 0; padding: 0; }
 .oi-item {
@@ -318,7 +322,7 @@
   animation: snackIn .25s ease-out;
 }
 .framed .snack { top: 70px; }
-.snack img { position: absolute; left: 20px; top: 10px; filter: drop-shadow(0 1px 3px rgba(31,183,79,.45)); }
+.snack img { position: absolute; left: 20px; top: 10px; }
 .snack p { flex: 1; min-width: 0; display: flex; font-size: 14px; color: #fff; white-space: nowrap; }
 .snack .snack-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .snack .snack-rest { flex: none; white-space: pre; }

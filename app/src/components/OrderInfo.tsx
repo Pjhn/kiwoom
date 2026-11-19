@@ -1,6 +1,7 @@
 import { type CSSProperties, Fragment, type ReactNode, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import filterIcon from '../assets/icons/filter.svg';
 import checkMagenta from '../assets/icons/check-magenta-24.svg';
+import arrowDown from '../assets/icons/arrow-down-16-outlined.svg';
 import tooltipArrow from '../assets/icons/tooltip-arrow.svg';
 import emptyGraphic from '../assets/img/empty-graphic@3x.png';
 import { fmt, stockById } from '../lib/market';
@@ -18,6 +19,8 @@ export type Order = {
   status: OrderStatus;
   time: string;
   isNew?: boolean;
+  /** 접수, 체결, 취소된 시각 (ms) */
+  at?: number;
 };
 export type Holding = { stockId: string; qty: number; avg: number };
 export type InfoTab = 'pending' | 'holdings' | 'history';
@@ -89,6 +92,98 @@ function SortMenu({ value, onChange }: { value: Sort; onChange: (s: Sort) => voi
   );
 }
 
+/** 내역 날짜 범위 */
+type DateRange = { kind: 'all' | 'today' | '7d' | '30d' } | { kind: 'day'; day: string };
+const RANGES: { kind: 'all' | 'today' | '7d' | '30d'; label: string }[] = [
+  { kind: 'all', label: '전체 기간' },
+  { kind: 'today', label: '오늘' },
+  { kind: '7d', label: '최근 7일' },
+  { kind: '30d', label: '최근 1개월' },
+];
+const ymd = (t: number) => {
+  const d = new Date(t);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+const DAY = 86_400_000;
+function inRange(at: number | undefined, r: DateRange) {
+  const t = at ?? Date.now();
+  if (r.kind === 'all') return true;
+  if (r.kind === 'day') return ymd(t) === r.day;
+  const start = new Date();
+  start.setHours(0, 0, 0, 0);
+  const from = start.getTime() - (r.kind === 'today' ? 0 : r.kind === '7d' ? 6 * DAY : 29 * DAY);
+  return t >= from;
+}
+const rangeLabel = (r: DateRange) =>
+  r.kind === 'day' ? `${Number(r.day.slice(5, 7))}월 ${Number(r.day.slice(8, 10))}일` : RANGES.find((x) => x.kind === r.kind)!.label;
+
+/** 내역 날짜 고르기: 정렬 메뉴와 같은 드롭다운, 마지막 줄에서 달력으로 하루를 고른다 */
+function DateMenu({ value, onChange }: { value: DateRange; onChange: (r: DateRange) => void }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const input = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const off = (e: PointerEvent) => {
+      if (!ref.current?.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('pointerdown', off);
+    return () => document.removeEventListener('pointerdown', off);
+  }, [open]);
+  const pick = (r: DateRange) => {
+    onChange(r);
+    setOpen(false);
+  };
+  return (
+    <div className="sort-wrap" ref={ref}>
+      <button className="sort-btn date-btn" onClick={() => setOpen((v) => !v)} aria-haspopup="listbox" aria-expanded={open}>
+        {rangeLabel(value)}
+        <img src={arrowDown} alt="" className={open ? 'flip' : ''} />
+      </button>
+      {open && (
+        <ul className="minute-menu sort-menu" role="listbox" aria-label="날짜">
+          {RANGES.map((o) => (
+            <li key={o.kind}>
+              <button role="option" aria-selected={value.kind === o.kind} className={value.kind === o.kind ? 'on' : ''} onClick={() => pick({ kind: o.kind })}>
+                {o.label}
+                {value.kind === o.kind && <img src={checkMagenta} alt="" width={16} height={16} />}
+              </button>
+            </li>
+          ))}
+          <li className="date-pick">
+            <button
+              role="option"
+              aria-selected={value.kind === 'day'}
+              className={value.kind === 'day' ? 'on' : ''}
+              onClick={() => {
+                const el = input.current;
+                if (!el) return;
+                try {
+                  el.showPicker();
+                } catch {
+                  el.focus();
+                  el.click();
+                }
+              }}
+            >
+              {value.kind === 'day' ? rangeLabel(value) : '날짜 선택'}
+              {value.kind === 'day' && <img src={checkMagenta} alt="" width={16} height={16} />}
+            </button>
+            <input
+              ref={input}
+              type="date"
+              aria-label="날짜 선택"
+              max={ymd(Date.now())}
+              value={value.kind === 'day' ? value.day : ''}
+              onChange={(e) => e.target.value && pick({ kind: 'day', day: e.target.value })}
+            />
+          </li>
+        </ul>
+      )}
+    </div>
+  );
+}
+
 function FilterRow({
   count,
   current,
@@ -153,7 +248,6 @@ type Props = {
   holdings: Holding[];
   priceOf: (stockId: string) => number;
   currentStockId: string;
-  showTip: boolean;
   onCancel: (id: number) => void;
   onCancelAll: (ids?: number[]) => void;
   onHolding: (stockId: string) => void;
@@ -166,16 +260,17 @@ type Props = {
 const paper = (i: number) => ({ '--i': Math.min(i, 8) }) as CSSProperties;
 
 function FilteredEmpty() {
-  return <p className="oi-none paper">현재 종목은 비어있어요</p>;
+  return <p className="oi-none paper">조건에 맞는 항목이 없어요</p>;
 }
 
 export function OrderInfo(p: Props) {
   const root = useRef<HTMLElement>(null);
   const [scope, setScope] = useState<Scope>('all');
   const [sort, setSort] = useState<Sort>('recent');
+  const [range, setRange] = useState<DateRange>({ kind: 'all' });
   const mine = (id: string) => scope === 'all' || id === p.currentStockId;
   const openList = p.open.filter((o) => mine(o.stockId));
-  const historyList = p.history.filter((o) => mine(o.stockId));
+  const historyList = p.history.filter((o) => mine(o.stockId) && inRange(o.at, range));
   const plPct = (h: Holding) => (p.priceOf(h.stockId) - h.avg) / h.avg;
   const holdList = p.holdings
     .filter((h) => mine(h.stockId))
@@ -226,7 +321,7 @@ export function OrderInfo(p: Props) {
         ))}
       </div>
 
-      <div className="oi-body" key={`${p.tab}-${scope}-${sort}`}>
+      <div className="oi-body" key={`${p.tab}-${scope}-${sort}-${JSON.stringify(range)}`}>
         {p.tab === 'pending' &&
           (p.open.length === 0 ? (
             <Empty text="주문 내역이 비어있어요" />
@@ -287,7 +382,6 @@ export function OrderInfo(p: Props) {
                   index={i}
                   h={h}
                   price={p.priceOf(h.stockId)}
-                  showTip={p.showTip && i === 0}
                   fresh={p.fresh?.tab === 'holdings' && p.fresh.key === h.stockId}
                   onClick={() => p.onHolding(h.stockId)}
                 />
@@ -304,6 +398,7 @@ export function OrderInfo(p: Props) {
                 {...filterProps}
                 count={p.history.length}
                 current={p.history.filter((o) => o.stockId === p.currentStockId).length}
+                right={<DateMenu value={range} onChange={setRange} />}
               />
               {historyList.length === 0 && <FilteredEmpty />}
               <ul className="oi-list">
@@ -334,7 +429,6 @@ export function OrderInfo(p: Props) {
 function HoldingItem({
   h,
   price,
-  showTip,
   onClick,
   index,
   fresh,
@@ -342,7 +436,6 @@ function HoldingItem({
   fresh: boolean;
   h: Holding;
   price: number;
-  showTip: boolean;
   onClick: () => void;
   index: number;
 }) {
@@ -377,7 +470,7 @@ function HoldingItem({
           </p>
         </div>
       </button>
-      {showTip && (
+      {fresh && (
         <div className="tooltip" role="tooltip">
           <img className="arrow" src={tooltipArrow} alt="" />
           터치하여 판매할 수 있어요
