@@ -9,6 +9,7 @@ npm install
 npm run dev        # 개발 서버
 npm run build      # 타입 검사 후 dist/ 빌드
 npm run preview    # 빌드 결과 미리보기
+npm run build:pages  # GitHub Pages용으로 저장소 루트의 order/ 에 빌드 (main 병합 후 /kiwoom/order/ 주소로 공개)
 ```
 
 - 폭 500px 이상 화면에서는 375px 아이폰 프레임(상태바와 홈 인디케이터 포함)으로 보입니다.
