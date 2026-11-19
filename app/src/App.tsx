@@ -6,10 +6,11 @@ import { OrderPanel, type Side } from './components/OrderPanel';
 import { MultiChart } from './components/MultiChart';
 import { OrderInfo, type Holding, type InfoTab, type Order } from './components/OrderInfo';
 import { ConfirmSheet, SnackBar, type Snack } from './components/Overlays';
-import { ASKS, BIDS, CASH, CURRENT_PRICE, STOCK, TICK, fmt } from './lib/market';
-
-const BEST_ASK = Math.min(...ASKS.map((r) => r.price));
-const BEST_BID = Math.max(...BIDS.map((r) => r.price));
+import { OrderTypeSheet } from './components/OrderTypeSheet';
+import { StockPicker } from './components/StockPicker';
+import { CASH, STOCKS, type Market, type Stock, bestAsk, bestBid, fmt, krxTick, stockById } from './lib/market';
+import { autoPrice, isUserPriced, typeLabel, type OrderType } from './lib/orderTypes';
+import { useMarket } from './lib/useMarket';
 
 function useFramed() {
   const q = new URLSearchParams(location.search).get('frame');
@@ -29,22 +30,40 @@ const now = () => {
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 };
 
+const initialStock = () => {
+  const q = new URLSearchParams(location.search).get('stock');
+  return STOCKS.find((s) => s.id === q) ?? STOCKS[0];
+};
+
 export default function App() {
   const framed = useFramed();
+  const [stock, setStock] = useState<Stock>(initialStock);
+  const market = useMarket(stock);
+  const marketRef = useRef<Market>(market);
+  marketRef.current = market;
+
   const [panelOpen, setPanelOpen] = useState(true);
   const [view, setView] = useState<View>('book');
   const [side, setSide] = useState<Side>('buy');
   const [price, setPrice] = useState<number | null>(null);
   const [qty, setQty] = useState<number | null>(null);
   const [confirming, setConfirming] = useState(false);
+  const [orderType, setOrderType] = useState<OrderType>('limit');
+  const [typesOpen, setTypesOpen] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   const [open, setOpen] = useState<Order[]>([]);
   const [history, setHistory] = useState<Order[]>([]);
-  const [holding, setHolding] = useState<Holding | null>(null);
+  const [holdings, setHoldings] = useState<Holding[]>([]);
   const [tab, setTab] = useState<InfoTab>('pending');
   const [glowTab, setGlowTab] = useState<InfoTab | null>(null);
   const [showTip, setShowTip] = useState(false);
   const [snack, setSnack] = useState<Snack | null>(null);
+
+  // 종목별 마지막 가격 (보유 평가에 사용)
+  const lastPrice = useRef<Record<string, number>>({});
+  lastPrice.current[stock.id] = market.price;
+  const priceOf = (id: string) => lastPrice.current[id] ?? stockById(id).mockPrice;
 
   const seq = useRef(1);
   const openRef = useRef(open);
@@ -52,22 +71,27 @@ export default function App() {
   const infoRef = useRef<HTMLDivElement>(null);
   const scrollerRef = useRef<HTMLDivElement>(null);
 
-  const pendingSellQty = open.filter((o) => o.side === 'sell').reduce((s, o) => s + (o.qty - o.filled), 0);
+  const userPriced = isUserPriced(orderType);
+  const auto = autoPrice(orderType, side, market);
+  const effPrice = userPriced ? price : auto;
+
+  const holding = holdings.find((h) => h.stockId === stock.id);
+  const pendingSellQty = open
+    .filter((o) => o.side === 'sell' && o.stockId === stock.id)
+    .reduce((s, o) => s + (o.qty - o.filled), 0);
   const sellable = Math.max(0, (holding?.qty ?? 0) - pendingSellQty);
   const maxQty = useMemo(() => {
     if (side === 'sell') return sellable;
-    const p = price ?? CURRENT_PRICE;
+    const p = effPrice ?? market.price;
     return p > 0 ? Math.floor(CASH / p) : 0;
-  }, [side, price, sellable]);
+  }, [side, effPrice, sellable, market.price]);
 
-  // 스낵바 자동 닫기
   useEffect(() => {
     if (!snack) return;
     const t = setTimeout(() => setSnack(null), 3500);
     return () => clearTimeout(t);
   }, [snack]);
 
-  // 툴팁 자동 닫기
   useEffect(() => {
     if (!showTip) return;
     const t = setTimeout(() => setShowTip(false), 5000);
@@ -89,38 +113,39 @@ export default function App() {
   const goTab = (t: InfoTab) => {
     setTab(t);
     if (glowTab === t) setGlowTab(null);
-    if (t === 'holdings' && holding) setShowTip(true);
-    if (t !== 'holdings') setShowTip(false);
+    setShowTip(t === 'holdings' && holdings.length > 0);
   };
 
-  // 체결 처리: 보유 수량과 평균가 반영
   const applyFill = useCallback((o: Order, delta: number) => {
     if (delta <= 0) return;
-    setHolding((h) => {
+    setHoldings((list) => {
+      const h = list.find((x) => x.stockId === o.stockId);
+      const rest = list.filter((x) => x.stockId !== o.stockId);
       if (o.side === 'buy') {
         const q = (h?.qty ?? 0) + delta;
         const avg = ((h?.avg ?? 0) * (h?.qty ?? 0) + o.price * delta) / q;
-        return { qty: q, avg: Math.round(avg) };
+        return [{ stockId: o.stockId, qty: q, avg: Math.round(avg) }, ...rest];
       }
-      if (!h) return h;
+      if (!h) return list;
       const q = h.qty - delta;
-      return q > 0 ? { qty: q, avg: h.avg } : null;
+      return q > 0 ? list.map((x) => (x.stockId === o.stockId ? { ...x, qty: q } : x)) : rest;
     });
   }, []);
 
   const fillTo = useCallback(
     (id: number, filled: number) => {
       const o = openRef.current.find((x) => x.id === id);
-      if (!o) return; // 이미 취소됨
+      if (!o) return;
       const target = Math.min(o.qty, filled);
       applyFill(o, target - o.filled);
+      const name = stockById(o.stockId).name;
       const verb = o.side === 'buy' ? '구매' : '판매';
       if (target >= o.qty) {
         setOpen((list) => list.filter((x) => x.id !== id));
         setHistory((h) => [{ ...o, filled: o.qty, status: 'filled', time: now(), isNew: false }, ...h]);
         if (o.side === 'buy') {
           setGlowTab('holdings');
-          toast(`${STOCK.name} ${verb}가 완료됐어요`, '보유 확인', () => {
+          toast(`${name} ${verb}가 완료됐어요`, '보유 확인', () => {
             setSnack(null);
             setTab('holdings');
             setGlowTab(null);
@@ -129,7 +154,7 @@ export default function App() {
           });
         } else {
           setGlowTab('history');
-          toast(`${STOCK.name} ${verb}가 완료됐어요`, '내역 보기', () => {
+          toast(`${name} ${verb}가 완료됐어요`, '내역 보기', () => {
             setSnack(null);
             setTab('history');
             setGlowTab(null);
@@ -144,12 +169,13 @@ export default function App() {
   );
 
   const submit = () => {
-    if (price == null) {
+    if (effPrice == null) {
       document.querySelector<HTMLInputElement>('.order-panel input')?.focus();
       return;
     }
     if (qty == null || qty <= 0) {
-      document.querySelectorAll<HTMLInputElement>('.order-panel input')[1]?.focus();
+      const inputs = document.querySelectorAll<HTMLInputElement>('.order-panel input');
+      inputs[inputs.length - 1]?.focus();
       return;
     }
     if (qty > maxQty) {
@@ -160,28 +186,59 @@ export default function App() {
     setConfirming(true);
   };
 
+  // 체결 흉내: 주문 가격이 상대 호가에 닿았는지 시세가 바뀔 때마다 본다
+  const tryFill = useCallback(
+    (o: Order) => {
+      const m = marketRef.current;
+      if (m.stock.id !== o.stockId) return false;
+      return o.side === 'buy' ? o.price >= bestAsk(m) : o.price <= bestBid(m);
+    },
+    [],
+  );
+
+  const scheduleFill = (o: Order) => {
+    if (o.qty > 1) setTimeout(() => fillTo(o.id, Math.ceil(o.qty * 0.7)), 2500);
+    setTimeout(() => fillTo(o.id, o.qty), 5000);
+  };
+
+  // 대기 주문이 나중에 시세에 닿으면 체결
+  const filling = useRef(new Set<number>());
+  useEffect(() => {
+    for (const o of open) {
+      if (filling.current.has(o.id)) continue;
+      if (tryFill(o)) {
+        filling.current.add(o.id);
+        scheduleFill(o);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [market, open]);
+
   const confirm = () => {
-    if (price == null || qty == null) return;
+    if (effPrice == null || qty == null) return;
     const id = seq.current++;
-    const order: Order = { id, side, price, qty, filled: 0, status: 'pending', time: now(), isNew: true };
+    const order: Order = {
+      id,
+      stockId: stock.id,
+      side,
+      price: effPrice,
+      qty,
+      filled: 0,
+      status: 'pending',
+      time: now(),
+      isNew: true,
+    };
     setOpen((l) => [order, ...l]);
     setConfirming(false);
     setTab('pending');
     setShowTip(false);
     const verb = side === 'buy' ? '구매' : '판매';
-    toast(`${STOCK.name} ${verb} 주문을 접수했어요`, '대기 보기', () => {
+    toast(`${stock.name} ${verb} 주문을 접수했어요`, '대기 보기', () => {
       setSnack(null);
       setTab('pending');
       scrollToInfo();
     });
     setTimeout(() => setOpen((l) => l.map((x) => (x.id === id ? { ...x, isNew: false } : x))), 3000);
-
-    // 시장가에 닿는 주문만 체결을 흉내낸다 (구매: 매도1호가 이상, 판매: 매수1호가 이하)
-    const marketable = side === 'buy' ? price >= BEST_ASK : price <= BEST_BID;
-    if (marketable) {
-      if (qty > 1) setTimeout(() => fillTo(id, Math.ceil(qty * 0.7)), 2500);
-      setTimeout(() => fillTo(id, qty), 5000);
-    }
   };
 
   const cancel = (id: number) => {
@@ -197,15 +254,34 @@ export default function App() {
 
   const pickPrice = (p: number) => {
     setPrice(p);
+    if (!isUserPriced(orderType)) setOrderType('limit');
     if (!panelOpen) setPanelOpen(true);
   };
 
-  const onHolding = () => {
+  const changeStock = (s: Stock) => {
+    setPickerOpen(false);
+    if (s.id === stock.id) return;
+    setStock(s);
+    setPrice(null);
+    setQty(null);
+  };
+
+  const onHolding = (stockId: string) => {
     setShowTip(false);
+    const h = holdings.find((x) => x.stockId === stockId);
+    if (stockId !== stock.id) {
+      setStock(stockById(stockId));
+      setPrice(null);
+    }
     setSide('sell');
     setPanelOpen(true);
-    if (price == null) setPrice(CURRENT_PRICE);
-    setQty(sellable > 0 ? sellable : null);
+    const pendingSell = open
+      .filter((o) => o.side === 'sell' && o.stockId === stockId)
+      .reduce((s, o) => s + (o.qty - o.filled), 0);
+    const can = Math.max(0, (h?.qty ?? 0) - pendingSell);
+    if (stockId === stock.id && price == null) setPrice(market.price);
+    if (stockId !== stock.id) setPrice(priceOf(stockId));
+    setQty(can > 0 ? can : null);
     scrollerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -215,7 +291,12 @@ export default function App() {
     setQty(null);
   };
 
-  const stepPrice = (d: 1 | -1) => setPrice((p) => Math.max(TICK, (p ?? CURRENT_PRICE) + (p == null ? 0 : d * TICK)));
+  const stepPrice = (d: 1 | -1) =>
+    setPrice((p) => {
+      if (p == null) return market.price;
+      const t = krxTick(d > 0 ? p : p - 1);
+      return Math.max(t, p + d * t);
+    });
   const stepQty = (d: 1 | -1) => setQty((q) => (q == null ? (d > 0 ? 1 : null) : q + d <= 0 ? null : q + d));
 
   const iconPos =
@@ -230,15 +311,15 @@ export default function App() {
       <div className="device">
         {framed && <StatusBar />}
         <div className="scroller" ref={scrollerRef}>
-          <TopAppBar />
+          <TopAppBar name={stock.name} live={market.live} onSearch={() => setPickerOpen(true)} />
           <SubBar panelOpen={panelOpen} onTogglePanel={() => setPanelOpen((v) => !v)} />
           <section className="trade">
             {view === 'chart' ? (
-              <MultiChart />
+              <MultiChart main={stock} />
             ) : panelOpen ? (
-              <CompactOrderBook selected={price} onPick={pickPrice} />
+              <CompactOrderBook market={market} onPick={pickPrice} />
             ) : (
-              <WideOrderBook selected={price} onPick={pickPrice} />
+              <WideOrderBook market={market} onPick={pickPrice} />
             )}
             {panelOpen && (
               <OrderPanel
@@ -253,6 +334,9 @@ export default function App() {
                 maxQty={maxQty}
                 available={side === 'buy' ? `${fmt(CASH)} 원` : `${sellable} 주`}
                 onSubmit={submit}
+                orderType={orderType}
+                onOpenTypes={() => setTypesOpen(true)}
+                autoPrice={auto}
               />
             )}
             <IconTabs view={view} onChange={setView} style={iconPos} />
@@ -264,7 +348,9 @@ export default function App() {
               glowTab={glowTab}
               open={open}
               history={history}
-              holding={holding}
+              holdings={holdings}
+              priceOf={priceOf}
+              currentStockId={stock.id}
               showTip={showTip}
               onCancel={cancel}
               onCancelAll={cancelAll}
@@ -274,9 +360,28 @@ export default function App() {
         </div>
         {framed && <HomeIndicator />}
         {snack && <SnackBar snack={snack} />}
-        {confirming && price != null && qty != null && (
-          <ConfirmSheet side={side} price={price} qty={qty} onCancel={() => setConfirming(false)} onConfirm={confirm} />
+        {confirming && effPrice != null && qty != null && (
+          <ConfirmSheet
+            stock={stock}
+            side={side}
+            price={effPrice}
+            qty={qty}
+            typeName={typeLabel(orderType)}
+            onCancel={() => setConfirming(false)}
+            onConfirm={confirm}
+          />
         )}
+        {typesOpen && (
+          <OrderTypeSheet
+            value={orderType}
+            onClose={() => setTypesOpen(false)}
+            onSelect={(t) => {
+              setOrderType(t);
+              setTypesOpen(false);
+            }}
+          />
+        )}
+        {pickerOpen && <StockPicker current={stock} onPick={changeStock} onClose={() => setPickerOpen(false)} />}
       </div>
     </div>
   );

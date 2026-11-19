@@ -1,16 +1,15 @@
 import { Fragment, type ReactNode } from 'react';
-import logo46 from '../assets/icons/logo-kakao-46.svg';
-import logo46Ring from '../assets/icons/logo-kakao-46-ring.svg';
-import logo46Holding from '../assets/icons/logo-kakao-46-holding.svg';
 import filterIcon from '../assets/icons/filter.svg';
 import tooltipArrow from '../assets/icons/tooltip-arrow.svg';
 import emptyGraphic from '../assets/img/empty-graphic@3x.png';
-import { CURRENT_PRICE, STOCK, fmt } from '../lib/market';
+import { fmt, stockById } from '../lib/market';
+import { StockLogo, kakaoHoldingLogo } from './StockLogo';
 import type { Side } from './OrderPanel';
 
 export type OrderStatus = 'pending' | 'partial' | 'filled' | 'cancelled';
 export type Order = {
   id: number;
+  stockId: string;
   side: Side;
   price: number;
   qty: number;
@@ -19,7 +18,7 @@ export type Order = {
   time: string;
   isNew?: boolean;
 };
-export type Holding = { qty: number; avg: number };
+export type Holding = { stockId: string; qty: number; avg: number };
 export type InfoTab = 'pending' | 'holdings' | 'history';
 
 const TABS: { key: InfoTab; label: string }[] = [
@@ -39,12 +38,12 @@ function Empty({ text }: { text: string }) {
   );
 }
 
-function FilterRow({ count, right }: { count: number; right?: ReactNode }) {
+function FilterRow({ count, current, right }: { count: number; current: number; right?: ReactNode }) {
   return (
     <div className="oi-filter">
       <div className="l">
         <button className="chip on">전체 {count}</button>
-        <button className="chip">현재 종목 {count}</button>
+        <button className="chip">현재 종목 {current}</button>
       </div>
       {right}
     </div>
@@ -77,11 +76,13 @@ type Props = {
   glowTab: InfoTab | null;
   open: Order[];
   history: Order[];
-  holding: Holding | null;
+  holdings: Holding[];
+  priceOf: (stockId: string) => number;
+  currentStockId: string;
   showTip: boolean;
   onCancel: (id: number) => void;
   onCancelAll: () => void;
-  onHolding: () => void;
+  onHolding: (stockId: string) => void;
 };
 
 export function OrderInfo(p: Props) {
@@ -111,6 +112,7 @@ export function OrderInfo(p: Props) {
             <>
               <FilterRow
                 count={p.open.length}
+                current={p.open.filter((o) => o.stockId === p.currentStockId).length}
                 right={
                   <button className="outlined-sm" onClick={p.onCancelAll}>
                     {p.open.length}건 취소
@@ -120,10 +122,10 @@ export function OrderInfo(p: Props) {
               <ul className="oi-list">
                 {p.open.map((o) => (
                   <li key={o.id} className={`oi-item ${o.isNew ? 'alert' : ''}`}>
-                    <img className="logo" src={o.status === 'partial' ? logo46Ring : logo46} alt="" />
+                    <StockLogo stock={stockById(o.stockId)} size={46} ring={o.status === 'partial'} />
                     <div className="oi-text">
                       <p className="oi-title">
-                        <span className={o.side}>{sideLabel(o.side)}</span> {STOCK.name}
+                        <span className={o.side}>{sideLabel(o.side)}</span> {stockById(o.stockId).name}
                       </p>
                       <OrderLine o={o} />
                     </div>
@@ -137,12 +139,13 @@ export function OrderInfo(p: Props) {
           ))}
 
         {p.tab === 'holdings' &&
-          (!p.holding ? (
+          (p.holdings.length === 0 ? (
             <Empty text="보유한 주식이 없어요" />
           ) : (
             <>
               <FilterRow
-                count={1}
+                count={p.holdings.length}
+                current={p.holdings.filter((h) => h.stockId === p.currentStockId).length}
                 right={
                   <button className="sort-btn">
                     <img src={filterIcon} alt="" />
@@ -150,7 +153,15 @@ export function OrderInfo(p: Props) {
                   </button>
                 }
               />
-              <HoldingItem h={p.holding} showTip={p.showTip} onClick={p.onHolding} />
+              {p.holdings.map((h, i) => (
+                <HoldingItem
+                  key={h.stockId}
+                  h={h}
+                  price={p.priceOf(h.stockId)}
+                  showTip={p.showTip && i === 0}
+                  onClick={() => p.onHolding(h.stockId)}
+                />
+              ))}
             </>
           ))}
 
@@ -159,14 +170,17 @@ export function OrderInfo(p: Props) {
             <Empty text="거래 내역이 비어있어요" />
           ) : (
             <>
-              <FilterRow count={p.history.length} />
+              <FilterRow
+                count={p.history.length}
+                current={p.history.filter((o) => o.stockId === p.currentStockId).length}
+              />
               <ul className="oi-list">
                 {p.history.map((o) => (
                   <li key={o.id} className="oi-item">
-                    <img className="logo" src={logo46} alt="" />
+                    <StockLogo stock={stockById(o.stockId)} size={46} />
                     <div className="oi-text">
                       <p className="oi-title">
-                        <span className={o.side}>{sideLabel(o.side)}</span> {STOCK.name}
+                        <span className={o.side}>{sideLabel(o.side)}</span> {stockById(o.stockId).name}
                       </p>
                       <OrderLine o={o} />
                     </div>
@@ -181,18 +195,23 @@ export function OrderInfo(p: Props) {
   );
 }
 
-function HoldingItem({ h, showTip, onClick }: { h: Holding; showTip: boolean; onClick: () => void }) {
-  const value = CURRENT_PRICE * h.qty;
+function HoldingItem({ h, price, showTip, onClick }: { h: Holding; price: number; showTip: boolean; onClick: () => void }) {
+  const stock = stockById(h.stockId);
+  const value = price * h.qty;
   const cost = h.avg * h.qty;
   const pl = value - cost;
   const plPct = (pl / cost) * 100;
   const tone = pl > 0 ? 'up' : pl < 0 ? 'down' : '';
   return (
     <div className="holding-wrap">
-      <button className="oi-item holding" onClick={onClick} aria-label="카카오 판매하기">
-        <img className="logo" src={logo46Holding} alt="" />
+      <button className="oi-item holding" onClick={onClick} aria-label={`${stock.name} 판매하기`}>
+        {stock.id === 'kakao' ? (
+          <img className="logo" src={kakaoHoldingLogo} alt="" width={46} height={46} />
+        ) : (
+          <StockLogo stock={stock} size={46} />
+        )}
         <div className="oi-text">
-          <p className="oi-title">{STOCK.name}</p>
+          <p className="oi-title">{stock.name}</p>
           <p className="oi-sub">
             <span>평균 {fmt(h.avg)} 원</span>
             <i />

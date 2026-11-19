@@ -20,27 +20,46 @@ npm run preview    # 빌드 결과 미리보기
 | --- | --- |
 | `src/styles/base.css` | Figma 변수(색상), Pretendard, 기본 스타일 |
 | `src/styles/app.css` | 화면 전체 스타일 |
-| `src/lib/market.ts` | 목업 시세, 호가, 체결 데이터 |
+| `src/lib/market.ts` | 종목 정의, 시세 모델, 호가 단위 |
+| `src/lib/useMarket.ts` | 바이낸스 실시간 시세와 모의 시세 |
+| `src/lib/useCandles.ts`, `src/lib/candles.ts` | 차트 캔들(바이낸스 또는 모의) |
+| `src/lib/binance.ts`, `src/lib/fx.ts` | 바이낸스 선물 API, 환율 |
+| `src/lib/orderTypes.ts` | 주문유형 |
 | `src/components/Chrome.tsx` | 상태바, 상단 앱바, 계좌 바, 홈 인디케이터 |
 | `src/components/OrderBook.tsx` | 좁은 호가(패널 열림), 넓은 호가(패널 닫힘) |
 | `src/components/OrderPanel.tsx` | 구매/판매 주문 패널, 입력칸, 슬라이더, 토글 |
-| `src/components/MultiChart.tsx` | 멀티 차트 |
+| `src/components/MultiChart.tsx`, `TvChart.tsx` | TradingView 멀티 차트 |
+| `src/components/OrderTypeSheet.tsx`, `StockPicker.tsx` | 주문유형 시트, 종목 선택 시트 |
 | `src/components/OrderInfo.tsx` | 대기, 보유, 내역 탭 |
 | `src/components/Overlays.tsx` | 주문 확인 바텀 시트, 스낵바 |
 | `src/assets/` | Figma에서 내보낸 아이콘, 차트, 빈 화면 그래픽 |
 
+## 시세 데이터
+
+- 삼성전자, SK하이닉스, 현대차는 바이낸스 USDⓈ-M 주식 선물(`SAMSUNGUSDT`, `SKHYNIXUSDT`, `HYUNDAIUSDT`)의 공개 시세를 받습니다. API 키는 쓰지 않습니다.
+  - 호가: `/fapi/v1/depth` 를 2초마다 받아 원화 호가 단위로 묶어 6단계로 보여줌
+  - 현재가와 체결: 웹소켓 `@aggTrade`, `@ticker`
+  - 차트: `/fapi/v1/klines` 와 웹소켓 `@kline_*`
+- 가격은 USDT를 원화로 바꿔 보여줍니다. 환율은 업비트 KRW-USDT 시세를 쓰고, 실패하면 `VITE_USDKRW` 값 또는 1,450원을 씁니다.
+- 바이낸스에 닿지 않으면(네트워크 차단, 미리보기 환경 등) 같은 종목을 모의 시세로 자동 전환합니다. 검색창 옆 「실시간」 표시가 있으면 실제 시세입니다.
+- 카카오는 바이낸스에 없어 모의 시세만 씁니다.
+- 주문은 실제로 나가지 않습니다. 지정가가 상대 호가에 닿으면 체결된 것으로 흉내 냅니다.
+- `?stock=samsung` 처럼 첫 종목을 고를 수 있습니다 (hynix, samsung, hyundai, kakao).
+
 ## 동작
 
+- 검색창을 누르면 종목 선택
+- 주문유형 시트(지정가, 시장가, 중간가, 최유리 지정가, 최우선 지정가, 조건부 지정가). 지정가와 조건부 지정가만 가격을 직접 넣고, 나머지는 호가로 가격이 정해짐
 - 구매/판매 전환, 가격과 수량 입력(직접 입력, -/+ 버튼), 슬라이더로 가능 수량의 비율 선택
-- 호가를 누르면 그 가격이 입력됨(패널이 닫혀 있으면 열림)
+- 호가를 누르면 그 가격이 지정가로 입력됨(패널이 닫혀 있으면 열림)
 - 오른쪽 위 패널 버튼으로 주문 패널 열기/닫기, 왼쪽 아이콘 탭으로 호가와 차트 전환
-- 구매하기 → 확인 시트(세부 사항 펼치기) → 접수 스낵바와 대기 목록
-- 매도 1호가(31,750원) 이상 구매 주문은 약 2.5초 뒤 일부 체결, 5초 뒤 전량 체결되고 보유로 옮겨짐. 그보다 낮은 가격은 체결대기로 남음
+- 차트는 TradingView Lightweight Charts. 영역을 꽉 채우고, 아래 「차트 추가」로 최대 4개까지 나눠 보기, 종목 이름을 누르면 종목 바꾸기
+- 구매하기 → 확인 시트(세부 사항 펼치기) → 접수 스낵바와 대기 목록 → 체결되면 보유로 옮겨짐
 - 체결되면 보유 탭이 빛나고 「보유 확인」을 누르면 보유 탭과 툴팁이 뜸
 - 보유 종목을 누르면 판매 모드로 바뀌고 판매가능 수량이 채워짐
 - 대기 주문은 하나씩 또는 「N건 취소」로 한꺼번에 취소, 취소와 체결 결과는 내역 탭에 쌓임
 
 ## 아직 없는 것
 
-- 주문 유형(지정가) 드롭다운, 일반주문 드롭다운, 주문 안내, AI 도우미: 시안이 정해지면 추가
+- 일반주문 드롭다운, 주문 안내, AI 도우미: 시안이 정해지면 추가
 - Capacitor 앱 포장

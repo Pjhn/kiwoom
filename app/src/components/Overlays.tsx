@@ -1,21 +1,25 @@
 import { useState } from 'react';
-import logo24 from '../assets/icons/logo-kakao-24.svg';
 import arrowDown12 from '../assets/icons/arrow-down-12.svg';
 import arrowUp12 from '../assets/icons/arrow-up-12.svg';
 import check from '../assets/icons/check.svg';
-import { STOCK, fmt } from '../lib/market';
+import { type Stock, fmt } from '../lib/market';
+import { StockLogo } from './StockLogo';
 import type { Side } from './OrderPanel';
 
 export function ConfirmSheet({
+  stock,
   side,
   price,
   qty,
+  typeName,
   onCancel,
   onConfirm,
 }: {
+  stock: Stock;
   side: Side;
   price: number;
   qty: number;
+  typeName: string;
   onCancel: () => void;
   onConfirm: () => void;
 }) {
@@ -28,8 +32,8 @@ export function ConfirmSheet({
         <span className="handle" />
         <div className="sheet-text">
           <p>
-            <img src={logo24} alt="" width={24} height={24} />
-            <b>{STOCK.name}</b>
+            <StockLogo stock={stock} size={24} />
+            <b>{stock.name}</b>
             <span> 주식을</span>
           </p>
           <p>
@@ -46,7 +50,7 @@ export function ConfirmSheet({
           <dl className="sheet-detail">
             <div>
               <dt>종목명</dt>
-              <dd>{STOCK.name}</dd>
+              <dd>{stock.name}</dd>
             </div>
             <div>
               <dt>거래소</dt>
@@ -54,7 +58,7 @@ export function ConfirmSheet({
             </div>
             <div>
               <dt>주문유형</dt>
-              <dd>지정가 {side === 'buy' ? '매수' : '매도'}</dd>
+              <dd>{typeName} {side === 'buy' ? '매수' : '매도'}</dd>
             </div>
             <div>
               <dt>주문가격</dt>

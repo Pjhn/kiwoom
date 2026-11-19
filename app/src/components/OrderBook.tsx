@@ -1,53 +1,49 @@
-import { ASKS, BIDS, CURRENT_PRICE, PREV_CLOSE, TICKS, fmt, fmtPct, pctOf, type BookRow } from '../lib/market';
+import { type BookRow, type Market, fmt, fmtPct, pctOf } from '../lib/market';
 
-const OPEN_PRICE = 31700;
-const maxVol = Math.max(...ASKS.map((r) => r.volume), ...BIDS.map((r) => r.volume));
-const barW = (v: number, max: number, of = maxVol) => Math.max(2, Math.round(max * Math.sqrt(v / of)));
-const askMax = Math.max(...ASKS.map((r) => r.volume));
-const bidMax = Math.max(...BIDS.map((r) => r.volume));
+type Props = { market: Market; onPick: (price: number) => void };
 
-type Props = { selected: number | null; onPick: (price: number) => void };
+const barW = (v: number, max: number, of: number) => (of <= 0 ? 2 : Math.max(2, Math.round(max * Math.sqrt(v / of))));
 
-function priceClass(price: number, side: 'ask' | 'bid') {
-  if (price < PREV_CLOSE) return 'down';
+function priceClass(price: number, prev: number, side: 'ask' | 'bid') {
+  if (price < prev) return 'down';
   return side === 'ask' ? 'up-ask' : 'up-bid';
 }
 
-function CompactRow({ row, side, selected, onPick }: { row: BookRow; side: 'ask' | 'bid' } & Props) {
+function CompactRow({ row, side, market, onPick, of }: { row: BookRow; side: 'ask' | 'bid'; of: number } & Props) {
   return (
-    <button
-      className={`cbook-row ${side} ${selected === row.price ? 'sel' : ''}`}
-      onClick={() => onPick(row.price)}
-      aria-label={`${fmt(row.price)}원 선택`}
-    >
+    <button className={`cbook-row ${side}`} onClick={() => onPick(row.price)} aria-label={`${fmt(row.price)}원 선택`}>
       <span className="cbook-left">
-        <span className="cbook-slot">{row.price === OPEN_PRICE && <span className="quote-badge">시</span>}</span>
-        <span className={`cbook-price ${priceClass(row.price, side)}`}>
+        <span className="cbook-slot">{row.price === market.open && <span className="quote-badge">시</span>}</span>
+        <span className={`cbook-price ${priceClass(row.price, market.prevClose, side)}`}>
           <span className="p">{fmt(row.price)}</span>
-          <span className="r">{fmtPct(pctOf(row.price))}</span>
+          <span className="r">{fmtPct(pctOf(row.price, market.prevClose))}</span>
         </span>
       </span>
-      <span className={`vol-bar ${side}`} style={{ width: barW(row.volume, 33) }}>
+      <span className={`vol-bar ${side}`} style={{ width: barW(row.volume, 33, of) }}>
         <span>{fmt(row.volume)}</span>
       </span>
     </button>
   );
 }
 
+const maxVol = (m: Market) => Math.max(1, ...m.asks.map((r) => r.volume), ...m.bids.map((r) => r.volume));
+
 export function CompactOrderBook(props: Props) {
+  const { market } = props;
+  const of = maxVol(market);
   return (
     <div className="cbook">
       <div className="cbook-asks">
-        {ASKS.map((r) => (
-          <CompactRow key={r.price} row={r} side="ask" {...props} />
+        {market.asks.map((r) => (
+          <CompactRow key={r.price} row={r} side="ask" of={of} {...props} />
         ))}
       </div>
-      <button className="cbook-current" onClick={() => props.onPick(CURRENT_PRICE)}>
-        <span className="grad-price">{fmt(CURRENT_PRICE)}</span>
+      <button className="cbook-current" onClick={() => props.onPick(market.price)}>
+        <span className="grad-price">{fmt(market.price)}</span>
       </button>
       <div className="cbook-bids">
-        {BIDS.map((r) => (
-          <CompactRow key={r.price} row={r} side="bid" {...props} />
+        {market.bids.map((r) => (
+          <CompactRow key={r.price} row={r} side="bid" of={of} {...props} />
         ))}
       </div>
       <div className="fade top" />
@@ -56,20 +52,16 @@ export function CompactOrderBook(props: Props) {
   );
 }
 
-function WideRow({ row, side, selected, onPick }: { row: BookRow; side: 'ask' | 'bid' } & Props) {
+function WideRow({ row, side, market, onPick, of }: { row: BookRow; side: 'ask' | 'bid'; of: number } & Props) {
   return (
-    <button
-      className={`wbook-row ${side} ${selected === row.price ? 'sel' : ''}`}
-      onClick={() => onPick(row.price)}
-      aria-label={`${fmt(row.price)}원 선택`}
-    >
-      <span className={`vol-bar ${side}`} style={{ width: barW(row.volume, 93, side === 'ask' ? askMax : bidMax) }}>
+    <button className={`wbook-row ${side}`} onClick={() => onPick(row.price)} aria-label={`${fmt(row.price)}원 선택`}>
+      <span className={`vol-bar ${side}`} style={{ width: barW(row.volume, 93, of) }}>
         <span>{fmt(row.volume)}</span>
       </span>
-      {row.price === OPEN_PRICE && <span className="quote-badge wide">시</span>}
-      <span className={`wbook-price ${priceClass(row.price, side)}`}>
+      {row.price === market.open && <span className="quote-badge wide">시</span>}
+      <span className={`wbook-price ${priceClass(row.price, market.prevClose, side)}`}>
         <span className="p">{fmt(row.price)}</span>
-        <span className="r">{fmtPct(pctOf(row.price))}</span>
+        <span className="r">{fmtPct(pctOf(row.price, market.prevClose))}</span>
       </span>
     </button>
   );
@@ -84,49 +76,57 @@ function Stat({ label, value, tone }: { label: string; value: number; tone?: 'up
   );
 }
 
+const snapTo = (p: number, ref: number) => {
+  const t = ref < 2000 ? 1 : ref < 5000 ? 5 : ref < 20000 ? 10 : ref < 50000 ? 50 : ref < 200000 ? 100 : ref < 500000 ? 500 : 1000;
+  return Math.round(p / t) * t;
+};
+
 export function WideOrderBook(props: Props) {
+  const { market: m } = props;
+  const askOf = Math.max(1, ...m.asks.map((r) => r.volume));
+  const bidOf = Math.max(1, ...m.bids.map((r) => r.volume));
   return (
     <div className="wbook">
       <div className="wbook-asks">
-        {ASKS.map((r) => (
-          <WideRow key={r.price} row={r} side="ask" {...props} />
+        {m.asks.map((r) => (
+          <WideRow key={r.price} row={r} side="ask" of={askOf} {...props} />
         ))}
       </div>
-      <button className="wbook-current" onClick={() => props.onPick(CURRENT_PRICE)}>
-        <span className="grad-price">{fmt(CURRENT_PRICE)}</span>
+      <button className="wbook-current" onClick={() => props.onPick(m.price)}>
+        <span className="grad-price">{fmt(m.price)}</span>
       </button>
       <div className="wbook-bids">
-        {BIDS.map((r) => (
-          <WideRow key={r.price} row={r} side="bid" {...props} />
+        {m.bids.map((r) => (
+          <WideRow key={r.price} row={r} side="bid" of={bidOf} {...props} />
         ))}
       </div>
 
       <div className="wbook-stats">
         <div className="g" style={{ top: 27 }}>
-          <Stat label="거래량" value={1_102_100} />
+          <Stat label="거래량" value={m.volume} />
         </div>
         <div className="g" style={{ top: 58 }}>
-          <Stat label="상한가" value={40_100} />
-          <Stat label="하한가" value={23_100} />
+          <Stat label="상한가" value={snapTo(m.prevClose * 1.3, m.prevClose)} />
+          <Stat label="하한가" value={snapTo(m.prevClose * 0.7, m.prevClose)} />
         </div>
         <div className="g" style={{ top: 110 }}>
-          <Stat label="상승 VI" value={34_700} />
-          <Stat label="하락 VI" value={29_600} />
+          <Stat label="상승 VI" value={snapTo(m.prevClose * 1.1, m.prevClose)} />
+          <Stat label="하락 VI" value={snapTo(m.prevClose * 0.9, m.prevClose)} />
         </div>
         <div className="g bottom">
-          <Stat label="시작" value={OPEN_PRICE} />
-          <Stat label="최고" value={31_900} tone="up" />
-          <Stat label="최저" value={30_700} tone="down" />
+          <Stat label="시작" value={m.open} />
+          <Stat label="최고" value={m.high} tone="up" />
+          <Stat label="최저" value={m.low} tone="down" />
         </div>
       </div>
 
       <div className="wbook-ticks">
         <p className="strength">
           <span>체결강도</span>
-          <span className="up">109.02%</span>
+          <span className={m.strength >= 100 ? 'up' : 'down'}>{m.strength.toFixed(2)}%</span>
         </p>
         <ul>
-          {TICKS.map((t, i) => (
+          {m.ticks.slice(0, 8).map((t, i) => (
             <li key={i}>
               <span>{t.price}</span>
               <span className={t.up ? 'up' : 'down'}>{fmt(t.qty)}</span>

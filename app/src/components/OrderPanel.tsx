@@ -6,6 +6,7 @@ import glowBuy from '../assets/icons/glow-buy.svg';
 import glowSell from '../assets/icons/glow-sell.svg';
 import tipArrow from '../assets/icons/slider-tip-arrow.svg';
 import { fmt } from '../lib/market';
+import { isUserPriced, typeLabel, type OrderType } from '../lib/orderTypes';
 
 export type Side = 'buy' | 'sell';
 
@@ -21,6 +22,10 @@ type Props = {
   maxQty: number;
   available: string;
   onSubmit: () => void;
+  orderType: OrderType;
+  onOpenTypes: () => void;
+  /** 주문유형이 가격을 정할 때의 가격 */
+  autoPrice: number;
 };
 
 const parseNum = (s: string) => {
@@ -140,8 +145,10 @@ export function OrderPanel(p: Props) {
   const [margin, setMargin] = useState(false);
   const isBuy = p.side === 'buy';
   const verb = isBuy ? '구매' : '판매';
-  const total = p.price != null && p.qty != null ? p.price * p.qty : 0;
-  const ready = p.price != null && p.qty != null && p.qty > 0;
+  const userPriced = isUserPriced(p.orderType);
+  const price = userPriced ? p.price : p.autoPrice;
+  const total = price != null && p.qty != null ? price * p.qty : 0;
+  const ready = price != null && p.qty != null && p.qty > 0;
   const pct = p.maxQty > 0 && p.qty != null ? Math.min(100, Math.round((p.qty / p.maxQty) * 100)) : 0;
 
   const onPct = (v: number) => {
@@ -161,18 +168,27 @@ export function OrderPanel(p: Props) {
               판매
             </button>
           </div>
-          <button className="dropdown-filled">
-            <span>지정가</span>
+          <button className="dropdown-filled" onClick={p.onOpenTypes} aria-haspopup="dialog">
+            <span>{typeLabel(p.orderType)}</span>
             <img src={arrowDown16} alt="" />
           </button>
-          <NumberField
-            label={`${verb}가`}
-            value={p.price}
-            unit="원"
-            placeholder={`${verb}가 입력`}
-            onChange={p.onPrice}
-            onStep={p.onStepPrice}
-          />
+          {userPriced ? (
+            <NumberField
+              label={`${verb}가`}
+              value={p.price}
+              unit="원"
+              placeholder={`${verb}가 입력`}
+              onChange={p.onPrice}
+              onStep={p.onStepPrice}
+            />
+          ) : (
+            <div className="text-field locked" aria-label={`${verb}가 ${typeLabel(p.orderType)}`}>
+              <span className="tf-locked">
+                {p.orderType === 'market' ? '시장가로 주문' : `${fmt(p.autoPrice)} 원`}
+              </span>
+              <span className="tf-tag">{p.orderType === 'market' ? `약 ${fmt(p.autoPrice)} 원` : '자동'}</span>
+            </div>
+          )}
           <NumberField label="수량" value={p.qty} unit="주" placeholder="수량 입력" onChange={p.onQty} onStep={p.onStepQty} />
         </div>
         <Slider side={p.side} pct={pct} onPct={onPct} />

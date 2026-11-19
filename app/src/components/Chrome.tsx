@@ -6,7 +6,6 @@ import sidePanelOn from '../assets/icons/side-panel-closed.svg';
 import sbSignal from '../assets/icons/sb-signal.svg';
 import sbConnection from '../assets/icons/sb-connection.svg';
 import sbBattery from '../assets/icons/sb-battery.svg';
-import { STOCK } from '../lib/market';
 
 export function StatusBar() {
   return (
@@ -29,15 +28,21 @@ export function HomeIndicator() {
   );
 }
 
-export function TopAppBar() {
+export function TopAppBar({ name, live, onSearch }: { name: string; live: boolean; onSearch: () => void }) {
   return (
     <header className="top-app-bar">
       <button className="icon-btn back" aria-label="뒤로">
         <img src={arrowLeft} alt="" />
       </button>
-      <button className="search-bar">
+      <button className="search-bar" onClick={onSearch} aria-label={`종목 검색, 현재 ${name}`}>
         <img src={search} alt="" />
-        <span>{STOCK.name}</span>
+        <span className="sb-name">{name}</span>
+        {live && (
+          <span className="live-dot" title="실시간 시세">
+            <i />
+            실시간
+          </span>
+        )}
       </button>
       <button className="outlined-dropdown">
         <span>일반주문</span>

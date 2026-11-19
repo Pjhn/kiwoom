@@ -104,7 +104,6 @@
 .cbook-price .r, .wbook-price .r { font-size: 12px; }
 .cbook .vol-bar span { right: 2px; }
 .cbook-current { position: absolute; left: -1px; top: 220px; padding-left: 16px; z-index: 2; }
-.cbook-row.sel .p, .wbook-row.sel .p { text-decoration: underline; text-underline-offset: 3px; }
 
 /* 넓은 호가 (패널 닫힘) */
 .wbook { position: absolute; inset: 0; background: #fff; overflow: hidden; }
@@ -218,7 +217,7 @@
 .primary-btn:active { filter: brightness(.94); }
 
 /* ---------- 멀티 차트 ---------- */
-.mchart { position: absolute; inset: 0; background: #fff; }
+.mchart { position: absolute; inset: 0; background: #fff; display: flex; flex-direction: column; }
 .mchart-head {
   height: 36px; padding: 0 16px; border-bottom: 1px solid var(--gray-700);
   display: flex; align-items: center; justify-content: space-between; background: #fff;
@@ -228,8 +227,20 @@
 .text-btn { padding: 4px 12px; border-radius: 4px; font-size: 14px; }
 .text-btn.on { background: var(--gray-800); color: var(--magenta-400); font-weight: 600; }
 .icon-32 { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; }
-.mchart-pane { position: relative; height: 179px; overflow: hidden; }
-.mchart-pane img { position: absolute; top: -5px; left: 0; }
+.mchart-head { flex: none; }
+.interval.on { color: var(--magenta-400); font-weight: 600; }
+.mchart-panes { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.mchart-pane { position: relative; flex: 1; min-height: 0; border-bottom: 1px solid var(--gray-500); }
+.tv-chart { position: absolute; inset: 0; }
+.pane-ma { font-size: 11px; color: #f59f00; padding: 0 4px; }
+.pane-tools { position: absolute; left: 8px; top: 4px; display: flex; align-items: center; gap: 2px; z-index: 2; }
+.pane-name { font-size: 11px; color: var(--gray-100); padding: 2px 4px; background: rgba(255,255,255,.85); border-radius: 2px; }
+.pane-close { width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,.85); border-radius: 2px; }
+.chart-add {
+  flex: none; height: 40px; display: flex; align-items: center; justify-content: center; gap: 4px;
+  font-size: 14px; font-weight: 500; color: var(--gray-250); background: #fff;
+}
+.chart-add:disabled { color: var(--gray-400); cursor: default; }
 
 /* ---------- 주문 정보 섹션 ---------- */
 .order-info { margin-top: 1px; height: 433px; background: #fff; padding: 4px 0; display: flex; flex-direction: column; gap: 4px; }
@@ -333,3 +344,37 @@
 .sheet-btns .primary.sell { background: var(--side-sell); }
 @keyframes sheetUp { from { transform: translateY(100%); } }
 @keyframes fadeIn { from { opacity: 0; } }
+
+/* ---------- 주문 유형 시트 ---------- */
+.ot-dim { background: rgba(17,17,17,.6); }
+.ot-sheet { height: auto; max-height: calc(100% - 40px); overflow-y: auto; padding: 50px 36px 64px; }
+.ot-col { display: flex; flex-direction: column; gap: 36px; }
+.ot-group { display: flex; flex-direction: column; gap: 24px; }
+.ot-head { font-size: 14px; color: var(--gray-300); }
+.ot-divider { height: 2px; background: var(--gray-700); }
+.ot-item { display: flex; align-items: center; gap: 24px; text-align: left; width: 100%; }
+.ot-text { flex: 1; display: flex; flex-direction: column; gap: 8px; font-size: 16px; }
+.ot-title { font-weight: 600; color: #000; }
+.ot-item.on .ot-title { color: var(--magenta-400); }
+.ot-desc { display: flex; flex-direction: column; line-height: 1.5; color: var(--gray-250); }
+.text-field.locked { background: var(--gray-700); }
+.tf-locked { font-size: 16px; font-weight: 600; color: var(--gray-250); white-space: nowrap; }
+.tf-tag { font-size: 12px; color: var(--gray-300); white-space: nowrap; }
+.mchart-pane:first-child .pane-tools { left: 104px; }
+
+/* ---------- 종목 선택, 실시간 표시 ---------- */
+.sb-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.live-dot { margin-left: auto; display: flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 500; color: var(--magenta-400); flex: none; }
+.live-dot i { width: 6px; height: 6px; border-radius: 50%; background: var(--magenta-400); animation: glowPulse 1.2s ease-in-out infinite; }
+.picker { padding-left: 24px; padding-right: 24px; }
+.picker .ot-head { margin-bottom: 8px; }
+.picker-list { list-style: none; margin: 0; padding: 0; }
+.picker-list button { width: 100%; display: flex; align-items: center; gap: 16px; padding: 12px 0; text-align: left; }
+.pk-name { flex: 1; font-size: 16px; font-weight: 600; }
+.picker-list button.on .pk-name { color: var(--magenta-400); }
+.pk-tag { font-size: 12px; color: var(--gray-300); padding: 4px 8px; border-radius: 4px; background: var(--gray-800); }
+.pk-tag.live { color: var(--magenta-400); background: var(--magenta-800); }
+.text-logo { display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; flex: none; }
+.text-logo > span { display: flex; align-items: center; justify-content: center; border-radius: 50%; font-weight: 600; letter-spacing: -0.04em; }
+.text-logo.ring { box-shadow: inset 0 0 0 2px var(--magenta-400); }
+.sheet-text p .text-logo { margin-right: 4px; }

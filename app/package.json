@@ -12,6 +12,7 @@
     "prebuild": "npm run tokens"
   },
   "dependencies": {
+    "lightweight-charts": "^5.1.0",
     "react": "^19.3.1",
     "react-dom": "^19.3.1"
   },
