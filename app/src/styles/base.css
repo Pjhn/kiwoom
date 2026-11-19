@@ -1,0 +1,46 @@
+@font-face { font-family: Pretendard; font-weight: 400; font-display: swap; src: url('../assets/fonts/Pretendard-Regular.woff2') format('woff2'); }
+@font-face { font-family: Pretendard; font-weight: 500; font-display: swap; src: url('../assets/fonts/Pretendard-Medium.woff2') format('woff2'); }
+@font-face { font-family: Pretendard; font-weight: 600; font-display: swap; src: url('../assets/fonts/Pretendard-SemiBold.woff2') format('woff2'); }
+
+/* Figma 변수 (키움 UX 개선 파일) */
+:root {
+  --bg-primary: #fff;
+  --surface-secondary: #f8f9fa;
+  --gray-800: #f8f9fa;
+  --gray-700: #f1f3f5;
+  --gray-500: #dee2e6;
+  --gray-400: #adb5bd;
+  --gray-300: #868e96;
+  --gray-250: #606b76;
+  --gray-200: #343a40;
+  --gray-100: #212529;
+  --text-primary: #212529;
+  --text-secondary: #606b76;
+  --placeholder: #868e96;
+  --border-primary: #dee2e6;
+  --magenta-400: #e5007d;
+  --magenta-800: #fee9f4;
+  --blue-400: #002752;
+  --blue-600: #0354ad;
+  --blue-800: #eff6ff;
+  --side-buy: #e5007d;
+  --side-sell: #0354ad;
+  --book-price: #e33692;
+  --frame-w: 375px;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html, body, #root { margin: 0; height: 100%; }
+body {
+  font-family: Pretendard, system-ui, sans-serif;
+  color: var(--text-primary);
+  background: #e9ecef;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+p { margin: 0; }
+button { font: inherit; color: inherit; letter-spacing: inherit; border: 0; background: none; padding: 0; cursor: pointer; }
+input { font: inherit; color: inherit; letter-spacing: inherit; }
+img { display: block; }

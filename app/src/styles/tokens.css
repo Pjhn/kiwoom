@@ -1,0 +1,126 @@
+/* 자동 생성: npm run tokens. 직접 수정하지 말 것 */
+:root {
+  --white: #FFFFFF;
+  --gray-50: #F7F8FA;
+  --gray-100: #F2F4F6;
+  --gray-200: #E5E8EB;
+  --gray-300: #D1D6DB;
+  --gray-400: #B0B8C1;
+  --gray-500: #8B95A1;
+  --gray-600: #6B7684;
+  --gray-700: #4E5968;
+  --gray-800: #333D4B;
+  --gray-900: #191F28;
+  --magenta-50: #FDE9F3;
+  --magenta-100: #F9D3E6;
+  --magenta-200: #F5A9CF;
+  --magenta-300: #FF64AE;
+  --magenta-400: #FF3D9A;
+  --magenta-500: #E6007E;
+  --magenta-600: #C4006B;
+  --magenta-700: #9E0057;
+  --magenta-800: #780042;
+  --magenta-900: #3A1529;
+  --red-50: #FDEBED;
+  --red-500: #E5243B;
+  --red-600: #C81E31;
+  --blue-50: #EEF4FF;
+  --blue-100: #D6E4FB;
+  --blue-500: #2F6FED;
+  --blue-600: #1D5FD1;
+  --orange-50: #FFF7E6;
+  --orange-500: #F5A623;
+  --orange-700: #B45309;
+  --green-50: #EAF7EE;
+  --green-500: #16A34A;
+  --green-700: #15803D;
+  --black-alpha-45: #00000073;
+  --space-4: 4px;
+  --space-8: 8px;
+  --space-12: 12px;
+  --space-16: 16px;
+  --space-20: 20px;
+  --space-24: 24px;
+  --space-32: 32px;
+  --space-40: 40px;
+  --radius-4: 4px;
+  --radius-8: 8px;
+  --radius-12: 12px;
+  --radius-20: 20px;
+  --radius-full: 9999px;
+  --size-touch-min: 48px;
+  --size-control-l: 52px;
+  --size-control-m: 48px;
+  --size-control-s: 40px;
+  --size-control-xs: 32px;
+  --size-icon-16: 16px;
+  --size-icon-20: 20px;
+  --size-icon-24: 24px;
+  --grid-mobile-columns: 4px;
+  --grid-mobile-margin: 20px;
+  --grid-mobile-gutter: 16px;
+  --grid-mobile-frame-width: 375px;
+  --bg-default: var(--white);
+  --bg-subtle: var(--gray-50);
+  --surface-default: var(--white);
+  --surface-secondary: var(--gray-100);
+  --surface-inverse: var(--gray-800);
+  --overlay-dim: var(--black-alpha-45);
+  --text-primary: var(--gray-900);
+  --text-secondary: var(--gray-700);
+  --text-tertiary: var(--gray-600);
+  --text-disabled: var(--gray-400);
+  --text-on-primary: var(--white);
+  --text-on-inverse: var(--white);
+  --icon-default: var(--gray-900);
+  --icon-secondary: var(--gray-500);
+  --border-default: var(--gray-200);
+  --border-strong: var(--gray-300);
+  --border-focus: var(--gray-900);
+  --action-primary: var(--magenta-500);
+  --action-primary-pressed: var(--magenta-600);
+  --action-primary-disabled: var(--gray-200);
+  --state-selected: var(--magenta-500);
+  --state-selected-bg: var(--magenta-50);
+  --state-selected-text: var(--magenta-600);
+  --price-up: var(--red-500);
+  --price-up-bg: var(--red-50);
+  --price-up-strong: var(--red-600);
+  --price-down: var(--blue-600);
+  --price-down-bg: var(--blue-50);
+  --price-flat: var(--gray-900);
+  --feedback-error: var(--red-500);
+  --feedback-warning: var(--orange-700);
+  --feedback-warning-graphic: var(--orange-500);
+  --feedback-success: var(--green-700);
+  --feedback-success-graphic: var(--green-500);
+  --chart-up: var(--red-500);
+  --chart-down: var(--blue-500);
+  --chart-ma: var(--orange-500);
+}
+
+.t-Display-Bold { font-family: Pretendard, system-ui, sans-serif; font-size: 26px; font-weight: 700; line-height: 1.2; letter-spacing: -0.02em; }
+.t-Title1-Bold { font-family: Pretendard, system-ui, sans-serif; font-size: 24px; font-weight: 700; line-height: 1.4; letter-spacing: -0.02em; }
+.t-Title2-Bold { font-family: Pretendard, system-ui, sans-serif; font-size: 20px; font-weight: 700; line-height: 1.4; letter-spacing: -0.02em; }
+.t-Title2-SemiBold { font-family: Pretendard, system-ui, sans-serif; font-size: 20px; font-weight: 600; line-height: 1.4; letter-spacing: -0.02em; }
+.t-Title3-Bold { font-family: Pretendard, system-ui, sans-serif; font-size: 18px; font-weight: 700; line-height: 1.4; letter-spacing: -0.02em; }
+.t-Body1-SemiBold { font-family: Pretendard, system-ui, sans-serif; font-size: 16px; font-weight: 600; line-height: 1.5; letter-spacing: -0.02em; }
+.t-Body1-Medium { font-family: Pretendard, system-ui, sans-serif; font-size: 16px; font-weight: 500; line-height: 1.5; letter-spacing: -0.02em; }
+.t-Body1-Regular { font-family: Pretendard, system-ui, sans-serif; font-size: 16px; font-weight: 400; line-height: 1.5; letter-spacing: -0.02em; }
+.t-Body2-SemiBold { font-family: Pretendard, system-ui, sans-serif; font-size: 15px; font-weight: 600; line-height: 1.5; letter-spacing: -0.02em; }
+.t-Body2-Medium { font-family: Pretendard, system-ui, sans-serif; font-size: 15px; font-weight: 500; line-height: 1.5; letter-spacing: -0.02em; }
+.t-Body3-SemiBold { font-family: Pretendard, system-ui, sans-serif; font-size: 14px; font-weight: 600; line-height: 1.5; letter-spacing: -0.02em; }
+.t-Body3-Medium { font-family: Pretendard, system-ui, sans-serif; font-size: 14px; font-weight: 500; line-height: 1.5; letter-spacing: -0.02em; }
+.t-Body3-Regular { font-family: Pretendard, system-ui, sans-serif; font-size: 14px; font-weight: 400; line-height: 1.5; letter-spacing: -0.02em; }
+.t-Caption1-SemiBold { font-family: Pretendard, system-ui, sans-serif; font-size: 13px; font-weight: 600; line-height: 1.4; letter-spacing: -0.02em; }
+.t-Caption1-Regular { font-family: Pretendard, system-ui, sans-serif; font-size: 13px; font-weight: 400; line-height: 1.4; letter-spacing: -0.02em; }
+.t-Caption2-Medium { font-family: Pretendard, system-ui, sans-serif; font-size: 12px; font-weight: 500; line-height: 1.4; letter-spacing: -0.02em; }
+.t-Caption2-Regular { font-family: Pretendard, system-ui, sans-serif; font-size: 12px; font-weight: 400; line-height: 1.4; letter-spacing: -0.02em; }
+.t-Label-SemiBold { font-family: Pretendard, system-ui, sans-serif; font-size: 11px; font-weight: 600; line-height: 1.3; letter-spacing: -0.02em; }
+.t-Num-Display-Bold { font-family: Pretendard, system-ui, sans-serif; font-size: 26px; font-weight: 700; line-height: 1.2; letter-spacing: -0.02em; }
+.t-Num-Title2-Bold { font-family: Pretendard, system-ui, sans-serif; font-size: 20px; font-weight: 700; line-height: 1.2; letter-spacing: -0.02em; }
+.t-Num-Body1-SemiBold { font-family: Pretendard, system-ui, sans-serif; font-size: 16px; font-weight: 600; line-height: 1.2; letter-spacing: -0.02em; }
+.t-Num-Body2-SemiBold { font-family: Pretendard, system-ui, sans-serif; font-size: 15px; font-weight: 600; line-height: 1.2; letter-spacing: -0.02em; }
+.t-Num-Body3-SemiBold { font-family: Pretendard, system-ui, sans-serif; font-size: 14px; font-weight: 600; line-height: 1.2; letter-spacing: -0.02em; }
+.t-Num-Caption1-Medium { font-family: Pretendard, system-ui, sans-serif; font-size: 13px; font-weight: 500; line-height: 1.2; letter-spacing: -0.02em; }
+.t-Num-Label-Medium { font-family: Pretendard, system-ui, sans-serif; font-size: 11px; font-weight: 500; line-height: 1.2; letter-spacing: -0.02em; }

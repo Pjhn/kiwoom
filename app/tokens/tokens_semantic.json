@@ -1,0 +1,211 @@
+{
+  "Semantic": {
+    "bg": {
+      "default": {
+        "$type": "color",
+        "$value": "{white}",
+        "$description": "화면 기본 배경"
+      },
+      "subtle": {
+        "$type": "color",
+        "$value": "{gray.50}",
+        "$description": "구획 띠(8px 구분 띠)"
+      }
+    },
+    "surface": {
+      "default": {
+        "$type": "color",
+        "$value": "{white}",
+        "$description": "시트, 카드, 토스트 외 떠 있는 면"
+      },
+      "secondary": {
+        "$type": "color",
+        "$value": "{gray.100}",
+        "$description": "입력칸, 세그먼트, 보조 버튼 면"
+      },
+      "inverse": {
+        "$type": "color",
+        "$value": "{gray.800}",
+        "$description": "어두운 면(토스트, 툴팁)"
+      }
+    },
+    "overlay": {
+      "dim": {
+        "$type": "color",
+        "$value": "{black.alpha-45}",
+        "$description": "시트 뒤 딤"
+      }
+    },
+    "text": {
+      "primary": {
+        "$type": "color",
+        "$value": "{gray.900}",
+        "$description": "제목, 본문, 숫자"
+      },
+      "secondary": {
+        "$type": "color",
+        "$value": "{gray.700}",
+        "$description": "보조 설명, 라벨"
+      },
+      "tertiary": {
+        "$type": "color",
+        "$value": "{gray.600}",
+        "$description": "가장 약한 읽어야 하는 글자"
+      },
+      "disabled": {
+        "$type": "color",
+        "$value": "{gray.400}",
+        "$description": "비활성, placeholder (대비 기준 예외)"
+      },
+      "on-primary": {
+        "$type": "color",
+        "$value": "{white}",
+        "$description": "Primary 버튼 위 글자"
+      },
+      "on-inverse": {
+        "$type": "color",
+        "$value": "{white}",
+        "$description": "토스트, 툴팁 위 글자"
+      }
+    },
+    "icon": {
+      "default": {
+        "$type": "color",
+        "$value": "{gray.900}",
+        "$description": "기본 아이콘"
+      },
+      "secondary": {
+        "$type": "color",
+        "$value": "{gray.500}",
+        "$description": "보조 아이콘(셰브런 등)"
+      }
+    },
+    "border": {
+      "default": {
+        "$type": "color",
+        "$value": "{gray.200}",
+        "$description": "구분선, 테두리"
+      },
+      "strong": {
+        "$type": "color",
+        "$value": "{gray.300}",
+        "$description": "강한 구분, 손잡이"
+      },
+      "focus": {
+        "$type": "color",
+        "$value": "{gray.900}",
+        "$description": "입력칸 포커스 테두리 1.5"
+      }
+    },
+    "action": {
+      "primary": {
+        "$type": "color",
+        "$value": "{magenta.500}",
+        "$description": "Primary 버튼 면"
+      },
+      "primary-pressed": {
+        "$type": "color",
+        "$value": "{magenta.600}",
+        "$description": "Primary 눌림"
+      },
+      "primary-disabled": {
+        "$type": "color",
+        "$value": "{gray.200}",
+        "$description": "Primary 비활성 면"
+      }
+    },
+    "state": {
+      "selected": {
+        "$type": "color",
+        "$value": "{magenta.500}",
+        "$description": "선택된 항목 강조(밑줄, 테두리, 채움, 슬라이더)"
+      },
+      "selected-bg": {
+        "$type": "color",
+        "$value": "{magenta.50}",
+        "$description": "선택된 항목 연한 배경"
+      },
+      "selected-text": {
+        "$type": "color",
+        "$value": "{magenta.600}",
+        "$description": "연한 배경 위 선택 글자"
+      }
+    },
+    "price": {
+      "up": {
+        "$type": "color",
+        "$value": "{red.500}",
+        "$description": "상승 가격, 매수 잔량"
+      },
+      "up-bg": {
+        "$type": "color",
+        "$value": "{red.50}",
+        "$description": "상승 잔량 배경"
+      },
+      "up-strong": {
+        "$type": "color",
+        "$value": "{red.600}",
+        "$description": "연한 상승 배경 위 상승 글자"
+      },
+      "down": {
+        "$type": "color",
+        "$value": "{blue.600}",
+        "$description": "하락 가격, 매도 잔량"
+      },
+      "down-bg": {
+        "$type": "color",
+        "$value": "{blue.50}",
+        "$description": "하락 잔량 배경"
+      },
+      "flat": {
+        "$type": "color",
+        "$value": "{gray.900}",
+        "$description": "보합"
+      }
+    },
+    "feedback": {
+      "error": {
+        "$type": "color",
+        "$value": "{red.500}",
+        "$description": "오류, 초과"
+      },
+      "warning": {
+        "$type": "color",
+        "$value": "{orange.700}",
+        "$description": "경고 글자"
+      },
+      "warning-graphic": {
+        "$type": "color",
+        "$value": "{orange.500}",
+        "$description": "경고 아이콘, 그래픽"
+      },
+      "success": {
+        "$type": "color",
+        "$value": "{green.700}",
+        "$description": "성공 글자"
+      },
+      "success-graphic": {
+        "$type": "color",
+        "$value": "{green.500}",
+        "$description": "성공 아이콘, 그래픽"
+      }
+    },
+    "chart": {
+      "up": {
+        "$type": "color",
+        "$value": "{red.500}",
+        "$description": "양봉"
+      },
+      "down": {
+        "$type": "color",
+        "$value": "{blue.500}",
+        "$description": "음봉"
+      },
+      "ma": {
+        "$type": "color",
+        "$value": "{orange.500}",
+        "$description": "이동평균선"
+      }
+    }
+  }
+}
