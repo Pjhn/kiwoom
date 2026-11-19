@@ -8,11 +8,13 @@ import {
   LineSeries,
   createChart,
   type IChartApi,
+  type IPriceLine,
   type ISeriesApi,
   type SeriesType,
   type UTCTimestamp,
 } from 'lightweight-charts';
 import { type Candle, type Interval, movingAverage } from '../lib/candles';
+import { snap } from '../lib/market';
 
 export type ChartSettings = {
   type: 'candle' | 'line' | 'area';
@@ -33,7 +35,21 @@ const fmtPrice = (p: number) =>
 const ts = (t: number) => t as UTCTimestamp;
 
 /** TradingView Lightweight Charts 한 칸. 터치(마우스) 위치를 중심으로 격자가 빛난다 */
-export function TvChart({ candles, interval, settings }: { candles: Candle[]; interval: Interval; settings: ChartSettings }) {
+export function TvChart({
+  candles,
+  interval,
+  settings,
+  onPickPrice,
+}: {
+  candles: Candle[];
+  interval: Interval;
+  settings: ChartSettings;
+  /** 차트를 누른 높이의 가격을 주문 가격으로 넘긴다 (현재 종목 차트에만) */
+  onPickPrice?: (price: number) => void;
+}) {
+  const pickRef = useRef(onPickPrice);
+  pickRef.current = onPickPrice;
+  const pickLine = useRef<IPriceLine | null>(null);
   const wrap = useRef<HTMLDivElement>(null);
   const box = useRef<HTMLDivElement>(null);
   const chart = useRef<IChartApi | null>(null);
@@ -79,7 +95,25 @@ export function TvChart({ candles, interval, settings }: { candles: Candle[]; in
       });
     }
     chart.current = c;
+    c.subscribeClick((param) => {
+      const s = main.current;
+      if (!pickRef.current || !s || !param.point) return;
+      const raw = s.coordinateToPrice(param.point.y);
+      if (raw == null || !(raw > 0)) return;
+      const price = snap(raw);
+      if (pickLine.current) s.removePriceLine(pickLine.current);
+      pickLine.current = s.createPriceLine({
+        price,
+        color: '#e5007d',
+        lineWidth: 1,
+        lineStyle: 2,
+        axisLabelVisible: true,
+        title: '주문가',
+      });
+      pickRef.current(price);
+    });
     return () => {
+      pickLine.current = null;
       c.remove();
       chart.current = null;
       main.current = null;

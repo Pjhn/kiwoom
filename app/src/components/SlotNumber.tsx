@@ -38,10 +38,10 @@ export function SlotNumber({ value, className }: { value: number; className?: st
               className="slot-strip"
               style={
                 spin === 0
-                  ? { transform: `translateY(${-(d + 20) * 1.2}em)` }
+                  ? { transform: `translateY(${-(d + 20) * 1.7}em)` }
                   : ({
-                      '--from': `${-d * 1.2}em`,
-                      '--to': `${-(d + 20) * 1.2}em`,
+                      '--from': `${-d * 1.7}em`,
+                      '--to': `${-(d + 20) * 1.7}em`,
                       animationDuration: `${dur}ms`,
                       animationDelay: `${delay}ms`,
                     } as CSSProperties)

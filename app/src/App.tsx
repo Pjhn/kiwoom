@@ -42,7 +42,19 @@ export default function App() {
   const marketRef = useRef<Market>(market);
   marketRef.current = market;
 
-  const [panelOpen, setPanelOpen] = useState(true);
+  const [panelOpen, setPanelOpenRaw] = useState(true);
+  // 닫힐 때 미끄러져 나가는 모션이 끝날 때까지 패널을 남겨 둔다
+  const [panelShown, setPanelShown] = useState(true);
+  const closeTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const setPanelOpen = (next: boolean | ((v: boolean) => boolean)) => {
+    setPanelOpenRaw((cur) => {
+      const v = typeof next === 'function' ? next(cur) : next;
+      clearTimeout(closeTimer.current);
+      if (v) setPanelShown(true);
+      else closeTimer.current = setTimeout(() => setPanelShown(false), 260);
+      return v;
+    });
+  };
   const [view, setView] = useState<View>('book');
   const [side, setSide] = useState<Side>('buy');
   const [price, setPrice] = useState<number | null>(null);
@@ -51,7 +63,6 @@ export default function App() {
   const [orderType, setOrderType] = useState<OrderType>('limit');
   const [typesOpen, setTypesOpen] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
-  const [priceFlash, setPriceFlash] = useState(0);
 
   const [open, setOpen] = useState<Order[]>([]);
   const [history, setHistory] = useState<Order[]>([]);
@@ -287,7 +298,6 @@ export default function App() {
 
   const pickPrice = (p: number) => {
     setPrice(p);
-    setPriceFlash((n) => n + 1);
     if (!isUserPriced(orderType)) setOrderType('limit');
     if (!panelOpen) setPanelOpen(true);
   };
@@ -349,14 +359,15 @@ export default function App() {
           <SubBar panelOpen={panelOpen} onTogglePanel={() => setPanelOpen((v) => !v)} />
           <section className="trade">
             {view === 'chart' ? (
-              <MultiChart main={stock} />
+              <MultiChart main={stock} onPickPrice={pickPrice} />
             ) : panelOpen ? (
               <CompactOrderBook market={market} onPick={pickPrice} />
             ) : (
               <WideOrderBook market={market} onPick={pickPrice} />
             )}
-            {panelOpen && (
+            {panelShown && (
               <OrderPanel
+                closing={!panelOpen}
                 side={side}
                 onSide={changeSide}
                 price={price}
@@ -371,7 +382,6 @@ export default function App() {
                 orderType={orderType}
                 onOpenTypes={() => setTypesOpen(true)}
                 autoPrice={auto}
-                priceFlash={priceFlash}
               />
             )}
             <IconTabs view={view} onChange={setView} style={iconPos} />

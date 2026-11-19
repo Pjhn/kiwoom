@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { SlotNumber } from './SlotNumber';
 import plus from '../assets/icons/plus.svg';
 import minus from '../assets/icons/minus.svg';
@@ -27,8 +27,8 @@ type Props = {
   onOpenTypes: () => void;
   /** 주문유형이 가격을 정할 때의 가격 */
   autoPrice: number;
-  /** 호가를 눌러 가격이 들어올 때마다 바뀌는 값 (빛 효과) */
-  priceFlash?: number;
+  /** 닫히는 중 (미끄러져 나가는 모션) */
+  closing?: boolean;
 };
 
 const parseNum = (s: string) => {
@@ -43,7 +43,6 @@ function NumberField({
   onChange,
   onStep,
   label,
-  flash,
 }: {
   value: number | null;
   unit: string;
@@ -51,19 +50,10 @@ function NumberField({
   onChange: (v: number | null) => void;
   onStep: (dir: 1 | -1) => void;
   label: string;
-  flash?: number;
 }) {
   const text = value == null ? '' : fmt(value);
-  const box = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const el = box.current;
-    if (!flash || !el) return;
-    el.classList.remove('lit');
-    void el.offsetWidth; // 애니메이션 다시 시작
-    el.classList.add('lit');
-  }, [flash]);
   return (
-    <div ref={box} className={`text-field ${value == null ? 'empty' : ''}`}>
+    <div className={`text-field ${value == null ? 'empty' : ''}`}>
       <label className="tf-value">
         <span className="tf-mirror" aria-hidden>
           {text || placeholder}
@@ -170,7 +160,7 @@ export function OrderPanel(p: Props) {
   };
 
   return (
-    <div className={`order-panel ${p.side}`}>
+    <div className={`order-panel ${p.side} ${p.closing ? 'closing' : ''}`}>
       <div className="op-col">
         <div className="op-top">
           <div className="seg" role="tablist">
@@ -193,7 +183,6 @@ export function OrderPanel(p: Props) {
               placeholder={`${verb}가 입력`}
               onChange={p.onPrice}
               onStep={p.onStepPrice}
-              flash={p.priceFlash}
             />
           ) : (
             <div className="text-field locked" aria-label={`${verb}가 ${typeLabel(p.orderType)}`}>
