@@ -30,7 +30,7 @@ export function HomeIndicator() {
   );
 }
 
-export function TopAppBar({ name, live, onSearch }: { name: string; live: boolean; onSearch: () => void }) {
+export function TopAppBar({ name, onSearch }: { name: string; onSearch: () => void }) {
   return (
     <header className="top-app-bar">
       <button className="icon-btn back" aria-label="뒤로">
@@ -39,12 +39,6 @@ export function TopAppBar({ name, live, onSearch }: { name: string; live: boolea
       <button className="search-bar" onClick={onSearch} aria-label={`종목 검색, 현재 ${name}`}>
         <img src={search} alt="" />
         <span className="sb-name">{name}</span>
-        {live && (
-          <span className="live-dot" title="실시간 시세">
-            <i />
-            실시간
-          </span>
-        )}
       </button>
       <button className="outlined-dropdown">
         <span>일반주문</span>

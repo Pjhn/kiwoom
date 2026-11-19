@@ -410,7 +410,7 @@ export default function App() {
       <div className="device">
         {framed && <StatusBar />}
         <div className="scroller" ref={scrollerRef}>
-          <TopAppBar name={stock.name} live={market.live} onSearch={() => setPickerOpen(true)} />
+          <TopAppBar name={stock.name} onSearch={() => setPickerOpen(true)} />
           <SubBar panelOpen={panelOpen} onTogglePanel={() => setPanelOpen((v) => !v)} />
           <section className="trade">
             {view === 'chart' ? (
