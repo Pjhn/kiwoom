@@ -68,7 +68,12 @@ export default function App() {
   const [history, setHistory] = useState<Order[]>([]);
   const [holdings, setHoldings] = useState<Holding[]>([]);
   const [tab, setTab] = useState<InfoTab>('pending');
+  const tabRef = useRef(tab);
+  tabRef.current = tab;
   const [glowTab, setGlowTab] = useState<InfoTab | null>(null);
+  // 바로 체결되어 보유(판매는 내역)에 새로 들어간 항목: 잠시 빛나고, 시간이 지나거나 탭을 떠나면 꺼진다
+  const [fresh, setFresh] = useState<{ tab: InfoTab; key: string } | null>(null);
+  const freshTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const [showTip, setShowTip] = useState(false);
   const [snack, setSnack] = useState<Snack | null>(null);
   const [leaving, setLeaving] = useState<Record<number, InfoTab>>({});
@@ -143,6 +148,7 @@ export default function App() {
   const goTab = (t: InfoTab) => {
     setTab(t);
     if (glowTab === t) setGlowTab(null);
+    if (fresh && fresh.tab !== t) setFresh(null);
     setShowTip(t === 'holdings' && holdings.length > 0);
   };
 
@@ -164,11 +170,12 @@ export default function App() {
 
   /** 체결 완료 알림: 구매는 보유, 판매는 내역으로 안내 */
   const announceDone = useCallback(
-    (o: Order) => {
+    (o: Order, immediate = false) => {
       const name = stockById(o.stockId).name;
       const verb = o.side === 'buy' ? '구매' : '판매';
       const to: InfoTab = o.side === 'buy' ? 'holdings' : 'history';
-      setGlowTab(to);
+      // 바로 체결이면 이미 그 탭을 보고 있으므로 탭을 빛내지 않는다
+      if (!immediate && tabRef.current !== to) setGlowTab(to);
       toast(
         `${verb}가 완료됐어요`,
         o.side === 'buy' ? '보유 확인' : '내역 보기',
@@ -285,8 +292,13 @@ export default function App() {
       applyFill({ ...order, price: avgPrice }, got);
       if (got >= qty) {
         setHistory((h) => [{ ...order, price: avgPrice, filled: qty, status: 'filled', isNew: false }, ...h]);
-        announceDone(order);
-        setTab(side === 'buy' ? 'holdings' : 'history'); // 대기를 거치지 않고 바로 보유(판매는 내역)로
+        const to: InfoTab = side === 'buy' ? 'holdings' : 'history';
+        announceDone(order, true);
+        setGlowTab(null);
+        setTab(to); // 대기를 거치지 않고 바로 보유(판매는 내역)로
+        setFresh({ tab: to, key: to === 'holdings' ? order.stockId : String(order.id) });
+        clearTimeout(freshTimer.current);
+        freshTimer.current = setTimeout(() => setFresh(null), 4000);
         return;
       }
       order.filled = got;
@@ -416,6 +428,7 @@ export default function App() {
               tab={tab}
               onTab={goTab}
               glowTab={glowTab}
+              fresh={fresh}
               open={open}
               history={history}
               holdings={holdings}

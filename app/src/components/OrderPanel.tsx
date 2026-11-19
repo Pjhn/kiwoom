@@ -43,7 +43,9 @@ function NumberField({
   onChange,
   onStep,
   label,
+  disabled = false,
 }: {
+  disabled?: boolean;
   value: number | null;
   unit: string;
   placeholder: string;
@@ -53,7 +55,7 @@ function NumberField({
 }) {
   const text = value == null ? '' : fmt(value);
   return (
-    <div className={`text-field ${value == null ? 'empty' : ''}`}>
+    <div className={`text-field ${value == null ? 'empty' : ''} ${disabled ? 'disabled' : ''}`} aria-disabled={disabled}>
       <label className="tf-value">
         <span className="tf-mirror" aria-hidden>
           {text || placeholder}
@@ -63,15 +65,16 @@ function NumberField({
           aria-label={label}
           placeholder={placeholder}
           value={text}
+          disabled={disabled}
           onChange={(e) => onChange(parseNum(e.target.value))}
         />
         {value != null && <span className="tf-unit">{unit}</span>}
       </label>
       <span className="pm-group">
-        <button aria-label={`${label} 빼기`} onClick={() => onStep(-1)}>
+        <button aria-label={`${label} 빼기`} disabled={disabled} onClick={() => onStep(-1)}>
           <img src={minus} alt="" />
         </button>
-        <button aria-label={`${label} 더하기`} onClick={() => onStep(1)}>
+        <button aria-label={`${label} 더하기`} disabled={disabled} onClick={() => onStep(1)}>
           <img src={plus} alt="" />
         </button>
       </span>
@@ -192,7 +195,15 @@ export function OrderPanel(p: Props) {
               <span className="tf-tag">{p.orderType === 'market' ? `약 ${fmt(p.autoPrice)} 원` : '자동'}</span>
             </div>
           )}
-          <NumberField label="수량" value={p.qty} unit="주" placeholder="수량 입력" onChange={p.onQty} onStep={p.onStepQty} />
+          <NumberField
+            label="수량"
+            value={p.qty}
+            unit="주"
+            placeholder="수량 입력"
+            onChange={p.onQty}
+            onStep={p.onStepQty}
+            disabled={!isBuy && p.maxQty <= 0}
+          />
         </div>
         <Slider side={p.side} pct={pct} onPct={onPct} />
         <div className="op-info">

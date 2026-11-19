@@ -103,6 +103,8 @@ type Props = {
   tab: InfoTab;
   onTab: (t: InfoTab) => void;
   glowTab: InfoTab | null;
+  /** 바로 체결되어 새로 들어온 항목 (보유는 종목 id, 내역은 주문 id) */
+  fresh: { tab: InfoTab; key: string } | null;
   open: Order[];
   history: Order[];
   holdings: Holding[];
@@ -249,6 +251,7 @@ export function OrderInfo(p: Props) {
                   h={h}
                   price={p.priceOf(h.stockId)}
                   showTip={p.showTip && i === 0}
+                  fresh={p.fresh?.tab === 'holdings' && p.fresh.key === h.stockId}
                   onClick={() => p.onHolding(h.stockId)}
                 />
               ))}
@@ -268,7 +271,11 @@ export function OrderInfo(p: Props) {
               {historyList.length === 0 && <FilteredEmpty />}
               <ul className="oi-list">
                 {historyList.map((o, i) => (
-                  <li key={o.id} style={paper(i)} className="oi-item paper">
+                  <li
+                    key={o.id}
+                    style={paper(i)}
+                    className={`oi-item paper ${p.fresh?.tab === 'history' && p.fresh.key === String(o.id) ? 'alert' : ''}`}
+                  >
                     <StockLogo stock={stockById(o.stockId)} size={46} />
                     <div className="oi-text">
                       <p className="oi-title">
@@ -293,7 +300,9 @@ function HoldingItem({
   showTip,
   onClick,
   index,
+  fresh,
 }: {
+  fresh: boolean;
   h: Holding;
   price: number;
   showTip: boolean;
@@ -308,7 +317,7 @@ function HoldingItem({
   const tone = pl > 0 ? 'up' : pl < 0 ? 'down' : '';
   return (
     <div className="holding-wrap paper" style={paper(index)}>
-      <button className="oi-item holding" onClick={onClick} aria-label={`${stock.name} 판매하기`}>
+      <button className={`oi-item holding ${fresh ? 'alert' : ''}`} onClick={onClick} aria-label={`${stock.name} 판매하기`}>
         {stock.id === 'kakao' ? (
           <img className="logo" src={kakaoHoldingLogo} alt="" width={46} height={46} />
         ) : (
