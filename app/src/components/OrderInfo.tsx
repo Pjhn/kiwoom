@@ -29,10 +29,36 @@ const TABS: { key: InfoTab; label: string }[] = [
 
 const sideLabel = (s: Side) => (s === 'buy' ? '구매' : '판매');
 
+/** 빈 화면 그래픽: 문서철에 겹쳐 있던 종이들이 날아가고 마지막 한 장이 들린다 (화면에 보일 때 한 번) */
 function Empty({ text }: { text: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    if (typeof IntersectionObserver === 'undefined') {
+      el.classList.add('play');
+      return;
+    }
+    const io = new IntersectionObserver(
+      ([e]) => {
+        if (e.isIntersecting) {
+          el.classList.add('play');
+          io.disconnect();
+        }
+      },
+      { threshold: 0.6 },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
   return (
     <div className="oi-empty">
-      <img src={emptyGraphic} alt="" width={108} height={108} />
+      <div className="empty-art" ref={ref} aria-hidden>
+        <i className="sheet s1" />
+        <i className="sheet s2" />
+        <i className="sheet s3" />
+        <img src={emptyGraphic} alt="" width={108} height={108} />
+      </div>
       <p>{text}</p>
     </div>
   );

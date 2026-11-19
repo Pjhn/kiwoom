@@ -2,7 +2,9 @@ import arrowLeft from '../assets/icons/arrow-left.svg';
 import search from '../assets/icons/search.svg';
 import arrowDown16 from '../assets/icons/arrow-down-16-outlined.svg';
 import swap from '../assets/icons/swap.svg';
-import sidePanelOn from '../assets/icons/side-panel-closed.svg';
+// 시안: 패널이 열려 있으면 검정, 닫혀 있으면 회색 아이콘
+import sidePanelBlack from '../assets/icons/side-panel-closed.svg';
+import sidePanelGray from '../assets/icons/side-panel-open.svg';
 import sbSignal from '../assets/icons/sb-signal.svg';
 import sbConnection from '../assets/icons/sb-connection.svg';
 import sbBattery from '../assets/icons/sb-battery.svg';
@@ -66,7 +68,7 @@ export function SubBar({ panelOpen, onTogglePanel }: { panelOpen: boolean; onTog
         aria-pressed={panelOpen}
         onClick={onTogglePanel}
       >
-        <img src={sidePanelOn} alt="" />
+        <img src={panelOpen ? sidePanelBlack : sidePanelGray} alt="" />
       </button>
     </div>
   );
