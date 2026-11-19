@@ -1,4 +1,4 @@
-import { type CSSProperties, Fragment, type ReactNode, useLayoutEffect, useRef } from 'react';
+import { type CSSProperties, Fragment, type ReactNode, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import filterIcon from '../assets/icons/filter.svg';
 import tooltipArrow from '../assets/icons/tooltip-arrow.svg';
 import emptyGraphic from '../assets/img/empty-graphic@3x.png';
@@ -38,12 +38,41 @@ function Empty({ text }: { text: string }) {
   );
 }
 
-function FilterRow({ count, current, right }: { count: number; current: number; right?: ReactNode }) {
+type Scope = 'all' | 'current';
+type Sort = 'recent' | 'value' | 'profit';
+const SORTS: { key: Sort; label: string }[] = [
+  { key: 'recent', label: '최근거래 순' },
+  { key: 'value', label: '평가금액 순' },
+  { key: 'profit', label: '수익률 순' },
+];
+
+function FilterRow({
+  count,
+  current,
+  scope,
+  onScope,
+  right,
+}: {
+  count: number;
+  current: number;
+  scope: Scope;
+  onScope: (s: Scope) => void;
+  right?: ReactNode;
+}) {
   return (
     <div className="oi-filter">
-      <div className="l">
-        <button className="chip on">전체 {count}</button>
-        <button className="chip">현재 종목 {current}</button>
+      <div className="l" role="radiogroup" aria-label="목록 범위">
+        <button role="radio" aria-checked={scope === 'all'} className={`chip ${scope === 'all' ? 'on' : ''}`} onClick={() => onScope('all')}>
+          전체 {count}
+        </button>
+        <button
+          role="radio"
+          aria-checked={scope === 'current'}
+          className={`chip ${scope === 'current' ? 'on' : ''}`}
+          onClick={() => onScope('current')}
+        >
+          현재 종목 {current}
+        </button>
       </div>
       {right}
     </div>
@@ -81,7 +110,7 @@ type Props = {
   currentStockId: string;
   showTip: boolean;
   onCancel: (id: number) => void;
-  onCancelAll: () => void;
+  onCancelAll: (ids?: number[]) => void;
   onHolding: (stockId: string) => void;
   /** 날아가는 중인 대기 주문과 그 목적지 탭 */
   leaving: Record<number, InfoTab>;
@@ -90,9 +119,61 @@ type Props = {
 };
 
 const paper = (i: number) => ({ '--i': Math.min(i, 8) }) as CSSProperties;
+const SUCK_MS = 340;
+
+function FilteredEmpty() {
+  return <p className="oi-none paper">현재 종목은 비어있어요</p>;
+}
 
 export function OrderInfo(p: Props) {
   const root = useRef<HTMLElement>(null);
+  const body = useRef<HTMLDivElement>(null);
+  const [scope, setScope] = useState<Scope>('all');
+  const [sort, setSort] = useState<Sort>('recent');
+  // 탭을 바꾸면 지금 목록이 새 탭 버튼으로 빨려 들어간 뒤 새 목록이 나온다
+  const [shown, setShown] = useState<InfoTab>(p.tab);
+  useLayoutEffect(() => {
+    if (p.tab === shown) return;
+    const el = body.current;
+    const target = root.current?.querySelector<HTMLElement>(`[data-tab="${p.tab}"]`);
+    const parts = el ? Array.from(el.querySelectorAll<HTMLElement>('.oi-filter, .oi-list > li, .holding-wrap, .oi-empty, .oi-none')) : [];
+    if (!target || parts.length === 0 || matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setShown(p.tab);
+      return;
+    }
+    const t = target.getBoundingClientRect();
+    const tx = t.left + t.width / 2;
+    const ty = t.top + t.height / 2;
+    parts.forEach((n, i) => {
+      const r = n.getBoundingClientRect();
+      n.style.transformOrigin = `${tx - r.left}px ${ty - r.top}px`;
+      n.style.setProperty('--i', String(Math.min(i, 6)));
+      n.classList.add('suck');
+    });
+    const id = setTimeout(() => setShown(p.tab), SUCK_MS);
+    return () => clearTimeout(id);
+  }, [p.tab, shown]);
+  useEffect(() => {
+    root.current?.querySelectorAll('.suck').forEach((n) => n.classList.remove('suck'));
+  }, [shown]);
+
+  const mine = (id: string) => scope === 'all' || id === p.currentStockId;
+  const openList = p.open.filter((o) => mine(o.stockId));
+  const historyList = p.history.filter((o) => mine(o.stockId));
+  const plPct = (h: Holding) => (p.priceOf(h.stockId) - h.avg) / h.avg;
+  const holdList = p.holdings
+    .filter((h) => mine(h.stockId))
+    .map((h, i) => ({ h, i }))
+    .sort((a, b) =>
+      sort === 'value'
+        ? p.priceOf(b.h.stockId) * b.h.qty - p.priceOf(a.h.stockId) * a.h.qty
+        : sort === 'profit'
+          ? plPct(b.h) - plPct(a.h)
+          : a.i - b.i,
+    )
+    .map((x) => x.h);
+  const nextSort = () => setSort((s) => SORTS[(SORTS.findIndex((x) => x.key === s) + 1) % SORTS.length].key);
+  const filterProps = { scope, onScope: setScope };
   // 날아갈 대기 주문마다 목적지 탭까지의 거리를 잰다
   useLayoutEffect(() => {
     const el = root.current;
@@ -130,23 +211,30 @@ export function OrderInfo(p: Props) {
         ))}
       </div>
 
-      <div className="oi-body">
-        {p.tab === 'pending' &&
+      <div className="oi-body" ref={body} key={`${shown}-${scope}-${sort}`}>
+        {shown === 'pending' &&
           (p.open.length === 0 ? (
             <Empty text="주문 내역이 비어있어요" />
           ) : (
             <>
               <FilterRow
+                {...filterProps}
                 count={p.open.length}
                 current={p.open.filter((o) => o.stockId === p.currentStockId).length}
                 right={
-                  <button className="outlined-sm" onClick={p.onCancelAll}>
-                    {p.open.length}건 취소
-                  </button>
+                  openList.length > 0 && (
+                    <button
+                      className="outlined-sm"
+                      onClick={() => p.onCancelAll(scope === 'all' ? undefined : openList.map((o) => o.id))}
+                    >
+                      {openList.length}건 취소
+                    </button>
+                  )
                 }
               />
+              {openList.length === 0 && <FilteredEmpty />}
               <ul className="oi-list">
-                {p.open.map((o, i) => (
+                {openList.map((o, i) => (
                   <li key={o.id} data-id={o.id} style={paper(i)} className={`oi-item paper ${o.isNew ? 'alert' : ''}`}>
                     <StockLogo stock={stockById(o.stockId)} size={46} ring={o.status === 'partial'} />
                     <div className="oi-text">
@@ -164,22 +252,26 @@ export function OrderInfo(p: Props) {
             </>
           ))}
 
-        {p.tab === 'holdings' &&
+        {shown === 'holdings' &&
           (p.holdings.length === 0 ? (
             <Empty text="보유한 주식이 없어요" />
           ) : (
             <>
               <FilterRow
+                {...filterProps}
                 count={p.holdings.length}
                 current={p.holdings.filter((h) => h.stockId === p.currentStockId).length}
                 right={
-                  <button className="sort-btn">
+                  <button className="sort-btn" onClick={nextSort} aria-label="정렬 바꾸기">
                     <img src={filterIcon} alt="" />
-                    최근거래 순
+                    <span key={sort} className="sort-label">
+                      {SORTS.find((x) => x.key === sort)!.label}
+                    </span>
                   </button>
                 }
               />
-              {p.holdings.map((h, i) => (
+              {holdList.length === 0 && <FilteredEmpty />}
+              {holdList.map((h, i) => (
                 <HoldingItem
                   key={h.stockId}
                   index={i}
@@ -192,17 +284,19 @@ export function OrderInfo(p: Props) {
             </>
           ))}
 
-        {p.tab === 'history' &&
+        {shown === 'history' &&
           (p.history.length === 0 ? (
             <Empty text="거래 내역이 비어있어요" />
           ) : (
             <>
               <FilterRow
+                {...filterProps}
                 count={p.history.length}
                 current={p.history.filter((o) => o.stockId === p.currentStockId).length}
               />
+              {historyList.length === 0 && <FilteredEmpty />}
               <ul className="oi-list">
-                {p.history.map((o, i) => (
+                {historyList.map((o, i) => (
                   <li key={o.id} style={paper(i)} className="oi-item paper">
                     <StockLogo stock={stockById(o.stockId)} size={46} />
                     <div className="oi-text">

@@ -260,7 +260,7 @@
   animation: glowPulse 1.6s ease-in-out infinite;
 }
 @keyframes glowPulse { 50% { opacity: .65; } }
-.oi-body { position: relative; flex: 1; min-height: 0; overflow-y: auto; }
+.oi-body { position: relative; flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; }
 .oi-empty { position: absolute; inset: 0; }
 .oi-empty img { position: absolute; left: calc(50% - 54px + 0.5px); top: 72px; }
 .oi-empty p { position: absolute; left: 0; right: 0; top: calc(50% - 12px); text-align: center; font-size: 14px; line-height: 1.4; color: var(--placeholder); }
@@ -430,17 +430,29 @@
 .tv-chart { position: absolute; inset: 0; z-index: 1; }
 
 /* ---------- 대기, 보유, 내역: 종이 효과 ---------- */
-.oi-list, .oi-body { perspective: 700px; }
 .paper {
-  transform-origin: 50% 0;
-  animation: paperIn .55s cubic-bezier(.2,.9,.25,1.05) both;
-  animation-delay: calc(var(--i, 0) * 60ms);
+  animation: paperIn .5s cubic-bezier(.2,.9,.3,1) both;
+  animation-delay: calc(var(--i, 0) * 70ms);
 }
+/* 오른쪽 옆에서 위부터 차례로 튀어나온다 */
 @keyframes paperIn {
-  0% { opacity: 0; transform: translate3d(-14px, -26px, 0) rotateX(55deg) rotateZ(-4deg); }
-  60% { opacity: 1; transform: translate3d(2px, 3px, 0) rotateX(-6deg) rotateZ(.6deg); }
+  0% { opacity: 0; transform: translateX(70%) scale(.96); }
+  55% { opacity: 1; transform: translateX(-14px) scale(1.01); }
+  78% { transform: translateX(4px); }
   100% { transform: none; }
 }
+/* 다른 탭으로 옮길 때 새 탭 버튼 쪽으로 빨려 들어간다 (transform-origin 은 JS가 탭 위치로 잡음) */
+.suck {
+  pointer-events: none;
+  animation: suckIn .3s cubic-bezier(.55,0,.85,.35) both !important;
+  animation-delay: calc(var(--i, 0) * 12ms) !important;
+}
+@keyframes suckIn {
+  0% { transform: none; opacity: 1; filter: blur(0); }
+  100% { transform: scale(.04, .02) skewX(-12deg); opacity: 0; filter: blur(2px); }
+}
+.oi-none { padding: 40px 16px; text-align: center; font-size: 14px; color: var(--placeholder); }
+.sort-label { display: inline-block; animation: fadeIn .2s; }
 .oi-item.fly {
   position: relative; z-index: 4; pointer-events: none; overflow: visible;
   animation: paperFly .6s cubic-bezier(.45,.05,.55,.95) forwards; animation-delay: 0ms;
@@ -454,7 +466,7 @@
 }
 .oi-tab.catch { animation: tabCatch .45s cubic-bezier(.3,1.6,.5,1); }
 @keyframes tabCatch { 0% { transform: scale(1); } 40% { transform: scale(1.18) translateY(-2px); } 100% { transform: none; } }
-@media (prefers-reduced-motion: reduce) { .paper, .oi-item.fly, .oi-tab.catch { animation-duration: .01s; } }
+@media (prefers-reduced-motion: reduce) { .suck, .paper, .oi-item.fly, .oi-tab.catch { animation-duration: .01s; } }
 
 .cur-flat, .cur-down { font-size: 20px; font-weight: 600; }
 .cur-flat { color: var(--gray-100); }

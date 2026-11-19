@@ -68,8 +68,8 @@ export class GridGlow implements IPanePrimitive<Time> {
           const cy = this.y * vr;
           const r = 120 * hr;
           const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
-          g.addColorStop(0, `rgba(229,0,125,${0.95 * this.a})`);
-          g.addColorStop(0.45, `rgba(229,0,125,${0.5 * this.a})`);
+          g.addColorStop(0, `rgba(229,0,125,${0.38 * this.a})`);
+          g.addColorStop(0.45, `rgba(229,0,125,${0.16 * this.a})`);
           g.addColorStop(1, 'rgba(229,0,125,0)');
           ctx.save();
           ctx.globalCompositeOperation = 'source-atop';

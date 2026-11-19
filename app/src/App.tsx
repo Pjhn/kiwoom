@@ -282,8 +282,8 @@ export default function App() {
       setHistory((h) => [{ ...o, status: 'cancelled', time: now(), isNew: false }, ...h]);
     });
   };
-  const cancelAll = () => {
-    const list = open.filter((o) => !leaving[o.id]);
+  const cancelAll = (only?: number[]) => {
+    const list = open.filter((o) => !leaving[o.id] && (!only || only.includes(o.id)));
     list.forEach((o) => cancelled.current.add(o.id));
     flyAway(
       list.map((o) => o.id),
