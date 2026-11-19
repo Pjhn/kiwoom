@@ -476,6 +476,11 @@
 
 /* ---------- 예상금액: 바뀐 자리만 살짝 올라오기 ---------- */
 .tick-num { display: inline-flex; font-variant-numeric: tabular-nums; }
-.tick-d { display: inline-block; animation: tickUp .6s cubic-bezier(.25,.8,.3,1) both; }
-@keyframes tickUp { from { opacity: 0; transform: translateY(.35em); } }
-@media (prefers-reduced-motion: reduce) { .tick-d { animation: none; } }
+.tick-d { position: relative; display: inline-block; overflow: hidden; vertical-align: bottom; }
+.tick-new, .tick-old { display: block; }
+.tick-old { position: absolute; inset: 0; }
+.tick-d.roll .tick-new { animation: tickIn .6s cubic-bezier(.25,.8,.3,1) both; }
+.tick-d.roll .tick-old { animation: tickOut .6s cubic-bezier(.25,.8,.3,1) both; }
+@keyframes tickIn { from { transform: translateY(100%); } }
+@keyframes tickOut { to { transform: translateY(-100%); } }
+@media (prefers-reduced-motion: reduce) { .tick-d.roll .tick-new, .tick-d.roll .tick-old { animation: none; } .tick-old { display: none; } }
