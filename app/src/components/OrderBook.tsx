@@ -3,9 +3,8 @@ import { type BookRow, type Market, fmt, fmtPct, pctOf } from '../lib/market';
 
 // 호가 줄 높이가 고정이라 현재가 위치를 계산으로 정한다 (Figma 위치에 맞춰 처음 스크롤)
 const PAD = 40;
-const C_CUR = PAD + 10 * 35.4 + 9 * 14 + 7.6; // 좁은 호가 현재가 위치
-const W_CUR = PAD + 10 * 33.4 + 9 * 13 + 7.6; // 넓은 호가 현재가 위치
-const CENTER = 527 / 2 - 18; // 현재가를 고정하는 세로 위치 (가운데)
+const C_CUR = PAD + 10 * 35.4 + 9 * 14 + 13.6; // 좁은 호가 현재가 위치
+const W_CUR = PAD + 10 * 33.4 + 9 * 13 + 13.6; // 넓은 호가 현재가 위치
 
 /** 현재가 색: 상승 분홍, 보합 검정, 하락 파랑 */
 const curTone = (m: Market) => (m.price > m.prevClose ? 'grad-price' : m.price < m.prevClose ? 'cur-down' : 'cur-flat');
@@ -53,7 +52,7 @@ const maxVol = (m: Market) => Math.max(1, ...m.asks.map((r) => r.volume), ...m.b
 export function CompactOrderBook(props: Props) {
   const { market } = props;
   const of = maxVol(market);
-  const scroller = useInitialScroll(C_CUR - CENTER, market.stock.id);
+  const scroller = useInitialScroll(C_CUR - 220, market.stock.id);
   return (
     <div className="cbook">
       <div className="book-scroll" ref={scroller}>
@@ -117,8 +116,8 @@ export function WideOrderBook(props: Props) {
   const { market: m } = props;
   const askOf = Math.max(1, ...m.asks.map((r) => r.volume));
   const bidOf = Math.max(1, ...m.bids.map((r) => r.volume));
-  const scroller = useInitialScroll(W_CUR - CENTER, m.stock.id);
-  const at = (y: number) => W_CUR + 6 - 237 + y; // Figma 기준 y를 스크롤 안 좌표로
+  const scroller = useInitialScroll(W_CUR - 237, m.stock.id);
+  const at = (y: number) => W_CUR - 237 + y; // Figma 기준 y를 스크롤 안 좌표로
   return (
     <div className="wbook">
       <div className="book-scroll" ref={scroller}>

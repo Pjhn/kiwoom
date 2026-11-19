@@ -15,6 +15,7 @@ import {
 } from 'lightweight-charts';
 import { type Candle, type Interval, movingAverage } from '../lib/candles';
 import { snap } from '../lib/market';
+import { GridGlow } from '../lib/gridGlow';
 
 export type ChartSettings = {
   type: 'candle' | 'line' | 'area';
@@ -56,6 +57,7 @@ export function TvChart({
   const main = useRef<ISeriesApi<SeriesType> | null>(null);
   const vol = useRef<ISeriesApi<'Histogram'> | null>(null);
   const mas = useRef<Partial<Record<20 | 60 | 120, ISeriesApi<'Line'>>>>({});
+  const glow = useRef<GridGlow | null>(null);
 
   // 차트 종류가 바뀌면 다시 만든다
   useEffect(() => {
@@ -95,6 +97,9 @@ export function TvChart({
       });
     }
     chart.current = c;
+    const g = new GridGlow();
+    c.panes()[0].attachPrimitive(g);
+    glow.current = g;
     c.subscribeClick((param) => {
       const s = main.current;
       if (!pickRef.current || !s || !param.point) return;
@@ -114,6 +119,7 @@ export function TvChart({
     });
     return () => {
       pickLine.current = null;
+      glow.current = null;
       c.remove();
       chart.current = null;
       main.current = null;
@@ -180,13 +186,15 @@ export function TvChart({
   }, [interval, settings.type, candles.length > 0]);
 
   const move = (x: number, y: number) => {
-    const el = wrap.current;
-    if (!el) return;
-    const r = el.getBoundingClientRect();
-    el.style.setProperty('--gx', `${x - r.left}px`);
-    el.style.setProperty('--gy', `${y - r.top}px`);
-    el.classList.add('glow-on');
+    const pane = chart.current?.panes()[0]?.getHTMLElement();
+    if (!pane || !glow.current) return;
+    const r = pane.getBoundingClientRect();
+    // 패인 안 캔버스 칸(가격축 제외) 기준 좌표
+    const cell = pane.querySelector('canvas')?.parentElement ?? pane;
+    const cr = cell.getBoundingClientRect();
+    glow.current.move(x - (cr.left || r.left), y - (cr.top || r.top));
   };
+  const hide = () => glow.current?.hide();
 
   return (
     <div
@@ -194,10 +202,9 @@ export function TvChart({
       ref={wrap}
       onPointerMove={(e) => move(e.clientX, e.clientY)}
       onPointerDown={(e) => move(e.clientX, e.clientY)}
-      onPointerLeave={() => wrap.current?.classList.remove('glow-on')}
-      onPointerUp={(e) => e.pointerType !== 'mouse' && wrap.current?.classList.remove('glow-on')}
+      onPointerLeave={hide}
+      onPointerUp={(e) => e.pointerType !== 'mouse' && hide()}
     >
-      <div className="grid-glow" aria-hidden />
       <div className="tv-chart" ref={box} />
     </div>
   );

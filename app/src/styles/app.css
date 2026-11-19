@@ -12,7 +12,7 @@
 }
 .app.framed { align-items: flex-start; padding: 0; }
 .app.framed .device { width: var(--frame-w); height: min(100dvh, 1097px); box-shadow: 0 0 24px rgba(0,0,0,.12); }
-.scroller { flex: 1; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; scrollbar-width: none; }
+.scroller { flex: 1; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; overflow-anchor: none; scrollbar-width: none; }
 .scroller::-webkit-scrollbar { display: none; }
 
 .status-bar {
@@ -91,7 +91,7 @@
 
 /* 좁은 호가 (패널 열림) */
 .cbook { position: absolute; left: 0; top: 0; width: calc(100% - 236px); height: 528px; background: #fff; overflow: hidden; }
-.book-scroll { position: absolute; inset: 0; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; scrollbar-width: none; }
+.book-scroll { position: absolute; inset: 0; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; overflow-anchor: none; scrollbar-width: none; }
 .book-scroll::-webkit-scrollbar { display: none; }
 .cbook .book-scroll { padding: 40px 0; }
 .cbook-asks, .cbook-bids { position: relative; display: flex; flex-direction: column; gap: 14px; padding-left: 4px; }
@@ -108,7 +108,7 @@
 .cbook-price .p, .wbook-price .p { font-size: 14px; font-weight: 600; }
 .cbook-price .r, .wbook-price .r { font-size: 12px; }
 .cbook .vol-bar span { right: 2px; }
-.cbook-current { position: sticky; top: calc(50% - 18px); bottom: calc(50% - 18px); display: block; width: calc(100% + 1px); margin: 7.6px 0 10px -1px; height: 36px; padding: 6px 0 6px 16px; text-align: left; z-index: 2; background: #fff; box-shadow: 0 0 10px 8px #fff; }
+.cbook-current { position: relative; display: block; left: -1px; height: 24px; margin: 13.6px 0 16px; padding-left: 16px; z-index: 2; }
 
 /* 넓은 호가 (패널 닫힘) */
 .wbook { position: absolute; inset: 0; background: #fff; overflow: hidden; }
@@ -124,7 +124,7 @@
 .wbook-row .vol-bar.bid { left: calc(50% + 62.5px); }
 .wbook-row .vol-bar.bid span { left: 2px; }
 .quote-badge.wide { position: absolute; left: calc(50% - 49.5px); top: calc(50% - 6px); }
-.wbook-current { position: sticky; top: calc(50% - 18px); bottom: calc(50% - 18px); display: block; margin: 7.6px auto 10px; height: 36px; padding: 6px 0; width: 125px; text-align: center; z-index: 2; background: #fff; box-shadow: 0 0 10px 8px #fff; }
+.wbook-current { position: relative; display: block; margin: 13.6px auto 16px; height: 24px; width: 125px; text-align: center; z-index: 2; }
 .wbook-stats { position: absolute; left: calc(50% + 62.5px); right: 16px; top: 0; font-size: 14px; }
 .wbook-stats .g { position: absolute; left: 0; right: 0; display: flex; flex-direction: column; gap: 4px; }
 .wbook-stats .g.bottom { justify-content: flex-end; }
@@ -390,7 +390,7 @@
 /* 슬롯머신 숫자 */
 .slot { display: inline-flex; font-variant-numeric: tabular-nums; line-height: 1.2; margin: -0.25em 0; }
 .slot-col { display: inline-block; height: 1.7em; overflow: hidden; position: relative; -webkit-mask-image: linear-gradient(transparent, #000 22%, #000 78%, transparent); mask-image: linear-gradient(transparent, #000 22%, #000 78%, transparent); }
-.slot-strip { display: flex; flex-direction: column; animation: slotRoll 600ms cubic-bezier(.15,.85,.3,1.08) both; }
+.slot-strip { display: flex; flex-direction: column; animation: slotRoll 600ms cubic-bezier(.2,.8,.3,1.012) both; }
 .slot-strip > span { height: 1.7em; line-height: 1.7em; display: block; text-align: center; }
 .slot-sep { display: inline-block; line-height: 1.7em; }
 @keyframes slotRoll {
@@ -428,26 +428,6 @@
 
 .tv-wrap { position: absolute; inset: 0; touch-action: pan-y; }
 .tv-chart { position: absolute; inset: 0; z-index: 1; }
-@property --gx { syntax: '<length>'; inherits: true; initial-value: 0px; }
-@property --gy { syntax: '<length>'; inherits: true; initial-value: 0px; }
-.tv-wrap { transition: --gx .18s ease-out, --gy .18s ease-out; }
-.grid-glow { position: absolute; inset: 0; z-index: 0; pointer-events: none; opacity: 0; transition: opacity .35s ease; }
-.tv-wrap.glow-on .grid-glow { opacity: 1; }
-.grid-glow::before {
-  content: ''; position: absolute; inset: 0;
-  background: radial-gradient(circle 140px at var(--gx) var(--gy), rgba(229,0,125,.10), rgba(229,0,125,0) 70%);
-}
-.grid-glow::after {
-  content: ''; position: absolute; inset: 0;
-  background:
-    repeating-linear-gradient(0deg, rgba(229,0,125,.32) 0 1px, transparent 1px 24px),
-    repeating-linear-gradient(90deg, rgba(229,0,125,.32) 0 1px, transparent 1px 24px);
-  -webkit-mask-image: radial-gradient(circle 110px at var(--gx) var(--gy), #000, transparent 75%);
-  mask-image: radial-gradient(circle 110px at var(--gx) var(--gy), #000, transparent 75%);
-  animation: gridBreath 2.4s ease-in-out infinite;
-}
-@keyframes gridBreath { 50% { opacity: .55; } }
-@media (prefers-reduced-motion: reduce) { .grid-glow::after { animation: none; } .tv-wrap { transition: none; } }
 
 /* ---------- 대기, 보유, 내역: 종이 효과 ---------- */
 .oi-list, .oi-body { perspective: 700px; }
