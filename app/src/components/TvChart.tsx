@@ -34,6 +34,7 @@ export const MA_COLORS = { 20: '#f59f00', 60: '#20c997', 120: '#7950f2' } as con
 const fmtPrice = (p: number) =>
   p >= 1000 ? Math.round(p).toLocaleString('ko-KR') : p.toLocaleString('ko-KR', { maximumFractionDigits: 4 });
 const ts = (t: number) => t as UTCTimestamp;
+const PANEL_W = 237 + 12; // 주문 패널 폭 + 여백
 
 /** TradingView Lightweight Charts 한 칸. 터치(마우스) 위치를 중심으로 격자가 빛난다 */
 export function TvChart({
@@ -41,13 +42,19 @@ export function TvChart({
   interval,
   settings,
   onPickPrice,
+  panelOpen = false,
 }: {
   candles: Candle[];
   interval: Interval;
   settings: ChartSettings;
   /** 차트를 누른 높이의 가격을 주문 가격으로 넘긴다 (현재 종목 차트에만) */
   onPickPrice?: (price: number) => void;
+  /** 주문 패널이 차트 오른쪽을 덮을 때: 가격축을 왼쪽으로, 최근 봉은 패널 왼쪽으로 */
+  panelOpen?: boolean;
 }) {
+  const scaleId = panelOpen ? 'left' : 'right';
+  const scaleRef = useRef(scaleId);
+  scaleRef.current = scaleId;
   const pickRef = useRef(onPickPrice);
   pickRef.current = onPickPrice;
   const pickLine = useRef<IPriceLine | null>(null);
@@ -72,6 +79,7 @@ export function TvChart({
       },
       grid: { vertLines: { color: '#f1f3f5' }, horzLines: { color: '#f1f3f5' } },
       rightPriceScale: { borderVisible: false, scaleMargins: { top: 0.18, bottom: 0.08 } },
+      leftPriceScale: { borderVisible: false, scaleMargins: { top: 0.18, bottom: 0.08 } },
       timeScale: { borderVisible: false, rightOffset: 4, barSpacing: 5 },
       crosshair: { mode: CrosshairMode.Normal },
       localization: { locale: 'ko-KR', priceFormatter: fmtPrice },
@@ -140,6 +148,7 @@ export function TvChart({
         horzLines: { visible: settings.grid, color: '#f1f3f5' },
       },
       rightPriceScale: { scaleMargins: { top: 0.18, bottom: settings.volume ? 0.26 : 0.08 } },
+      leftPriceScale: { scaleMargins: { top: 0.18, bottom: settings.volume ? 0.26 : 0.08 } },
     });
     if (settings.type === 'candle') main.current.setData(candles.map((k) => ({ ...k, time: ts(k.time) })));
     else main.current.setData(candles.map((k) => ({ time: ts(k.time), value: k.close })));
@@ -150,6 +159,7 @@ export function TvChart({
       if (on && !mas.current[len]) {
         mas.current[len] = c.addSeries(LineSeries, {
           color: MA_COLORS[len],
+          priceScaleId: scaleRef.current,
           lineWidth: 1,
           priceLineVisible: false,
           lastValueVisible: false,
@@ -180,9 +190,26 @@ export function TvChart({
     );
   }, [candles, interval, settings]);
 
+  // 패널이 열리면 가격축을 왼쪽으로 옮기고, 최근 봉이 패널에 가리지 않게 오른쪽 여백을 패널 폭만큼 둔다
+  const alignRight = (animated: boolean) => {
+    const t = chart.current?.timeScale();
+    if (!t) return;
+    const bars = scaleRef.current === 'left' ? Math.ceil(PANEL_W / t.options().barSpacing) : 4;
+    t.scrollToPosition(bars, animated);
+  };
+  useEffect(() => {
+    const c = chart.current;
+    if (!c || !main.current) return;
+    const left = scaleId === 'left';
+    c.applyOptions({ leftPriceScale: { visible: left }, rightPriceScale: { visible: !left } });
+    main.current.applyOptions({ priceScaleId: scaleId });
+    for (const m of Object.values(mas.current)) m?.applyOptions({ priceScaleId: scaleId });
+    alignRight(true);
+  }, [scaleId, settings.type]);
+
   // 처음 데이터와 주기를 바꿀 때만 최근 봉으로 이동
   useEffect(() => {
-    chart.current?.timeScale().scrollToRealTime();
+    alignRight(false);
   }, [interval, settings.type, candles.length > 0]);
 
   const move = (x: number, y: number) => {

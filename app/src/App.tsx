@@ -429,7 +429,7 @@ export default function App() {
           <SubBar panelOpen={panelOpen} onTogglePanel={() => setPanelOpen((v) => !v)} />
           <section className="trade">
             {view === 'chart' ? (
-              <MultiChart main={stock} onPickPrice={pickPrice} />
+              <MultiChart main={stock} onPickPrice={pickPrice} panelOpen={panelOpen} />
             ) : panelOpen ? (
               <CompactOrderBook market={market} onPick={pickPrice} />
             ) : (
