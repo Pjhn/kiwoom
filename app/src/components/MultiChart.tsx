@@ -20,7 +20,9 @@ function Pane({
   onClose,
   onCycle,
   onPickPrice,
+  panelOpen,
 }: {
+  panelOpen?: boolean;
   sym: Stock;
   interval: Interval;
   settings: ChartSettings;
@@ -31,7 +33,7 @@ function Pane({
   const candles = useCandles(sym, interval);
   return (
     <div className="mchart-pane">
-      <TvChart candles={candles} interval={interval} settings={settings} onPickPrice={onPickPrice} />
+      <TvChart candles={candles} interval={interval} settings={settings} onPickPrice={onPickPrice} panelOpen={panelOpen} />
       <div className="pane-tools">
         <button className="pane-name" onClick={onCycle} aria-label={`${sym.name}, 눌러서 종목 바꾸기`}>
           {sym.name}
@@ -135,7 +137,15 @@ function SettingsSheet({
   );
 }
 
-export function MultiChart({ main, onPickPrice }: { main: Stock; onPickPrice: (p: number) => void }) {
+export function MultiChart({
+  main,
+  onPickPrice,
+  panelOpen = false,
+}: {
+  main: Stock;
+  onPickPrice: (p: number) => void;
+  panelOpen?: boolean;
+}) {
   const [interval, setInterval] = useState<Interval>('일');
   const [minute, setMinute] = useState<Interval>('15분');
   const [minuteOpen, setMinuteOpen] = useState(false);
@@ -238,6 +248,7 @@ export function MultiChart({ main, onPickPrice }: { main: Stock; onPickPrice: (p
             interval={interval}
             settings={settings}
             onPickPrice={p.sym === main.id ? onPickPrice : undefined}
+            panelOpen={panelOpen && !expanded}
             onCycle={() => cycle(p.key)}
             onClose={panes.length > 1 ? () => setPanes((x) => x.filter((y) => y.key !== p.key)) : undefined}
           />
