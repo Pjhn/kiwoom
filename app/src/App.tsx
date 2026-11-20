@@ -50,7 +50,7 @@ const now = () => {
 
 const initialStock = () => {
   const q = new URLSearchParams(location.search).get('stock');
-  return STOCKS.find((s) => s.id === q) ?? STOCKS[0];
+  return STOCKS.find((s) => s.id === q) ?? stockById('hyundai'); // 기본 종목: 현대차
 };
 
 export default function App() {
