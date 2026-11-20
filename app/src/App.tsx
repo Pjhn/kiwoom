@@ -128,6 +128,18 @@ export default function App() {
   const auto = autoPrice(orderType, side, market);
   const effPrice = userPriced ? price : auto;
 
+  // 지정가 기본값은 현재가. 실시간 시세가 늦게 오면, 사용자가 손대지 않은 한 그 값으로 다시 맞춘다
+  const seededPrice = useRef<number | null>(null);
+  useEffect(() => {
+    if (market.stock.id !== stock.id) return;
+    setPrice((p) => {
+      if (p != null && p !== seededPrice.current) return p;
+      seededPrice.current = market.price;
+      return market.price;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stock.id, market.stock.id, market.live]);
+
   const holding = holdings.find((h) => h.stockId === stock.id);
   const pendingSellQty = open
     .filter((o) => o.side === 'sell' && o.stockId === stock.id)
