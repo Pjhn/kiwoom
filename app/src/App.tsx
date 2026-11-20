@@ -20,9 +20,10 @@ import { useMarket } from './lib/useMarket';
  */
 type FrameMode = 'mock' | 'flat' | false;
 const PHONE_H = 812 + 11 * 2 + 4 * 2; // 화면 + 베젤 + 금속 테
+const DESIGN_W = 375;
 function useFrame(): { mode: FrameMode; viewH: number } {
   const q = new URLSearchParams(location.search).get('frame');
-  const read = () => ({ wide: window.innerWidth >= 500, h: window.innerHeight });
+  const read = () => ({ wide: window.innerWidth >= 500, w: window.innerWidth, h: window.innerHeight });
   const [win, setWin] = useState(read);
   useEffect(() => {
     const on = () => setWin(read());
@@ -30,10 +31,12 @@ function useFrame(): { mode: FrameMode; viewH: number } {
     return () => window.removeEventListener('resize', on);
   }, []);
   const mode: FrameMode = q === '1' ? 'flat' : q === '0' ? false : win.wide ? 'mock' : false;
-  const scale = mode === 'mock' ? Math.min(1, (win.h - 32) / PHONE_H) : 1;
+  // 폰에서는 시안 폭(375)을 기기 폭에 맞춰 통째로 늘이거나 줄인다. 갤럭시(360 등)에서 호가가 잘리지 않게
+  const scale =
+    mode === 'mock' ? Math.min(1, (win.h - 32) / PHONE_H) : mode === false && q !== '0' ? win.w / DESIGN_W : 1;
   useEffect(() => {
     const root = document.documentElement.style as CSSStyleDeclaration & { zoom: string };
-    root.zoom = scale < 1 ? String(scale) : '';
+    root.zoom = scale !== 1 ? String(scale) : '';
     setChartZoom(scale);
     return () => {
       root.zoom = '';
@@ -419,7 +422,7 @@ export default function App() {
       style={frameMode === 'mock' ? { height: viewH } : undefined}
     >
       <div className="phone">
-      <div className="device">
+      <div className="device" style={frameMode === false && viewH !== window.innerHeight ? { height: viewH } : undefined}>
         {framed && <StatusBar />}
         <div className="scroller" ref={scrollerRef}>
           <TopAppBar name={stock.name} onSearch={() => setPickerOpen(true)} />
