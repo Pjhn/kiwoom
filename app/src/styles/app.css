@@ -87,8 +87,13 @@
 }
 .account-btn { height: 32px; display: flex; align-items: center; gap: 8px; padding: 0 12px 0 0; font-size: 14px; font-weight: 500; color: var(--text-secondary); }
 .account-dot { width: 8px; height: 8px; border-radius: 50%; background: linear-gradient(135deg, #e33692, #f09948); }
-.side-panel-btn { padding: 4px; border-radius: 2px; }
-.side-panel-btn[aria-pressed="true"] { background: var(--surface-secondary); }
+/* 시안: 아이콘 + 「주문창」 글자. 열려 있으면 배경과 진한 글자, 닫혀 있으면 회색 */
+.side-panel-btn {
+  display: flex; align-items: center; gap: 2px; padding: 0 8px 0 0; border-radius: 4px;
+  font-size: 14px; line-height: 1.2; letter-spacing: -0.28px; color: var(--text-secondary);
+}
+.side-panel-btn img { padding: 4px; box-sizing: content-box; }
+.side-panel-btn[aria-pressed="true"] { background: var(--surface-secondary); color: #212529; }
 
 /* ---------- 주문 패널 섹션 ---------- */
 .trade { position: relative; height: 527px; margin-top: 1px; background: #fff; overflow: hidden; }
@@ -347,7 +352,7 @@
 .tooltip {
   position: absolute; left: 50%; top: calc(100% + 7px); z-index: 2; transform: translateX(-50%);
   padding: 10px 16px; background: #fff; border-radius: 4px; font-size: 14px; white-space: nowrap;
-  filter: drop-shadow(0 0 8px rgba(0,0,0,.12)); animation: tipIn .25s ease-out;
+  filter: drop-shadow(0 0 15px rgba(96,107,118,.2)); animation: tipIn .25s ease-out;
 }
 .tooltip .arrow { position: absolute; top: -8px; left: 50%; transform: translateX(-50%); }
 @keyframes tipIn { from { opacity: 0; transform: translate(-50%, 4px); } }
@@ -508,8 +513,9 @@
   25% { transform: scale(1.02, .96); opacity: 1; }
   100% { transform: scale(.03, .02) skewX(-14deg); opacity: 0; filter: blur(2px); }
 }
-.oi-tab.catch { animation: tabCatch .45s cubic-bezier(.3,1.6,.5,1); }
-@keyframes tabCatch { 0% { transform: scale(1); } 40% { transform: scale(1.18) translateY(-2px); } 100% { transform: none; } }
+/* 받는 탭: 튀어 오르는 반동 없이 부드럽게 커졌다 돌아온다 */
+.oi-tab.catch { animation: tabCatch .45s ease-in-out; }
+@keyframes tabCatch { 0% { transform: none; } 45% { transform: scale(1.1); } 100% { transform: none; } }
 @media (prefers-reduced-motion: reduce) { .paper, .oi-item.fly, .oi-tab.catch { animation-duration: .01s; } }
 
 .cur-flat, .cur-down { font-size: 20px; font-weight: 600; }
