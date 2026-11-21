@@ -190,7 +190,7 @@ export function OrderPanel(p: Props) {
           ) : (
             <div className="text-field locked" aria-label={`${verb}가 ${typeLabel(p.orderType)}`}>
               <span className="tf-locked">
-                {p.orderType === 'market' ? '시장가로 주문' : `${fmt(p.autoPrice)} 원`}
+                {p.orderType === 'market' ? '시장 가격' : `${fmt(p.autoPrice)} 원`}
               </span>
               <span className="tf-tag">{p.orderType === 'market' ? `약 ${fmt(p.autoPrice)} 원` : '자동'}</span>
             </div>
