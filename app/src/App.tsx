@@ -131,7 +131,7 @@ export default function App() {
   const auto = autoPrice(orderType, side, market);
   const effPrice = userPriced ? price : auto;
 
-  // 지정가 기본값은 현재가. 실시간 시세가 늦게 오면, 사용자가 손대지 않은 한 그 값으로 다시 맞춘다
+  // 가격 정해서 주문(지정가) 기본값은 현재가. 실시간 시세가 늦게 오면, 사용자가 손대지 않은 한 그 값으로 다시 맞춘다
   const seededPrice = useRef<number | null>(null);
   useEffect(() => {
     if (market.stock.id !== stock.id) return;
