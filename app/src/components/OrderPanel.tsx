@@ -232,7 +232,7 @@ export function OrderPanel(p: Props) {
           </p>
         </div>
         <button className={`primary-btn ${p.side} ${ready ? 'ready' : ''}`} onClick={p.onSubmit}>
-          {ready && <img className="glow" src={isBuy ? glowBuy : glowSell} alt="" />}
+          <img className="glow" src={isBuy ? glowBuy : glowSell} alt="" />
           <span>{verb}하기</span>
         </button>
       </div>
