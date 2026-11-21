@@ -53,7 +53,7 @@ export function SubBar({ panelOpen, onTogglePanel }: { panelOpen: boolean; onTog
     <div className="sub-bar">
       <button className="account-btn">
         <span className="account-dot" />
-        <span>위탁종합 5523 - 3333</span>
+        <span>위탁종합 3516 - 3333</span>
         <img src={swap} alt="" />
       </button>
       <button

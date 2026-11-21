@@ -82,7 +82,8 @@
 }
 
 .sub-bar {
-  height: 40px; background: #fff; padding: 0 16px;
+  /* 계좌 점의 왼쪽 끝을 앱바 뒤로가기 화살표의 왼쪽 끝(16 + 7.25)에 맞춘다 */
+  height: 40px; background: #fff; padding: 0 16px 0 23.25px;
   display: flex; align-items: center; justify-content: space-between;
 }
 .account-btn { height: 32px; display: flex; align-items: center; gap: 8px; padding: 0 12px 0 0; font-size: 14px; font-weight: 500; color: var(--text-secondary); }
@@ -108,7 +109,7 @@
 
 .fade { position: absolute; left: 0; right: 0; height: 40px; pointer-events: none; z-index: 1; }
 .fade.top { top: 0; background: linear-gradient(#fff, rgba(255,255,255,0)); }
-.fade.bottom { bottom: 0; background: linear-gradient(rgba(255,255,255,0), #fff); }
+.fade.bottom { bottom: 0; height: 56px; background: linear-gradient(rgba(255,255,255,0), rgba(255,255,255,.85) 60%, #fff); z-index: 3; }
 
 .grad-price {
   font-size: 20px; font-weight: 600;
@@ -257,12 +258,20 @@
   position: relative; overflow: hidden; width: 100%; padding: 12px 24px; border-radius: 4px;
   font-size: 18px; font-weight: 600; color: #fff; background: var(--side-buy);
 }
+.primary-btn { transition: background-color .4s ease; }
 .primary-btn.sell { background: var(--side-sell); }
-.primary-btn.ready.buy { background: linear-gradient(to top, #e5007d 6.52%, #7f0045 302.17%); }
-.primary-btn.ready.sell { background: linear-gradient(to top, #0354ad 6.52%, #50007f 302.17%); }
+/* 활성(그라데이션)은 덧씌운 층의 투명도로 서서히 켜고 끈다. 그라데이션 배경 자체는 전환이 안 된다 */
+.primary-btn::before {
+  content: ''; position: absolute; inset: 0; opacity: 0; transition: opacity .45s ease;
+  background: linear-gradient(to top, #e5007d 6.52%, #7f0045 302.17%);
+}
+.primary-btn.sell::before { background: linear-gradient(to top, #0354ad 6.52%, #50007f 302.17%); }
+.primary-btn.ready::before { opacity: 1; }
+.primary-btn span { transition: text-shadow .45s ease; text-shadow: 0 0 8px rgba(255,255,255,0); }
 .primary-btn.ready span { text-shadow: 0 0 8px rgba(255,255,255,.8); }
 .primary-btn span { position: relative; }
-.primary-btn .glow { position: absolute; top: 25px; left: 0; }
+.primary-btn .glow { position: absolute; top: 25px; left: 0; opacity: 0; transition: opacity .45s ease; }
+.primary-btn.ready .glow { opacity: 1; }
 .primary-btn:active { filter: brightness(.94); }
 
 /* ---------- 멀티 차트 ---------- */
@@ -491,14 +500,13 @@
 
 /* ---------- 대기, 보유, 내역: 종이 효과 ---------- */
 .paper {
-  animation: paperIn .5s cubic-bezier(.2,.9,.3,1) both;
+  animation: paperIn .5s cubic-bezier(.22,.61,.36,1) both;
   animation-delay: calc(var(--i, 0) * 70ms);
 }
-/* 오른쪽 옆에서 위부터 차례로 튀어나온다 */
+/* 오른쪽 옆에서 위부터 차례로 들어온다. 벽에 부딪혀 튕기는 반동 없이 미끄러지듯 멈춘다 */
 @keyframes paperIn {
   0% { opacity: 0; transform: translateX(70%) scale(.96); }
-  55% { opacity: 1; transform: translateX(-14px) scale(1.01); }
-  78% { transform: translateX(4px); }
+  60% { opacity: 1; }
   100% { transform: none; }
 }
 .oi-none { padding: 40px 16px; text-align: center; font-size: 14px; color: var(--placeholder); }
@@ -513,9 +521,8 @@
   25% { transform: scale(1.02, .96); opacity: 1; }
   100% { transform: scale(.03, .02) skewX(-14deg); opacity: 0; filter: blur(2px); }
 }
-/* 받는 탭: 튀어 오르는 반동 없이 부드럽게 커졌다 돌아온다 */
-.oi-tab.catch { animation: tabCatch .45s ease-in-out; }
-@keyframes tabCatch { 0% { transform: none; } 45% { transform: scale(1.1); } 100% { transform: none; } }
+.oi-tab.catch { animation: tabCatch .45s cubic-bezier(.3,1.6,.5,1); }
+@keyframes tabCatch { 0% { transform: scale(1); } 40% { transform: scale(1.18) translateY(-2px); } 100% { transform: none; } }
 @media (prefers-reduced-motion: reduce) { .paper, .oi-item.fly, .oi-tab.catch { animation-duration: .01s; } }
 
 .cur-flat, .cur-down { font-size: 20px; font-weight: 600; }
