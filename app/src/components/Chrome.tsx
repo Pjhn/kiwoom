@@ -63,6 +63,7 @@ export function SubBar({ panelOpen, onTogglePanel }: { panelOpen: boolean; onTog
         onClick={onTogglePanel}
       >
         <img src={panelOpen ? sidePanelBlack : sidePanelGray} alt="" />
+        주문창
       </button>
     </div>
   );
