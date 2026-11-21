@@ -12,6 +12,8 @@ import { StockPicker } from './components/StockPicker';
 import { CASH, STOCKS, type Market, type Stock, bestAsk, bestBid, fmt, krxTick, stockById } from './lib/market';
 import { autoPrice, isUserPriced, typeLabel, type OrderType } from './lib/orderTypes';
 import { useMarket } from './lib/useMarket';
+import { UtBar, UtLayer } from './ut/UtLayer';
+import { useUt, type PriceSrc } from './ut/useUt';
 
 /**
  * 넓은 화면: 아이폰 13 미니 목업(375 x 812) 안에 띄우고, 창이 낮으면 비율 그대로 통째로 줄인다 ('mock').
@@ -85,6 +87,8 @@ export default function App() {
   const [orderType, setOrderType] = useState<OrderType>('limit');
   const [typesOpen, setTypesOpen] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
+  /** UT 기록용: 주문 가격을 마지막으로 어디서 정했는지 */
+  const priceSrc = useRef<PriceSrc>('D');
 
   const [open, setOpen] = useState<Order[]>([]);
   const [history, setHistory] = useState<Order[]>([]);
@@ -126,6 +130,43 @@ export default function App() {
   openRef.current = open;
   const infoRef = useRef<HTMLDivElement>(null);
   const scrollerRef = useRef<HTMLDivElement>(null);
+
+  const holdingsRef = useRef(holdings);
+  holdingsRef.current = holdings;
+  const historyRef = useRef(history);
+  historyRef.current = history;
+  const ut = useUt({
+    holdingQty: (id) => holdingsRef.current.find((h) => h.stockId === id)?.qty ?? 0,
+    soldPrices: () => historyRef.current.filter((o) => o.side === 'sell' && o.status === 'filled').map((o) => o.price),
+    prepare: (m) => {
+      setSnack(null);
+      if (m === 2 && !holdingsRef.current.some((h) => h.stockId === 'hyundai')) {
+        // 미션 1을 건너뛰었거나 아직 체결 전이면 판매할 주식 10주를 넣어 둔다
+        const p = marketRef.current.stock.id === 'hyundai' ? marketRef.current.price : priceOf('hyundai');
+        const h = { stockId: 'hyundai', qty: 10, avg: p };
+        holdingsRef.current = [h, ...holdingsRef.current];
+        setHoldings((l) => [h, ...l.filter((x) => x.stockId !== 'hyundai')]);
+      }
+      if (m === 4) {
+        // 오늘 판 주식: 대기 중인 판매는 그 가격에 체결된 것으로 하고, 판 적이 없으면 한 건 넣어 둔다
+        const sells = openRef.current.filter((o) => o.side === 'sell');
+        const ids = new Set(sells.map((o) => o.id));
+        sells.forEach((o) => {
+          cancelled.current.add(o.id);
+          applyFill(o, o.qty - o.filled);
+        });
+        const filled = sells.map((o) => ({ ...o, filled: o.qty, status: 'filled' as const, time: now(), at: Date.now(), isNew: false }));
+        const hadSell = historyRef.current.some((o) => o.side === 'sell' && o.status === 'filled') || filled.length > 0;
+        const seed: Order[] = hadSell
+          ? []
+          : [{ id: seq.current++, stockId: 'hyundai', side: 'sell', price: priceOf('hyundai'), qty: 5, filled: 5, status: 'filled', time: now(), at: Date.now(), isNew: false }];
+        const add = [...filled, ...seed];
+        historyRef.current = [...add, ...historyRef.current];
+        if (sells.length) setOpen((l) => l.filter((o) => !ids.has(o.id)));
+        if (add.length) setHistory((h) => [...add, ...h]);
+      }
+    },
+  });
 
   const userPriced = isUserPriced(orderType);
   const auto = autoPrice(orderType, side, market);
@@ -306,6 +347,7 @@ export default function App() {
       isNew: true,
     };
     setConfirming(false);
+    ut.order({ side, stockId: stock.id, qty, price: effPrice, type: orderType, src: userPriced ? priceSrc.current : 'D', view });
     const verb = side === 'buy' ? '구매' : '판매';
 
     // 바로 체결될 수 있는 가격이면 상대 호가 물량만큼 그 자리에서 체결한다
@@ -368,7 +410,8 @@ export default function App() {
     );
   };
 
-  const pickPrice = (p: number) => {
+  const pickPrice = (p: number, src: PriceSrc = 'B') => {
+    priceSrc.current = src;
     setPrice(p);
     if (!isUserPriced(orderType)) setOrderType('limit');
     if (!panelOpen) setPanelOpen(true);
@@ -378,11 +421,13 @@ export default function App() {
     setPickerOpen(false);
     if (s.id === stock.id) return;
     setStock(s);
+    priceSrc.current = 'D';
     setPrice(null);
     setQty(null);
   };
 
   const onHolding = (stockId: string) => {
+    priceSrc.current = 'D';
     if (stockId !== stock.id) {
       setStock(stockById(stockId));
       setPrice(null);
@@ -401,12 +446,14 @@ export default function App() {
     setQty(null);
   };
 
-  const stepPrice = (d: 1 | -1) =>
+  const stepPrice = (d: 1 | -1) => {
+    priceSrc.current = 'T';
     setPrice((p) => {
       if (p == null) return market.price;
       const t = krxTick(d > 0 ? p : p - 1);
       return Math.max(t, p + d * t);
     });
+  };
   const stepQty = (d: 1 | -1) => setQty((q) => (q == null ? (d > 0 ? 1 : null) : q + d <= 0 ? null : q + d));
 
   const iconPos =
@@ -429,7 +476,7 @@ export default function App() {
           <SubBar panelOpen={panelOpen} onTogglePanel={() => setPanelOpen((v) => !v)} />
           <section className="trade">
             {view === 'chart' ? (
-              <MultiChart main={stock} onPickPrice={pickPrice} panelOpen={panelOpen} />
+              <MultiChart main={stock} onPickPrice={(p) => pickPrice(p, 'C')} panelOpen={panelOpen} />
             ) : panelOpen ? (
               <CompactOrderBook market={market} onPick={pickPrice} />
             ) : (
@@ -442,7 +489,10 @@ export default function App() {
                 onSide={changeSide}
                 price={price}
                 qty={qty}
-                onPrice={setPrice}
+                onPrice={(p) => {
+                  priceSrc.current = 'T';
+                  setPrice(p);
+                }}
                 onQty={setQty}
                 onStepPrice={stepPrice}
                 onStepQty={stepQty}
@@ -450,7 +500,10 @@ export default function App() {
                 available={side === 'buy' ? `${fmt(CASH)} 원` : `${sellable} 주`}
                 onSubmit={submit}
                 orderType={orderType}
-                onOpenTypes={() => setTypesOpen(true)}
+                onOpenTypes={() => {
+                  ut.typesOpened();
+                  setTypesOpen(true);
+                }}
                 autoPrice={auto}
               />
             )}
@@ -475,6 +528,7 @@ export default function App() {
             />
           </div>
         </div>
+        <UtBar ut={ut} />
         {framed && <HomeIndicator />}
         {snack && <SnackBar snack={snack} />}
         {confirming && effPrice != null && qty != null && (
@@ -484,7 +538,10 @@ export default function App() {
             price={effPrice}
             qty={qty}
             typeName={typeLabel(orderType)}
-            onCancel={() => setConfirming(false)}
+            onCancel={() => {
+              ut.stray();
+              setConfirming(false);
+            }}
             onConfirm={confirm}
           />
         )}
@@ -499,6 +556,7 @@ export default function App() {
           />
         )}
         {pickerOpen && <StockPicker current={stock} onPick={changeStock} onClose={() => setPickerOpen(false)} />}
+        <UtLayer ut={ut} />
       </div>
       </div>
     </div>

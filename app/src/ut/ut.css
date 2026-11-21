@@ -1,0 +1,66 @@
+/* ---------- 사용성 평가(UT) 모드 ---------- */
+.ut-bar {
+  flex: none; position: relative; z-index: 15;
+  padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+  background: var(--text-primary); color: #fff;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.ut-bar-row { display: flex; align-items: baseline; gap: 8px; }
+.ut-bar-no { flex: none; font-size: 12px; font-weight: 600; color: #ff7fbf; }
+.ut-bar-text { font-size: 15px; font-weight: 600; line-height: 1.4; }
+.ut-bar-msg { font-size: 13px; color: #ffc266; }
+.ut-bar-actions { display: flex; gap: 8px; justify-content: flex-end; }
+.ut-bar .ut-btn { height: 36px; padding: 0 14px; font-size: 14px; }
+.ut-bar .ut-btn.ghost { color: #dee2e6; background: rgba(255,255,255,.08); }
+
+.ut-cover {
+  position: absolute; inset: 0; z-index: 40;
+  display: flex; flex-direction: column; justify-content: center; gap: 16px;
+  padding: 24px 20px; background: var(--surface-secondary);
+  animation: fadeIn .2s;
+}
+.ut-cover.dim { background: rgba(0,0,0,.45); }
+.ut-card {
+  background: #fff; border-radius: 20px; padding: 28px 24px;
+  display: flex; flex-direction: column; gap: 16px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.08);
+}
+.ut-eyebrow { font-size: 14px; font-weight: 600; color: var(--magenta-400); }
+.ut-title { font-size: 22px; font-weight: 700; line-height: 1.4; color: var(--text-primary); word-break: keep-all; }
+.ut-sub { font-size: 14px; color: var(--text-secondary); line-height: 1.5; word-break: keep-all; }
+.ut-list { display: flex; flex-direction: column; gap: 10px; padding-left: 18px; font-size: 15px; line-height: 1.5; color: var(--text-primary); word-break: keep-all; }
+.ut-list li { list-style: disc; }
+
+.ut-btn {
+  height: 52px; padding: 0 20px; border-radius: 12px;
+  font-size: 16px; font-weight: 600;
+}
+.ut-btn.primary { background: var(--magenta-400); color: #fff; }
+.ut-btn.primary:disabled { background: var(--gray-400); }
+.ut-btn.ghost { background: var(--gray-700); color: var(--text-primary); }
+.ut-btn.wide { width: 100%; }
+.ut-row { display: flex; gap: 8px; }
+.ut-row .ut-btn { flex: 1; }
+.ut-link { align-self: center; font-size: 14px; color: var(--text-secondary); text-decoration: underline; padding: 8px; }
+
+.ut-seq { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+.ut-seq-btn {
+  height: 48px; border-radius: 8px; background: var(--gray-700);
+  font-size: 17px; font-weight: 600; color: var(--text-primary);
+}
+.ut-seq-btn:active { background: var(--magenta-400); color: #fff; }
+.ut-seq-legend { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-secondary); }
+
+.ut-input {
+  display: flex; align-items: center; gap: 8px; height: 56px; padding: 0 16px;
+  border: 1.5px solid var(--border-primary); border-radius: 12px;
+}
+.ut-input:focus-within { border-color: var(--magenta-400); }
+.ut-input input { flex: 1; min-width: 0; border: 0; outline: 0; font: inherit; font-size: 20px; font-weight: 600; text-align: right; background: none; }
+.ut-input span { font-size: 16px; color: var(--text-secondary); }
+
+.ut-code {
+  width: 100%; resize: none; padding: 14px; border-radius: 12px;
+  border: 1px solid var(--border-primary); background: var(--surface-secondary);
+  font: 600 15px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--text-primary);
+}
