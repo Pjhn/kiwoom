@@ -17,8 +17,9 @@ export const UT_ON = new URLSearchParams(location.search).get('ut') === '1';
  * 비워 두면 그 수집은 꺼지고 결과 코드만 보여 준다.
  */
 export const UT_CONFIG = {
-  sheetUrl: '',
-  clarityId: '',
+  sheetUrl:
+    'https://script.google.com/macros/s/AKfycbx-pIgOQ3SXgq3oYFYL-Gey3OpBmH_oAivlN9Wvm3xB3IXRKY44XMoqEeRbXHeyOjaq/exec',
+  clarityId: 'zhhvc5fgwd',
 };
 const SHEET_URL = UT_CONFIG.sheetUrl;
 const SEND = new URLSearchParams(location.search).get('sheet') !== '0';
