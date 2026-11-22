@@ -30,7 +30,7 @@ export const MISSIONS = [
   '현대차 주식을 10주 구매해 보세요',
   '가지고 있는 현대차 주식 중 절반을 팔아 보세요',
   '차트를 보면서 원하는 가격을 골라 구매해 보세요',
-  '오늘 판 주식이 얼마에 팔렸는지 확인해 보세요',
+  '오늘 판 주식의 내역을 확인해 보세요',
 ];
 
 /** 주문 가격을 어디서 정했는지: 차트(C), 호가(B), 직접 입력 또는 +- 버튼(T), 손대지 않음(D) */
@@ -57,7 +57,7 @@ export type MissionResult = {
   extra: string;
 };
 
-type Phase = 'intro' | 'ready' | 'run' | 'answer' | 'rate' | 'done';
+type Phase = 'intro' | 'ready' | 'run' | 'rate' | 'done';
 
 type Run = {
   start: number;
@@ -66,7 +66,6 @@ type Run = {
   typesOpened: number;
   /** 미션 2: 시작 때 가지고 있던 수량 */
   holdAtStart: number;
-  tries: number;
 };
 
 type Saved = { pid: string; idx: number; phase: Phase; results: MissionResult[] };
@@ -147,7 +146,7 @@ export const CLARITY_ON = UT_ON && !!UT_CONFIG.clarityId;
  * 결과 코드: KU1 참가코드 M1:S,42,18,0,6,L1 M2:...
  * 미션마다 성공 S 실패 F, 걸린 초, 탭 수, 헤맨 횟수, 쉬움 점수, 덧붙임
  * 덧붙임: 미션 1 주문유형(L 가격 정해서, M 시장 가격)과 주문유형 목록을 열었는지(1/0),
- * 미션 2 판 수량-가진 수량, 미션 3 가격을 정한 곳(C 차트, B 호가, T 직접 입력, D 그대로), 미션 4 입력 횟수
+ * 미션 2 판 수량-가진 수량, 미션 3 가격을 정한 곳(C 차트, B 호가, T 직접 입력, D 그대로), 미션 4 내역을 연 방법(T 탭, S 완료 알림)
  */
 export function resultCode(pid: string, results: MissionResult[]) {
   const parts = results.map((r) => `M${r.m}:${r.ok ? 'S' : 'F'},${r.sec},${r.taps},${r.errs},${r.seq ?? '-'},${r.extra || '-'}`);
@@ -160,8 +159,6 @@ export function useUt(hooks: {
   /** 미션을 시작하기 직전에 화면 상태를 맞춘다 (예: 미션 2에서 팔 주식이 없으면 넣어 둔다) */
   prepare: (m: number) => void;
   holdingQty: (stockId: string) => number;
-  /** 오늘 체결된 판매 주문 가격들 (미션 4 정답) */
-  soldPrices: () => number[];
 }) {
   const [saved] = useState(load);
   const [pid] = useState(() => saved?.pid ?? newPid());
@@ -172,7 +169,6 @@ export function useUt(hooks: {
   );
   const [results, setResults] = useState<MissionResult[]>(saved?.results ?? []);
   const [pendingOk, setPendingOk] = useState<boolean | null>(null);
-  const [answerMsg, setAnswerMsg] = useState<string | null>(null);
   const run = useRef<Run | null>(null);
   const hooksRef = useRef(hooks);
   hooksRef.current = hooks;
@@ -199,6 +195,8 @@ export function useUt(hooks: {
   }, [phase]);
 
   const m = idx + 1;
+  const mRef = useRef(m);
+  mRef.current = m;
 
   const begin = useCallback(() => {
     hooksRef.current.prepare(m);
@@ -208,9 +206,7 @@ export function useUt(hooks: {
       errs: 0,
       typesOpened: 0,
       holdAtStart: hooksRef.current.holdingQty('hyundai'),
-      tries: 0,
     };
-    setAnswerMsg(null);
     setPhase('run');
     clarity('set', 'mission', String(m));
     clarity('event', `m${m}_start`);
@@ -238,6 +234,9 @@ export function useUt(hooks: {
     [m],
   );
 
+  const finishRef = useRef(finish);
+  finishRef.current = finish;
+
   const rate = (seq: number) => {
     const d = draft.current;
     if (!d) return;
@@ -259,7 +258,7 @@ export function useUt(hooks: {
   const giveUp = () => {
     const r = run.current;
     if (!r) return;
-    const extra = m === 1 ? `-${r.typesOpened ? 1 : 0}` : m === 4 ? String(r.tries) : '';
+    const extra = m === 1 ? `-${r.typesOpened ? 1 : 0}` : '';
     finish(false, extra);
   };
 
@@ -292,21 +291,9 @@ export function useUt(hooks: {
     if (run.current) run.current.typesOpened++;
   };
 
-  const openAnswer = () => {
-    setAnswerMsg(null);
-    setPhase('answer');
-  };
-  const closeAnswer = () => setPhase('run');
-  const answer = (v: number) => {
-    const r = run.current;
-    if (!r) return;
-    r.tries++;
-    const sold = hooksRef.current.soldPrices();
-    if (sold.includes(v)) return finish(true, String(r.tries));
-    r.errs++;
-    if (r.tries >= 3) return finish(false, String(r.tries));
-    setAnswerMsg('적어 주신 가격과 달라요. 한 번 더 확인해 볼까요?');
-    setPhase('run');
+  /** 미션 4: 내역 탭을 열면 성공 (T 탭을 직접 누름, S 완료 알림의 [내역 보기]) */
+  const sawHistory = (via: 'T' | 'S') => {
+    if (mRef.current === 4 && run.current) finishRef.current(true, via);
   };
 
   const restart = () => {
@@ -321,7 +308,6 @@ export function useUt(hooks: {
     phase,
     results,
     pendingOk,
-    answerMsg,
     start: () => setPhase('ready'),
     begin,
     giveUp,
@@ -329,9 +315,7 @@ export function useUt(hooks: {
     order,
     stray,
     typesOpened,
-    openAnswer,
-    closeAnswer,
-    answer,
+    sawHistory,
     restart,
   };
 }

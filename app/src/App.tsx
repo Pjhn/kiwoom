@@ -137,7 +137,6 @@ export default function App() {
   historyRef.current = history;
   const ut = useUt({
     holdingQty: (id) => holdingsRef.current.find((h) => h.stockId === id)?.qty ?? 0,
-    soldPrices: () => historyRef.current.filter((o) => o.side === 'sell' && o.status === 'filled').map((o) => o.price),
     prepare: (m) => {
       setSnack(null);
       if (m === 2 && !holdingsRef.current.some((h) => h.stockId === 'hyundai')) {
@@ -148,6 +147,10 @@ export default function App() {
         setHoldings((l) => [h, ...l.filter((x) => x.stockId !== 'hyundai')]);
       }
       if (m === 4) {
+        // 내역 탭을 직접 찾아가게 대기 탭에서 시작한다
+        setTab('pending');
+        setGlowTab(null);
+        setFresh(null);
         // 오늘 판 주식: 대기 중인 판매는 그 가격에 체결된 것으로 하고, 판 적이 없으면 한 건 넣어 둔다
         const sells = openRef.current.filter((o) => o.side === 'sell');
         const ids = new Set(sells.map((o) => o.id));
@@ -221,6 +224,7 @@ export default function App() {
   };
 
   const goTab = (t: InfoTab) => {
+    if (t === 'history') ut.sawHistory('T');
     setTab(t);
     if (glowTab === t) setGlowTab(null);
     if (fresh && fresh.tab !== t) setFresh(null);
@@ -255,6 +259,7 @@ export default function App() {
         o.side === 'buy' ? '보유 확인' : '내역 보기',
         () => {
           setSnack(null);
+          if (to === 'history') ut.sawHistory('S');
           setTab(to);
           setGlowTab(null);
           markFresh(to, to === 'holdings' ? o.stockId : String(o.id));

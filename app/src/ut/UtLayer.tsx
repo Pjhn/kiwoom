@@ -6,7 +6,7 @@ const SEQ_LABELS = ['매우 어려웠어요', '', '', '보통이에요', '', '',
 
 /** 미션 안내: PC 목업에서는 폰 오른쪽 카드, 폰에서는 왼쪽 위 떠 있는 버튼을 누르면 펼쳐지는 카드 */
 export function UtBar({ ut, side = false }: { ut: UtApi; side?: boolean }) {
-  if (!ut.on || (ut.phase !== 'run' && ut.phase !== 'answer')) return null;
+  if (!ut.on || ut.phase !== 'run') return null;
   if (!side) return <UtFloat key={ut.m} ut={ut} />;
   return (
     <div className="ut ut-bar ut-side" role="region" aria-label="미션 안내">
@@ -18,7 +18,6 @@ export function UtBar({ ut, side = false }: { ut: UtApi; side?: boolean }) {
 function MissionBody({ ut, total = false }: { ut: UtApi; total?: boolean }) {
   return (
     <>
-      {ut.answerMsg && <p className="ut-bar-msg">{ut.answerMsg}</p>}
       <div className="ut-bar-row">
         <span className="ut-bar-no">
           미션 {ut.m}
@@ -30,11 +29,6 @@ function MissionBody({ ut, total = false }: { ut: UtApi; total?: boolean }) {
         <button className="ut-btn ghost" onClick={ut.giveUp}>
           잘 모르겠어요
         </button>
-        {ut.m === 4 && (
-          <button className="ut-btn primary" onClick={ut.openAnswer}>
-            찾았어요
-          </button>
-        )}
       </div>
     </>
   );
@@ -42,7 +36,7 @@ function MissionBody({ ut, total = false }: { ut: UtApi; total?: boolean }) {
 
 function UtFloat({ ut }: { ut: UtApi }) {
   const [open, setOpen] = useState(false);
-  const shown = open || !!ut.answerMsg;
+  const shown = open;
   return (
     <div className="ut ut-float-wrap">
       <button
@@ -73,8 +67,6 @@ export function UtLayer({ ut }: { ut: UtApi }) {
       return <Ready m={ut.m} onBegin={ut.begin} />;
     case 'rate':
       return <Rate ok={ut.pendingOk} onRate={ut.rate} />;
-    case 'answer':
-      return <Answer onClose={ut.closeAnswer} onSubmit={ut.answer} />;
     case 'done':
       return <Done code={resultCode(ut.pid, ut.results)} onRestart={ut.restart} />;
     default:
@@ -115,9 +107,7 @@ function Ready({ m, onBegin }: { m: number; onBegin: () => void }) {
         </p>
         <h1 className="ut-title">{MISSIONS[m - 1]}</h1>
         <p className="ut-sub">
-          {m === 4
-            ? '찾았으면 아래 [찾았어요]를 눌러 가격을 적어 주세요.'
-            : '다 하면 자동으로 다음 미션으로 넘어가요.'}
+          다 하면 자동으로 다음 미션으로 넘어가요.
         </p>
       </div>
       <button className="ut-btn primary wide" onClick={onBegin}>
@@ -145,44 +135,6 @@ function Rate({ ok, onRate }: { ok: boolean | null; onRate: (n: number) => void 
           <span>{SEQ_LABELS[6]}</span>
         </div>
       </div>
-    </div>
-  );
-}
-
-function Answer({ onClose, onSubmit }: { onClose: () => void; onSubmit: (v: number) => void }) {
-  const [v, setV] = useState('');
-  const n = Number(v.replace(/[^0-9]/g, ''));
-  return (
-    <div className="ut ut-cover dim">
-      <form
-        className="ut-card"
-        onSubmit={(e) => {
-          e.preventDefault();
-          if (n > 0) onSubmit(n);
-        }}
-      >
-        <p className="ut-eyebrow">미션 4</p>
-        <h1 className="ut-title">한 주에 얼마에 팔렸나요?</h1>
-        <label className="ut-input">
-          <input
-            autoFocus
-            inputMode="numeric"
-            value={v ? Number(v.replace(/[^0-9]/g, '') || 0).toLocaleString('ko-KR') : ''}
-            onChange={(e) => setV(e.target.value)}
-            placeholder="가격"
-            aria-label="팔린 가격"
-          />
-          <span>원</span>
-        </label>
-        <div className="ut-row">
-          <button type="button" className="ut-btn ghost" onClick={onClose}>
-            다시 볼게요
-          </button>
-          <button type="submit" className="ut-btn primary" disabled={!(n > 0)}>
-            확인
-          </button>
-        </div>
-      </form>
     </div>
   );
 }
