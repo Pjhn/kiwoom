@@ -102,3 +102,12 @@
   box-shadow: 0 12px 28px rgba(0,0,0,.28);
   animation: fadeIn .15s;
 }
+
+/* 마지막 화면 평가 */
+.ut-scroll { justify-content: flex-start; overflow-y: auto; }
+.ut-q { display: flex; flex-direction: column; gap: 10px; padding-top: 14px; border-top: 1px solid var(--border-primary); }
+.ut-q-text { font-size: 15px; line-height: 1.45; color: var(--text-primary); word-break: keep-all; }
+.ut-scale { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+.ut-seq-btn.on { background: var(--magenta-400); color: #fff; }
+.ut-etc { font: 400 15px/1.5 Pretendard, system-ui, sans-serif; }
+.ut-etc:focus { outline: 0; border-color: var(--magenta-400); }
