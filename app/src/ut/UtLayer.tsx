@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CLARITY_ON, MISSIONS, SURVEY, resultCode, type UtApi } from './useUt';
+import { CLARITY_ON, MISSIONS, SURVEY, TERMS, resultCode, type UtApi } from './useUt';
 import './ut.css';
 
 const SEQ_LABELS = ['매우 어려웠어요', '', '', '보통이에요', '', '', '매우 쉬웠어요'];
@@ -142,10 +142,14 @@ function Rate({ ok, onRate }: { ok: boolean | null; onRate: (n: number) => void 
 }
 
 /** 화면 평가 6문항 (1차 UT 와 같은 문항, 1 전혀 아니에요 ~ 5 매우 그래요) */
-function SurveyCard({ onSubmit }: { onSubmit: (scores: number[], etc: string) => void }) {
+function SurveyCard({ onSubmit }: { onSubmit: (scores: number[], terms: number[], etc: string) => void }) {
   const [scores, setScores] = useState<(number | null)[]>(() => SURVEY.map(() => null));
   const [etc, setEtc] = useState('');
-  const done = scores.every((v) => v != null);
+  // 고른 말 번호 (1부터). 0 은 「없었어요」로 다른 보기와 함께 고를 수 없다
+  const [terms, setTerms] = useState<number[]>([]);
+  const toggleTerm = (n: number) =>
+    setTerms((t) => (n === 0 ? (t.includes(0) ? [] : [0]) : t.includes(n) ? t.filter((x) => x !== n) : [...t.filter((x) => x !== 0), n]));
+  const done = scores.every((v) => v != null) && terms.length > 0;
   return (
     <div className="ut ut-cover ut-scroll">
       <div className="ut-card">
@@ -171,11 +175,25 @@ function SurveyCard({ onSubmit }: { onSubmit: (scores: number[], etc: string) =>
             </div>
           </div>
         ))}
+        <div className="ut-q">
+          <p className="ut-q-text">화면에서 뜻이 바로 와닿지 않은 말을 모두 골라 주세요</p>
+          <div className="ut-chips" role="group" aria-label="뜻이 와닿지 않은 말">
+            {[...TERMS, '없었어요'].map((t, i) => {
+              const n = i < TERMS.length ? i + 1 : 0;
+              const on = terms.includes(n);
+              return (
+                <button key={t} type="button" aria-pressed={on} className={`ut-chip ${on ? 'on' : ''}`} onClick={() => toggleTerm(n)}>
+                  {t}
+                </button>
+              );
+            })}
+          </div>
+        </div>
         <label className="ut-q">
           <span className="ut-q-text">그 밖에 불편했던 점이 있다면 적어 주세요</span>
           <textarea className="ut-code ut-etc" rows={3} value={etc} onChange={(e) => setEtc(e.target.value)} placeholder="없다면 비워 두셔도 돼요" />
         </label>
-        <button className="ut-btn primary wide" disabled={!done} onClick={() => onSubmit(scores as number[], etc.trim())}>
+        <button className="ut-btn primary wide" disabled={!done} onClick={() => onSubmit(scores as number[], terms.filter((x) => x > 0).sort((a, b) => a - b), etc.trim())}>
           제출하기
         </button>
       </div>

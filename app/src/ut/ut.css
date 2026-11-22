@@ -111,3 +111,7 @@
 .ut-seq-btn.on { background: var(--magenta-400); color: #fff; }
 .ut-etc { font: 400 15px/1.5 Pretendard, system-ui, sans-serif; }
 .ut-etc:focus { outline: 0; border-color: var(--magenta-400); }
+
+.ut-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.ut-chip { height: 40px; padding: 0 14px; border-radius: 20px; background: var(--gray-700); font-size: 15px; color: var(--text-primary); }
+.ut-chip.on { background: var(--magenta-400); color: #fff; font-weight: 600; }

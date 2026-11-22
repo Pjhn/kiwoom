@@ -77,7 +77,9 @@ export const SURVEY = [
   '수량을 입력하는 과정이 번거로웠어요',
   '가격이나 금액을 정하는 과정이 번거로웠어요',
 ];
-export type Survey = { scores: number[]; etc: string };
+/** 뜻이 바로 와닿지 않은 말 (복수 선택). 결과 코드에는 번호로 남긴다 (0 = 없었어요) */
+export const TERMS = ['가격 정해서 주문', '시장 가격으로 주문', '대기', '보유', '내역', '체결', '호가'];
+export type Survey = { scores: number[]; terms: number[]; etc: string };
 
 type Saved = { pid: string; idx: number; phase: Phase; results: MissionResult[]; survey?: Survey | null };
 
@@ -157,13 +159,15 @@ export const CLARITY_ON = UT_ON && !!UT_CONFIG.clarityId;
  * 결과 코드: KU1 참가코드 M1:S,42,18,0,6,L1 M2:...
  * 미션마다 성공 S 실패 F, 걸린 초, 탭 수, 헤맨 횟수, 쉬움 점수, 덧붙임
  * 덧붙임: 미션 1 주문유형(L 가격 정해서, M 시장 가격)과 주문유형 목록을 열었는지(1/0),
- * 끝의 Q: 는 화면 평가 6문항 점수(1~5, 낮을수록 좋음)
+ * 끝의 Q: 는 화면 평가 6문항 점수(1~5, 낮을수록 좋음), W: 는 뜻이 와닿지 않은 말 번호
  * 미션 2 판 수량-가진 수량, 미션 3 가격을 정한 곳(C 차트, B 호가, T 직접 입력, D 그대로), 미션 4 내역을 연 방법(T 탭, S 완료 알림)
  */
 export function resultCode(pid: string, results: MissionResult[], survey?: Survey | null) {
   const parts = results.map((r) => `M${r.m}:${r.ok ? 'S' : 'F'},${r.sec},${r.taps},${r.errs},${r.seq ?? '-'},${r.extra || '-'}`);
   // Q: 화면 평가 6문항 점수 (1~5, 낮을수록 좋음)
   if (survey) parts.push(`Q:${survey.scores.join(',')}`);
+  // W: 뜻이 바로 와닿지 않은 말 번호 (TERMS 순서 1부터, 0 = 없었어요)
+  if (survey) parts.push(`W:${survey.terms?.length ? survey.terms.join(',') : '0'}`);
   return ['KU1', pid, ...parts].join(' ');
 }
 
@@ -310,10 +314,15 @@ export function useUt(hooks: {
   };
 
   /** 화면 평가 제출: 1차 UT 와 같은 sus 탭에 쌓아 두 차례를 바로 비교할 수 있게 한다 */
-  const submitSurvey = (scores: number[], etc: string) => {
-    const sv: Survey = { scores, etc };
+  const submitSurvey = (scores: number[], terms: number[], etc: string) => {
+    const sv: Survey = { scores, terms, etc };
     setSurvey(sv);
-    const row: Record<string, unknown> = { pid, version: VERSION, etc };
+    const row: Record<string, unknown> = {
+      pid,
+      version: VERSION,
+      etc,
+      terms: terms.length ? terms.map((i) => TERMS[i - 1]).join(', ') : '없었어요',
+    };
     scores.forEach((v, i) => (row[`s${i + 1}`] = v));
     row.score = Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 100) / 100;
     send('sus', row);
