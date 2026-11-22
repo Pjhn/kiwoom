@@ -4,14 +4,17 @@ import './ut.css';
 
 const SEQ_LABELS = ['매우 어려웠어요', '', '', '보통이에요', '', '', '매우 쉬웠어요'];
 
-/** 미션 중 화면 아래에 붙는 안내 막대 */
-export function UtBar({ ut }: { ut: UtApi }) {
+/** 미션 안내: 폰에서는 화면 아래 막대, PC 목업에서는 폰 오른쪽 카드 */
+export function UtBar({ ut, side = false }: { ut: UtApi; side?: boolean }) {
   if (!ut.on || (ut.phase !== 'run' && ut.phase !== 'answer')) return null;
   return (
-    <div className="ut ut-bar" role="region" aria-label="미션 안내">
+    <div className={`ut ut-bar ${side ? 'ut-side' : 'ut-bottom'}`} role="region" aria-label="미션 안내">
       {ut.answerMsg && <p className="ut-bar-msg">{ut.answerMsg}</p>}
       <div className="ut-bar-row">
-        <span className="ut-bar-no">미션 {ut.m}</span>
+        <span className="ut-bar-no">
+          미션 {ut.m}
+          {side && ` / ${MISSIONS.length}`}
+        </span>
         <p className="ut-bar-text">{MISSIONS[ut.m - 1]}</p>
       </div>
       <div className="ut-bar-actions">

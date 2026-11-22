@@ -64,3 +64,17 @@
   border: 1px solid var(--border-primary); background: var(--surface-secondary);
   font: 600 15px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--text-primary);
 }
+
+/* PC 목업: 미션 안내를 폰 오른쪽에 둔다. 창이 좁으면 폰 안 아래 막대로 */
+.ut-side {
+  width: 300px; margin-left: 48px; padding: 28px 24px; gap: 20px;
+  border-radius: 20px; box-shadow: 0 20px 40px -12px rgba(0,0,0,.3);
+}
+.ut-side .ut-bar-row { flex-direction: column; align-items: flex-start; gap: 10px; }
+.ut-side .ut-bar-no { font-size: 14px; }
+.ut-side .ut-bar-text { font-size: 22px; font-weight: 700; word-break: keep-all; }
+.ut-side .ut-bar-msg { font-size: 14px; line-height: 1.5; }
+.ut-side .ut-bar-actions { flex-direction: column-reverse; }
+.ut-side .ut-btn { height: 48px; font-size: 15px; }
+@media (min-width: 900px) { .app.mock .ut-bottom { display: none; } }
+@media (max-width: 899px) { .ut-side { display: none; } }
