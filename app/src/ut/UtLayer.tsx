@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CLARITY_ON, MISSIONS, resultCode, type UtApi } from './useUt';
+import { CLARITY_ON, MISSIONS, SURVEY, resultCode, type UtApi } from './useUt';
 import './ut.css';
 
 const SEQ_LABELS = ['매우 어려웠어요', '', '', '보통이에요', '', '', '매우 쉬웠어요'];
@@ -67,8 +67,10 @@ export function UtLayer({ ut }: { ut: UtApi }) {
       return <Ready m={ut.m} onBegin={ut.begin} />;
     case 'rate':
       return <Rate ok={ut.pendingOk} onRate={ut.rate} />;
+    case 'survey':
+      return <SurveyCard onSubmit={ut.submitSurvey} />;
     case 'done':
-      return <Done code={resultCode(ut.pid, ut.results)} onRestart={ut.restart} />;
+      return <Done code={resultCode(ut.pid, ut.results, ut.survey)} onRestart={ut.restart} />;
     default:
       return null;
   }
@@ -134,6 +136,48 @@ function Rate({ ok, onRate }: { ok: boolean | null; onRate: (n: number) => void 
           <span>{SEQ_LABELS[0]}</span>
           <span>{SEQ_LABELS[6]}</span>
         </div>
+      </div>
+    </div>
+  );
+}
+
+/** 화면 평가 6문항 (1차 UT 와 같은 문항, 1 전혀 아니에요 ~ 5 매우 그래요) */
+function SurveyCard({ onSubmit }: { onSubmit: (scores: number[], etc: string) => void }) {
+  const [scores, setScores] = useState<(number | null)[]>(() => SURVEY.map(() => null));
+  const [etc, setEtc] = useState('');
+  const done = scores.every((v) => v != null);
+  return (
+    <div className="ut ut-cover ut-scroll">
+      <div className="ut-card">
+        <p className="ut-eyebrow">마지막 질문</p>
+        <h1 className="ut-title">방금 쓴 화면 전체를 떠올리며 답해 주세요</h1>
+        <p className="ut-sub">1은 전혀 아니에요, 5는 매우 그래요</p>
+        {SURVEY.map((q, i) => (
+          <div key={i} className="ut-q">
+            <p className="ut-q-text">{q}</p>
+            <div className="ut-scale" role="radiogroup" aria-label={q}>
+              {[1, 2, 3, 4, 5].map((v) => (
+                <button
+                  key={v}
+                  type="button"
+                  role="radio"
+                  aria-checked={scores[i] === v}
+                  className={`ut-seq-btn ${scores[i] === v ? 'on' : ''}`}
+                  onClick={() => setScores((s) => s.map((x, j) => (j === i ? v : x)))}
+                >
+                  {v}
+                </button>
+              ))}
+            </div>
+          </div>
+        ))}
+        <label className="ut-q">
+          <span className="ut-q-text">그 밖에 불편했던 점이 있다면 적어 주세요</span>
+          <textarea className="ut-code ut-etc" rows={3} value={etc} onChange={(e) => setEtc(e.target.value)} placeholder="없다면 비워 두셔도 돼요" />
+        </label>
+        <button className="ut-btn primary wide" disabled={!done} onClick={() => onSubmit(scores as number[], etc.trim())}>
+          제출하기
+        </button>
       </div>
     </div>
   );

@@ -57,7 +57,7 @@ export type MissionResult = {
   extra: string;
 };
 
-type Phase = 'intro' | 'ready' | 'run' | 'rate' | 'done';
+type Phase = 'intro' | 'ready' | 'run' | 'rate' | 'survey' | 'done';
 
 type Run = {
   start: number;
@@ -68,7 +68,18 @@ type Run = {
   holdAtStart: number;
 };
 
-type Saved = { pid: string; idx: number; phase: Phase; results: MissionResult[] };
+/** 마지막 화면 평가: 1차 UT(11월 16일)와 같은 문항, 같은 1~5점 (그렇다 = 불편, 낮을수록 좋음). 1차 7번(주문 취소)은 이번 미션에 없어 뺐다 */
+export const SURVEY = [
+  '화면이 복잡해서 내용에 집중하기 어려웠어요',
+  '화면에는 이해가 안 되는 용어가 많았어요',
+  '화면을 쓰려면 추가적인 검색이 필요할 것 같아요',
+  '화면을 쓰기 전에 배워야 할 게 많았어요',
+  '수량을 입력하는 과정이 번거로웠어요',
+  '가격이나 금액을 정하는 과정이 번거로웠어요',
+];
+export type Survey = { scores: number[]; etc: string };
+
+type Saved = { pid: string; idx: number; phase: Phase; results: MissionResult[]; survey?: Survey | null };
 
 const TYPE_CODE: Record<OrderType, string> = {
   limit: 'L',
@@ -101,7 +112,7 @@ function save(s: Saved | null) {
   }
 }
 
-function send(kind: 'task' | 'final', payload: Record<string, unknown>) {
+function send(kind: 'task' | 'sus' | 'final', payload: Record<string, unknown>) {
   if (!SEND || !SHEET_URL) return;
   try {
     fetch(SHEET_URL, {
@@ -146,10 +157,13 @@ export const CLARITY_ON = UT_ON && !!UT_CONFIG.clarityId;
  * 결과 코드: KU1 참가코드 M1:S,42,18,0,6,L1 M2:...
  * 미션마다 성공 S 실패 F, 걸린 초, 탭 수, 헤맨 횟수, 쉬움 점수, 덧붙임
  * 덧붙임: 미션 1 주문유형(L 가격 정해서, M 시장 가격)과 주문유형 목록을 열었는지(1/0),
+ * 끝의 Q: 는 화면 평가 6문항 점수(1~5, 낮을수록 좋음)
  * 미션 2 판 수량-가진 수량, 미션 3 가격을 정한 곳(C 차트, B 호가, T 직접 입력, D 그대로), 미션 4 내역을 연 방법(T 탭, S 완료 알림)
  */
-export function resultCode(pid: string, results: MissionResult[]) {
+export function resultCode(pid: string, results: MissionResult[], survey?: Survey | null) {
   const parts = results.map((r) => `M${r.m}:${r.ok ? 'S' : 'F'},${r.sec},${r.taps},${r.errs},${r.seq ?? '-'},${r.extra || '-'}`);
+  // Q: 화면 평가 6문항 점수 (1~5, 낮을수록 좋음)
+  if (survey) parts.push(`Q:${survey.scores.join(',')}`);
   return ['KU1', pid, ...parts].join(' ');
 }
 
@@ -165,9 +179,10 @@ export function useUt(hooks: {
   const [idx, setIdx] = useState(saved?.idx ?? 0);
   // 새로고침되면 진행 중이던 미션은 시작 카드부터 다시
   const [phase, setPhase] = useState<Phase>(
-    saved ? (saved.phase === 'done' ? 'done' : saved.phase === 'intro' ? 'intro' : 'ready') : 'intro',
+    saved ? (saved.phase === 'done' || saved.phase === 'survey' || saved.phase === 'intro' ? saved.phase : 'ready') : 'intro',
   );
   const [results, setResults] = useState<MissionResult[]>(saved?.results ?? []);
+  const [survey, setSurvey] = useState<Survey | null>(saved?.survey ?? null);
   const [pendingOk, setPendingOk] = useState<boolean | null>(null);
   const run = useRef<Run | null>(null);
   const hooksRef = useRef(hooks);
@@ -180,8 +195,8 @@ export function useUt(hooks: {
   }, [pid]);
 
   useEffect(() => {
-    if (UT_ON) save({ pid, idx, phase, results });
-  }, [pid, idx, phase, results]);
+    if (UT_ON) save({ pid, idx, phase, results, survey });
+  }, [pid, idx, phase, results, survey]);
 
   // 미션 중 화면 탭 수 (UT 안내 영역은 빼고 센다)
   useEffect(() => {
@@ -246,9 +261,7 @@ export function useUt(hooks: {
     setResults(next);
     send('task', { pid, task: res.m, ok: res.ok ? 1 : 0, sec: res.sec, taps: res.taps, errs: res.errs, seq, extra: res.extra });
     if (idx + 1 >= MISSIONS.length) {
-      send('final', { pid, code: resultCode(pid, next) });
-      clarity('event', 'ut_done');
-      setPhase('done');
+      setPhase('survey');
     } else {
       setIdx(idx + 1);
       setPhase('ready');
@@ -296,6 +309,19 @@ export function useUt(hooks: {
     if (mRef.current === 4 && run.current) finishRef.current(true, via);
   };
 
+  /** 화면 평가 제출: 1차 UT 와 같은 sus 탭에 쌓아 두 차례를 바로 비교할 수 있게 한다 */
+  const submitSurvey = (scores: number[], etc: string) => {
+    const sv: Survey = { scores, etc };
+    setSurvey(sv);
+    const row: Record<string, unknown> = { pid, version: VERSION, etc };
+    scores.forEach((v, i) => (row[`s${i + 1}`] = v));
+    row.score = Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 100) / 100;
+    send('sus', row);
+    send('final', { pid, code: resultCode(pid, results, sv) });
+    clarity('event', 'ut_done');
+    setPhase('done');
+  };
+
   const restart = () => {
     save(null);
     location.reload();
@@ -307,6 +333,8 @@ export function useUt(hooks: {
     m,
     phase,
     results,
+    survey,
+    submitSurvey,
     pendingOk,
     start: () => setPhase('ready'),
     begin,
