@@ -559,6 +559,7 @@ export default function App() {
         <UtLayer ut={ut} />
       </div>
       </div>
+      {frameMode === 'mock' && <UtBar ut={ut} side />}
     </div>
   );
 }
