@@ -10,9 +10,17 @@ import type { OrderType } from '../lib/orderTypes';
 
 export const UT_ON = new URLSearchParams(location.search).get('ut') === '1';
 
-// 기존 UT 사이트(루트 index.html)와 같은 구글 Apps Script 웹 앱. ?sheet=0 이면 보내지 않는다
-const SHEET_URL =
-  'https://script.google.com/macros/s/AKfycbxitxyz33yCy1pFqLv9anitS32mYCD6UDVS3Zzp79rgN9NxC5lcznbHtQ6bdLxOfB4yzw/exec';
+/**
+ * 결과 수집 설정. 기존 UT 사이트와 섞이지 않게 이 앱 전용 시트와 Clarity 프로젝트를 쓴다.
+ * - sheetUrl: 새 구글 시트에 /mnt 의 apps-script.gs 를 붙여 웹 앱으로 배포한 URL (task, final 탭에 쌓임)
+ * - clarityId: Microsoft Clarity 새 프로젝트의 Project ID
+ * 비워 두면 그 수집은 꺼지고 결과 코드만 보여 준다.
+ */
+export const UT_CONFIG = {
+  sheetUrl: '',
+  clarityId: '',
+};
+const SHEET_URL = UT_CONFIG.sheetUrl;
 const SEND = new URLSearchParams(location.search).get('sheet') !== '0';
 const VERSION = 'order-app-ut1';
 const STORE = 'kiwoom-ut-v1';
@@ -94,7 +102,7 @@ function save(s: Saved | null) {
 }
 
 function send(kind: 'task' | 'final', payload: Record<string, unknown>) {
-  if (!SEND) return;
+  if (!SEND || !SHEET_URL) return;
   try {
     fetch(SHEET_URL, {
       method: 'POST',
@@ -106,6 +114,33 @@ function send(kind: 'task' | 'final', payload: Record<string, unknown>) {
     /* 네트워크가 없어도 결과 코드로 받을 수 있다 */
   }
 }
+
+type ClarityFn = ((...a: unknown[]) => void) & { q?: unknown[][] };
+let clarityLoaded = false;
+/** UT 모드에서만 Clarity 를 불러온다. 미션별 히트맵과 녹화를 나눠 볼 수 있게 태그를 단다 */
+function clarity(...a: unknown[]) {
+  if (!UT_ON || !UT_CONFIG.clarityId) return;
+  const w = window as unknown as { clarity?: ClarityFn };
+  if (!clarityLoaded) {
+    clarityLoaded = true;
+    if (!w.clarity) {
+      const f: ClarityFn = (...args: unknown[]) => {
+        (f.q = f.q || []).push(args);
+      };
+      w.clarity = f;
+    }
+    const t = document.createElement('script');
+    t.async = true;
+    t.src = 'https://www.clarity.ms/tag/' + UT_CONFIG.clarityId;
+    document.head.appendChild(t);
+  }
+  try {
+    w.clarity?.(...a);
+  } catch {
+    /* 녹화 도구가 막혀도 UT 는 그대로 진행 */
+  }
+}
+export const CLARITY_ON = UT_ON && !!UT_CONFIG.clarityId;
 
 /**
  * 결과 코드: KU1 참가코드 M1:S,42,18,0,6,L1 M2:...
@@ -143,6 +178,11 @@ export function useUt(hooks: {
   const draft = useRef<Omit<MissionResult, 'seq'> | null>(null);
 
   useEffect(() => {
+    clarity('identify', pid);
+    clarity('set', 'version', VERSION);
+  }, [pid]);
+
+  useEffect(() => {
     if (UT_ON) save({ pid, idx, phase, results });
   }, [pid, idx, phase, results]);
 
@@ -171,6 +211,8 @@ export function useUt(hooks: {
     };
     setAnswerMsg(null);
     setPhase('run');
+    clarity('set', 'mission', String(m));
+    clarity('event', `m${m}_start`);
   }, [m]);
 
   const finish = useCallback(
@@ -187,6 +229,7 @@ export function useUt(hooks: {
         extra,
       };
       setPendingOk(ok);
+      clarity('event', `m${m}_${ok ? 'success' : 'fail'}`);
       // 앱의 완료 안내를 잠깐 보여 준 뒤 점수 카드를 띄운다
       if (delay) setTimeout(() => setPhase('rate'), delay);
       else setPhase('rate');
@@ -204,6 +247,7 @@ export function useUt(hooks: {
     send('task', { pid, task: res.m, ok: res.ok ? 1 : 0, sec: res.sec, taps: res.taps, errs: res.errs, seq, extra: res.extra });
     if (idx + 1 >= MISSIONS.length) {
       send('final', { pid, code: resultCode(pid, next) });
+      clarity('event', 'ut_done');
       setPhase('done');
     } else {
       setIdx(idx + 1);

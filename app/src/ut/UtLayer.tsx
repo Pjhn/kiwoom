@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { MISSIONS, resultCode, type UtApi } from './useUt';
+import { CLARITY_ON, MISSIONS, resultCode, type UtApi } from './useUt';
 import './ut.css';
 
 const SEQ_LABELS = ['매우 어려웠어요', '', '', '보통이에요', '', '', '매우 쉬웠어요'];
@@ -59,10 +59,13 @@ function Intro({ onStart }: { onStart: () => void }) {
           <li>평가받는 건 여러분이 아니라 앱이에요. 정답도 없어요.</li>
           <li>막히면 언제든 [잘 모르겠어요]를 눌러 다음으로 넘어가도 돼요.</li>
           <li>미션마다 걸린 시간과 누른 횟수를 기록해요. 이름 같은 개인 정보는 모으지 않아요.</li>
+          {CLARITY_ON && (
+            <li>화면을 누른 위치와 화면 녹화가 익명으로 수집돼요. 녹화 도구(Microsoft Clarity)는 쿠키를 사용해요.</li>
+          )}
         </ul>
       </div>
       <button className="ut-btn primary wide" onClick={onStart}>
-        시작할게요
+        {CLARITY_ON ? '동의하고 시작할게요' : '시작할게요'}
       </button>
     </div>
   );
