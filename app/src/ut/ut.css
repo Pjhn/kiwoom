@@ -76,5 +76,29 @@
 .ut-side .ut-bar-msg { font-size: 14px; line-height: 1.5; }
 .ut-side .ut-bar-actions { flex-direction: column-reverse; }
 .ut-side .ut-btn { height: 48px; font-size: 15px; }
-@media (min-width: 900px) { .app.mock .ut-bottom { display: none; } }
+@media (min-width: 900px) { .app.mock .ut-float-wrap { display: none; } }
 @media (max-width: 899px) { .ut-side { display: none; } }
+
+/* 폰: 왼쪽 위 떠 있는 미션 버튼 (가짜 뒤로 버튼 자리를 덮는다) */
+.ut-float-wrap { position: absolute; left: 6px; top: 4px; right: 6px; z-index: 25; pointer-events: none; }
+.framed .ut-float-wrap { top: 51px; }
+.ut-fab {
+  pointer-events: auto;
+  width: 40px; height: 40px; border-radius: 50%;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0;
+  background: var(--magenta-400); color: #fff; line-height: 1.05;
+  box-shadow: 0 4px 12px rgba(229,0,125,.35);
+  animation: utPulse 1.6s ease-out 2;
+}
+.ut-fab.on { background: var(--text-primary); box-shadow: 0 4px 12px rgba(0,0,0,.3); animation: none; }
+.ut-fab-label { font-size: 9px; font-weight: 600; opacity: .85; }
+.ut-fab-no { font-size: 15px; font-weight: 700; }
+@keyframes utPulse {
+  0% { box-shadow: 0 0 0 0 rgba(229,0,125,.55); }
+  100% { box-shadow: 0 0 0 14px rgba(229,0,125,0); }
+}
+.ut-pop {
+  pointer-events: auto; margin-top: 8px; border-radius: 16px;
+  box-shadow: 0 12px 28px rgba(0,0,0,.28);
+  animation: fadeIn .15s;
+}

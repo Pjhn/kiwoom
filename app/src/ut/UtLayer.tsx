@@ -4,16 +4,25 @@ import './ut.css';
 
 const SEQ_LABELS = ['매우 어려웠어요', '', '', '보통이에요', '', '', '매우 쉬웠어요'];
 
-/** 미션 안내: 폰에서는 화면 아래 막대, PC 목업에서는 폰 오른쪽 카드 */
+/** 미션 안내: PC 목업에서는 폰 오른쪽 카드, 폰에서는 왼쪽 위 떠 있는 버튼을 누르면 펼쳐지는 카드 */
 export function UtBar({ ut, side = false }: { ut: UtApi; side?: boolean }) {
   if (!ut.on || (ut.phase !== 'run' && ut.phase !== 'answer')) return null;
+  if (!side) return <UtFloat key={ut.m} ut={ut} />;
   return (
-    <div className={`ut ut-bar ${side ? 'ut-side' : 'ut-bottom'}`} role="region" aria-label="미션 안내">
+    <div className="ut ut-bar ut-side" role="region" aria-label="미션 안내">
+      <MissionBody ut={ut} total />
+    </div>
+  );
+}
+
+function MissionBody({ ut, total = false }: { ut: UtApi; total?: boolean }) {
+  return (
+    <>
       {ut.answerMsg && <p className="ut-bar-msg">{ut.answerMsg}</p>}
       <div className="ut-bar-row">
         <span className="ut-bar-no">
           미션 {ut.m}
-          {side && ` / ${MISSIONS.length}`}
+          {total && ` / ${MISSIONS.length}`}
         </span>
         <p className="ut-bar-text">{MISSIONS[ut.m - 1]}</p>
       </div>
@@ -27,6 +36,29 @@ export function UtBar({ ut, side = false }: { ut: UtApi; side?: boolean }) {
           </button>
         )}
       </div>
+    </>
+  );
+}
+
+function UtFloat({ ut }: { ut: UtApi }) {
+  const [open, setOpen] = useState(false);
+  const shown = open || !!ut.answerMsg;
+  return (
+    <div className="ut ut-float-wrap">
+      <button
+        className={`ut-fab ${shown ? 'on' : ''}`}
+        aria-expanded={shown}
+        aria-label={`미션 ${ut.m} ${shown ? '닫기' : '보기'}`}
+        onClick={() => setOpen(!shown)}
+      >
+        <span className="ut-fab-label">미션</span>
+        <span className="ut-fab-no">{ut.m}</span>
+      </button>
+      {shown && (
+        <div className="ut-bar ut-pop" role="region" aria-label="미션 안내">
+          <MissionBody ut={ut} total />
+        </div>
+      )}
     </div>
   );
 }
