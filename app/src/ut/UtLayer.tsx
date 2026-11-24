@@ -160,7 +160,11 @@ export function UtLayer({ ut, side = false }: { ut: UtApi; side?: boolean }) {
         </>
       );
     case 'done':
+<<<<<<< HEAD
       return <Done cls={cls} fb={side ? null : <UtFeedback ut={ut} />} />;
+=======
+      return <Done cls={cls} />;
+>>>>>>> origin/main
     default:
       return null;
   }
@@ -219,7 +223,10 @@ function Ready({ cls, m, onBegin, fb }: { cls: string; m: number; onBegin: () =>
           미션 시작
         </button>
       </div>
+<<<<<<< HEAD
       {fb}
+=======
+>>>>>>> origin/main
     </div>
   );
 }
@@ -284,7 +291,11 @@ function SurveyCard({ cls, onSubmit }: { cls: string; onSubmit: (scores: number[
   );
 }
 
+<<<<<<< HEAD
 function Done({ cls, fb }: { cls: string; fb: ReactNode }) {
+=======
+function Done({ cls }: { cls: string }) {
+>>>>>>> origin/main
   return (
     <div className={cls}>
       <div className="ut-card">
@@ -292,7 +303,10 @@ function Done({ cls, fb }: { cls: string; fb: ReactNode }) {
         <h1 className="ut-title">참여해 주셔서 감사합니다!</h1>
         <p className="ut-sub">보내 주신 답변은 주문 화면을 더 쉽게 만드는 데 쓰여요. 이제 창을 닫으셔도 돼요.</p>
       </div>
+<<<<<<< HEAD
       {fb}
+=======
+>>>>>>> origin/main
     </div>
   );
 }
