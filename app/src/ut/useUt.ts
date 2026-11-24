@@ -26,6 +26,9 @@ const SEND = new URLSearchParams(location.search).get('sheet') !== '0';
 const VERSION = 'order-app-ut1';
 const STORE = 'kiwoom-ut-v1';
 
+/** 미션이 끝나고 완료 안내를 띄우기까지 (앱의 완료 알림을 먼저 보게) */
+const DONE_DELAY = 800;
+
 export const MISSIONS = [
   '현대차 주식을 10주 구매해 보세요',
   '가지고 있는 현대차 주식 중 절반을 팔아 보세요',
@@ -78,7 +81,7 @@ export const SURVEY = [
   '가격이나 금액을 정하는 과정이 번거로웠어요',
 ];
 /** 뜻이 바로 와닿지 않은 말 (복수 선택). 결과 코드에는 번호로 남긴다 (0 = 없었어요) */
-export const TERMS = ['가격 정해서 주문', '시장 가격으로 주문', '대기', '보유', '내역', '체결', '호가'];
+export const TERMS = ['가격 정해서 주문', '시장 가격으로 주문', '대기', '보유', '내역', '체결', '호가', '소수점', '미수거래'];
 export type Survey = { scores: number[]; terms: number[]; etc: string };
 
 type Saved = { pid: string; idx: number; phase: Phase; results: MissionResult[]; survey?: Survey | null };
@@ -285,16 +288,16 @@ export function useUt(hooks: {
     if (!UT_ON || phase !== 'run' || !r) return;
     if (m === 1) {
       if (o.side === 'buy' && o.stockId === 'hyundai' && o.qty === 10) {
-        return finish(true, `${TYPE_CODE[o.type]}${r.typesOpened ? 1 : 0}`, 1400);
+        return finish(true, `${TYPE_CODE[o.type]}${r.typesOpened ? 1 : 0}`, DONE_DELAY);
       }
     } else if (m === 2) {
       const h = r.holdAtStart;
       if (o.side === 'sell' && o.stockId === 'hyundai' && h > 0 && (o.qty === Math.floor(h / 2) || o.qty === Math.ceil(h / 2))) {
-        return finish(true, `${o.qty}-${h}`, 1400);
+        return finish(true, `${o.qty}-${h}`, DONE_DELAY);
       }
     } else if (m === 3) {
       if (o.side === 'buy' && o.view === 'chart' && (o.type === 'limit' || o.type === 'conditional')) {
-        return finish(true, o.src, 1400);
+        return finish(true, o.src, DONE_DELAY);
       }
     }
     r.errs++;
@@ -310,7 +313,7 @@ export function useUt(hooks: {
 
   /** 미션 4: 내역 탭을 열면 성공 (T 탭을 직접 누름, S 완료 알림의 [내역 보기]) */
   const sawHistory = (via: 'T' | 'S') => {
-    if (mRef.current === 4 && run.current) finishRef.current(true, via);
+    if (mRef.current === 4 && run.current) finishRef.current(true, via, DONE_DELAY);
   };
 
   /** 화면 평가 제출: 1차 UT 와 같은 sus 탭에 쌓아 두 차례를 바로 비교할 수 있게 한다 */
