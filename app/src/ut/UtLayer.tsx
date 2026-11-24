@@ -93,6 +93,14 @@ export function UtLayer({ ut, side = false }: { ut: UtApi; side?: boolean }) {
   if (!ut.on) return null;
   const cls = side ? 'ut ut-aside' : 'ut ut-cover ut-in';
   switch (ut.phase) {
+    case 'rate':
+      // 미션 완료: 프로토타입을 흐리게 막고, 점수는 토글(폰은 위쪽 막대, PC 는 오른쪽 카드)에서 고른다
+      return side ? null : (
+        <div className="ut ut-veil" aria-hidden>
+          <span className="ut-veil-text ut-veil-phone">위쪽 분홍 막대를 눌러 점수를 남겨 주세요</span>
+          <span className="ut-veil-text ut-veil-desk">오른쪽에서 점수를 남겨 주세요 →</span>
+        </div>
+      );
     case 'intro':
       return <Intro cls={cls} onStart={ut.start} />;
     case 'ready':
@@ -119,7 +127,7 @@ function Intro({ cls, onStart }: { cls: string; onStart: () => void }) {
           <li>막히면 언제든 [잘 모르겠어요]를 눌러 다음으로 넘어가도 돼요.</li>
           <li>미션마다 걸린 시간과 누른 횟수를 기록해요. 이름 같은 개인 정보는 모으지 않아요.</li>
           {CLARITY_ON && (
-            <li>화면을 누른 위치와 화면 녹화가 익명으로 수집돼요. 녹화 도구(Microsoft Clarity)는 쿠키를 사용해요.</li>
+            <li>이 프로토타입 안에서 누른 위치와 움직임이 익명으로 녹화돼요. 기기의 다른 화면이나 앱은 녹화되지 않아요. 녹화 도구(Microsoft Clarity)는 쿠키를 사용해요.</li>
           )}
         </ul>
       </div>
@@ -214,7 +222,7 @@ function Done({ cls, onRestart }: { cls: string; onRestart: () => void }) {
     <div className={cls}>
       <div className="ut-card">
         <p className="ut-eyebrow">모든 미션을 마쳤어요</p>
-        <h1 className="ut-title">참여해 주셔서 고마워요!</h1>
+        <h1 className="ut-title">참여해 주셔서 감사합니다!</h1>
         <p className="ut-sub">보내 주신 답변은 주문 화면을 더 쉽게 만드는 데 쓰여요. 이제 창을 닫으셔도 돼요.</p>
       </div>
       <button className="ut-link" onClick={onRestart}>

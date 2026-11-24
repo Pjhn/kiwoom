@@ -67,12 +67,12 @@
 
 /* PC 목업: 미션 안내를 폰 오른쪽에 둔다. 창이 좁으면 폰 안 아래 막대로 */
 .ut-side {
-  width: 300px; margin-left: 40px; padding: 24px 22px; gap: 18px;
+  width: 340px; margin-left: 40px; padding: 26px 24px; gap: 18px;
   border-radius: 20px; box-shadow: 0 20px 40px -12px rgba(0,0,0,.3);
 }
 .ut-side .ut-bar-row { flex-direction: column; align-items: flex-start; gap: 10px; }
 .ut-side .ut-bar-no { font-size: 14px; }
-.ut-side .ut-bar-text { font-size: 19px; font-weight: 700; word-break: keep-all; }
+.ut-side .ut-bar-text { font-size: 21px; font-weight: 700; word-break: keep-all; }
 .ut-side .ut-bar-msg { font-size: 14px; line-height: 1.5; }
 .ut-side .ut-bar-actions { flex-direction: column-reverse; }
 .ut-side .ut-btn { height: 48px; font-size: 15px; }
@@ -81,19 +81,19 @@
 
 /* PC 목업: 안내 카드는 폰 오른쪽에, 폰 화면은 흐리게 막아 미리 만지지 않게 */
 .ut-aside {
-  width: 300px; margin-left: 40px; max-height: calc(100dvh - 48px); overflow-y: auto;
+  width: 340px; margin-left: 40px; max-height: calc(100dvh - 48px); overflow-y: auto;
   display: flex; flex-direction: column; gap: 12px; animation: fadeIn .2s;
   scrollbar-width: none;
 }
 .ut-aside::-webkit-scrollbar { display: none; }
-.ut-aside .ut-card { padding: 22px 20px; gap: 12px; border-radius: 20px; box-shadow: 0 20px 40px -12px rgba(0,0,0,.25); }
-.ut-aside .ut-eyebrow { font-size: 13px; }
-.ut-aside .ut-title { font-size: 18px; }
-.ut-aside .ut-sub, .ut-aside .ut-list, .ut-aside .ut-q-text { font-size: 14px; }
-.ut-aside .ut-list { gap: 6px; }
-.ut-aside .ut-btn { height: 46px; font-size: 15px; }
-.ut-aside .ut-seq-btn { height: 40px; font-size: 15px; }
-.ut-aside .ut-chip { height: 34px; padding: 0 12px; font-size: 13px; }
+.ut-aside .ut-card { padding: 26px 24px; gap: 14px; border-radius: 20px; box-shadow: 0 20px 40px -12px rgba(0,0,0,.25); }
+.ut-aside .ut-eyebrow { font-size: 14px; }
+.ut-aside .ut-title { font-size: 20px; }
+.ut-aside .ut-sub, .ut-aside .ut-list, .ut-aside .ut-q-text { font-size: 15px; }
+.ut-aside .ut-list { gap: 8px; }
+.ut-aside .ut-btn { height: 50px; font-size: 16px; }
+.ut-aside .ut-seq-btn { height: 44px; font-size: 16px; }
+.ut-aside .ut-chip { height: 36px; padding: 0 13px; font-size: 14px; }
 @media (min-width: 900px) {
   .app.mock .ut-in { background: rgba(255,255,255,.55); backdrop-filter: blur(3px); align-items: center; justify-content: center; overflow: hidden; }
   .app.mock .ut-in > * { display: none; }
@@ -139,3 +139,17 @@
 @keyframes utPillPulse { 50% { filter: brightness(1.15); } }
 
 @media (max-width: 899px) { .ut-aside { display: none; } }
+
+/* 미션 완료 뒤 점수를 고르는 동안 프로토타입을 흐리게 막는다 (위쪽 막대는 그 위에 남는다) */
+.ut-veil {
+  position: absolute; inset: 0; z-index: 22;
+  display: flex; align-items: center; justify-content: center; padding: 24px;
+  background: rgba(255,255,255,.5); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px);
+  animation: fadeIn .2s;
+}
+.ut-veil-text { font-size: 15px; font-weight: 600; color: var(--text-secondary); text-align: center; word-break: keep-all; }
+.ut-veil-desk { display: none; }
+@media (min-width: 900px) {
+  .app.mock .ut-veil-phone { display: none; }
+  .app.mock .ut-veil-desk { display: inline; }
+}
