@@ -84,25 +84,31 @@ function RateBody({ ok, onRate }: { ok: boolean | null; onRate: (n: number) => v
 }
 
 /** 시작 안내, 미션 카드, 쉬움 점수, 정답 입력, 결과 코드 (화면 전체를 덮는 층) */
-export function UtLayer({ ut }: { ut: UtApi }) {
+/**
+ * 시작 안내, 미션 카드, 화면 평가, 완료 화면
+ * - 폰: 화면 전체를 덮는다
+ * - PC 목업(side): 폰 오른쪽 카드로 띄우고, 폰 화면은 흐리게 막아 둔다 (CSS 의 .ut-in)
+ */
+export function UtLayer({ ut, side = false }: { ut: UtApi; side?: boolean }) {
   if (!ut.on) return null;
+  const cls = side ? 'ut ut-aside' : 'ut ut-cover ut-in';
   switch (ut.phase) {
     case 'intro':
-      return <Intro onStart={ut.start} />;
+      return <Intro cls={cls} onStart={ut.start} />;
     case 'ready':
-      return <Ready m={ut.m} onBegin={ut.begin} />;
+      return <Ready cls={cls} m={ut.m} onBegin={ut.begin} />;
     case 'survey':
-      return <SurveyCard onSubmit={ut.submitSurvey} />;
+      return <SurveyCard cls={`${cls} ut-scroll`} onSubmit={ut.submitSurvey} />;
     case 'done':
-      return <Done onRestart={ut.restart} />;
+      return <Done cls={cls} onRestart={ut.restart} />;
     default:
       return null;
   }
 }
 
-function Intro({ onStart }: { onStart: () => void }) {
+function Intro({ cls, onStart }: { cls: string; onStart: () => void }) {
   return (
-    <div className="ut ut-cover">
+    <div className={cls}>
       <div className="ut-card">
         <p className="ut-eyebrow">사용성 테스트</p>
         <h1 className="ut-title">주식 주문 화면을 써 보고 의견을 들려주세요</h1>
@@ -124,9 +130,9 @@ function Intro({ onStart }: { onStart: () => void }) {
   );
 }
 
-function Ready({ m, onBegin }: { m: number; onBegin: () => void }) {
+function Ready({ cls, m, onBegin }: { cls: string; m: number; onBegin: () => void }) {
   return (
-    <div className="ut ut-cover">
+    <div className={cls}>
       <div className="ut-card">
         <p className="ut-eyebrow">
           미션 {m} / {MISSIONS.length}
@@ -144,7 +150,7 @@ function Ready({ m, onBegin }: { m: number; onBegin: () => void }) {
 }
 
 /** 화면 평가 6문항 (1차 UT 와 같은 문항, 1 전혀 아니에요 ~ 5 매우 그래요) */
-function SurveyCard({ onSubmit }: { onSubmit: (scores: number[], terms: number[], etc: string) => void }) {
+function SurveyCard({ cls, onSubmit }: { cls: string; onSubmit: (scores: number[], terms: number[], etc: string) => void }) {
   const [scores, setScores] = useState<(number | null)[]>(() => SURVEY.map(() => null));
   const [etc, setEtc] = useState('');
   // 고른 말 번호 (1부터). 0 은 「없었어요」로 다른 보기와 함께 고를 수 없다
@@ -153,7 +159,7 @@ function SurveyCard({ onSubmit }: { onSubmit: (scores: number[], terms: number[]
     setTerms((t) => (n === 0 ? (t.includes(0) ? [] : [0]) : t.includes(n) ? t.filter((x) => x !== n) : [...t.filter((x) => x !== 0), n]));
   const done = scores.every((v) => v != null) && terms.length > 0;
   return (
-    <div className="ut ut-cover ut-scroll">
+    <div className={cls}>
       <div className="ut-card">
         <p className="ut-eyebrow">마지막 질문</p>
         <h1 className="ut-title">방금 쓴 화면 전체를 떠올리며 답해 주세요</h1>
@@ -203,9 +209,9 @@ function SurveyCard({ onSubmit }: { onSubmit: (scores: number[], terms: number[]
   );
 }
 
-function Done({ onRestart }: { onRestart: () => void }) {
+function Done({ cls, onRestart }: { cls: string; onRestart: () => void }) {
   return (
-    <div className="ut ut-cover">
+    <div className={cls}>
       <div className="ut-card">
         <p className="ut-eyebrow">모든 미션을 마쳤어요</p>
         <h1 className="ut-title">참여해 주셔서 고마워요!</h1>
