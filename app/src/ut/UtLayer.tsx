@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react';
-import { CLARITY_ON, MISSIONS, SURVEY, TERMS, type UtApi } from './useUt';
+import { CLARITY_ON, MISSIONS, PRE_QS, SURVEY, TERMS, type UtApi } from './useUt';
 import './ut.css';
 
 const SEQ_LABELS = ['매우 어려웠어요', '', '', '보통이에요', '', '', '매우 쉬웠어요'];
@@ -146,6 +146,8 @@ export function UtLayer({ ut, side = false }: { ut: UtApi; side?: boolean }) {
       );
     case 'intro':
       return <Intro cls={cls} onStart={ut.start} />;
+    case 'pre':
+      return <PreCard cls={cls} onSubmit={ut.submitPre} />;
     case 'ready':
       return <Ready cls={cls} m={ut.m} onBegin={ut.begin} fb={side ? null : <UtFeedback ut={ut} />} />;
     case 'survey':
@@ -176,6 +178,42 @@ function Veil({ ut, deskOnly = false, children }: { ut: UtApi; deskOnly?: boolea
         <input type="checkbox" checked={ut.blur} onChange={(e) => ut.setBlur(e.target.checked)} />
         <i aria-hidden />
       </label>
+    </div>
+  );
+}
+
+/** 사전 질문 2개. 답으로 숙련, 중간, 입문을 나눈다 */
+function PreCard({ cls, onSubmit }: { cls: string; onSubmit: (exp: string, kiwoom: string) => void }) {
+  const [a, setA] = useState<Record<string, string>>({});
+  const ok = PRE_QS.every((q) => a[q.key]);
+  return (
+    <div className={cls}>
+      <div className="ut-card">
+        <p className="ut-eyebrow">시작 전 질문 2개</p>
+        <h1 className="ut-title">평소 투자 경험을 알려 주세요</h1>
+        {PRE_QS.map((q) => (
+          <div key={q.key} className="ut-q">
+            <p className="ut-q-text">{q.q}</p>
+            <div className="ut-chips" role="radiogroup" aria-label={q.q}>
+              {q.opts.map((o) => (
+                <button
+                  key={o}
+                  type="button"
+                  role="radio"
+                  aria-checked={a[q.key] === o}
+                  className={`ut-chip ${a[q.key] === o ? 'on' : ''}`}
+                  onClick={() => setA((p) => ({ ...p, [q.key]: o }))}
+                >
+                  {o}
+                </button>
+              ))}
+            </div>
+          </div>
+        ))}
+        <button className="ut-btn primary wide" disabled={!ok} onClick={() => onSubmit(a.exp, a.kiwoom)}>
+          다음
+        </button>
+      </div>
     </div>
   );
 }
