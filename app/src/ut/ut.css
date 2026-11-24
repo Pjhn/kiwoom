@@ -68,7 +68,7 @@
 /* PC 목업: 미션 안내를 폰 오른쪽에 둔다. 창이 좁으면 폰 안 아래 막대로 */
 .ut-side {
   width: 340px; margin-left: 40px; padding: 26px 24px; gap: 18px;
-  border-radius: 20px; box-shadow: 0 20px 40px -12px rgba(0,0,0,.3);
+  border-radius: 20px; box-shadow: 0 24px 48px -12px rgba(0,0,0,.38), 0 4px 14px rgba(0,0,0,.1);
 }
 .ut-side .ut-bar-row { flex-direction: column; align-items: flex-start; gap: 10px; }
 .ut-side .ut-bar-no { font-size: 14px; }
@@ -81,12 +81,15 @@
 
 /* PC 목업: 안내 카드는 폰 오른쪽에, 폰 화면은 흐리게 막아 미리 만지지 않게 */
 .ut-aside {
-  width: 340px; margin-left: 40px; max-height: calc(100dvh - 48px); overflow-y: auto;
+  /* 스크롤 영역이 카드 그림자를 자르지 않게 안쪽 여백을 두고 같은 만큼 바깥 여백을 줄인다 */
+  width: 404px; margin: -32px -32px -32px 8px; padding: 32px; max-height: calc(100dvh - 16px); overflow-y: auto;
+  -webkit-mask-image: linear-gradient(transparent, #000 24px, #000 calc(100% - 24px), transparent);
+  mask-image: linear-gradient(transparent, #000 24px, #000 calc(100% - 24px), transparent);
   display: flex; flex-direction: column; gap: 12px; animation: fadeIn .2s;
   scrollbar-width: none;
 }
 .ut-aside::-webkit-scrollbar { display: none; }
-.ut-aside .ut-card { padding: 26px 24px; gap: 14px; border-radius: 20px; box-shadow: 0 20px 40px -12px rgba(0,0,0,.25); }
+.ut-aside .ut-card { padding: 26px 24px; gap: 14px; border-radius: 20px; box-shadow: 0 24px 48px -12px rgba(0,0,0,.38), 0 4px 14px rgba(0,0,0,.1); }
 .ut-aside .ut-eyebrow { font-size: 14px; }
 .ut-aside .ut-title { font-size: 20px; }
 .ut-aside .ut-sub, .ut-aside .ut-list, .ut-aside .ut-q-text { font-size: 15px; }
