@@ -95,7 +95,7 @@
 .ut-aside .ut-seq-btn { height: 44px; font-size: 16px; }
 .ut-aside .ut-chip { height: 36px; padding: 0 13px; font-size: 14px; }
 @media (min-width: 900px) {
-  .app.mock .ut-in { background: rgba(255,255,255,.55); backdrop-filter: blur(3px); align-items: center; justify-content: center; overflow: hidden; }
+  .app.mock .ut-in { background: rgba(255,255,255,.4); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); align-items: center; justify-content: center; overflow: hidden; }
   .app.mock .ut-in > * { display: none; }
   .app.mock .ut-in::after { content: '오른쪽 안내를 읽어 주세요 →'; font-size: 15px; font-weight: 600; color: var(--text-secondary); }
 }
@@ -144,8 +144,26 @@
 .ut-veil {
   position: absolute; inset: 0; z-index: 22;
   display: flex; align-items: center; justify-content: center; padding: 24px;
-  background: rgba(255,255,255,.5); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px);
-  animation: fadeIn .2s;
+  background: rgba(255,255,255,.4); backdrop-filter: blur(18px) saturate(.9); -webkit-backdrop-filter: blur(18px) saturate(.9);
+  animation: fadeIn .2s; transition: background .2s, backdrop-filter .2s;
+}
+.ut-veil.off { background: transparent; backdrop-filter: none; -webkit-backdrop-filter: none; }
+.ut-blur-t {
+  position: absolute; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%);
+  display: flex; align-items: center; gap: 8px; white-space: nowrap; cursor: pointer;
+  padding: 8px 10px 8px 16px; border-radius: 22px; background: #fff;
+  font-size: 14px; font-weight: 600; color: var(--text-secondary); box-shadow: 0 4px 14px rgba(0,0,0,.16);
+}
+.ut-blur-t input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.ut-blur-t i { flex: none; position: relative; width: 38px; height: 22px; border-radius: 11px; background: #ced4da; transition: background .2s; }
+.ut-blur-t i::after { content: ''; position: absolute; left: 3px; top: 3px; width: 16px; height: 16px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.2); transition: transform .2s; }
+.ut-blur-t input:checked + i { background: var(--magenta-400); }
+.ut-blur-t input:checked + i::after { transform: translateX(16px); }
+.ut-blur-t input:focus-visible + i { outline: 2px solid var(--magenta-400); outline-offset: 2px; }
+.ut-desk-only { display: none; }
+@media (min-width: 900px) {
+  .app.mock .ut-desk-only { display: flex; }
+  .app.mock .ut-phone-only { display: none; }
 }
 .ut-veil-text { font-size: 15px; font-weight: 600; color: var(--text-secondary); text-align: center; word-break: keep-all; }
 .ut-veil-desk { display: none; }
