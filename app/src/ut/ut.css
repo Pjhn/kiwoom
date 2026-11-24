@@ -95,7 +95,7 @@
 .ut-aside .ut-seq-btn { height: 44px; font-size: 16px; }
 .ut-aside .ut-chip { height: 36px; padding: 0 13px; font-size: 14px; }
 @media (min-width: 900px) {
-  .app.mock .ut-in { background: rgba(255,255,255,.4); -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px); align-items: center; justify-content: center; overflow: hidden; }
+  .app.mock .ut-in { background: rgba(255,255,255,.7); -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px); align-items: center; justify-content: center; overflow: hidden; }
   .app.mock .ut-in > * { display: none; }
   .app.mock .ut-in::after { content: '오른쪽 안내를 읽어 주세요 →'; font-size: 15px; font-weight: 600; color: var(--text-secondary); }
 }
@@ -144,7 +144,7 @@
 .ut-veil {
   position: absolute; inset: 0; z-index: 22;
   display: flex; align-items: center; justify-content: center; padding: 24px;
-  background: rgba(255,255,255,.55); -webkit-backdrop-filter: blur(18px) saturate(.9); backdrop-filter: blur(18px) saturate(.9);
+  background: rgba(255,255,255,.7); -webkit-backdrop-filter: blur(18px) saturate(.9); backdrop-filter: blur(18px) saturate(.9);
   animation: fadeIn .2s; transition: background .2s, backdrop-filter .2s;
 }
 .ut-veil.off { background: transparent; -webkit-backdrop-filter: none; backdrop-filter: none; }
