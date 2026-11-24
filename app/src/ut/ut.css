@@ -174,3 +174,33 @@
   .app.mock .ut-veil-phone { display: none; }
   .app.mock .ut-veil-desk { display: inline; }
 }
+
+/* PC 목업 오른쪽 세로 줄: 미션 카드와 그 아래 의견 칸 */
+.ut-sidecol { width: 340px; margin-left: 40px; max-height: calc(100dvh - 48px); display: flex; flex-direction: column; gap: 14px; }
+.ut-sidecol > .ut-side, .ut-sidecol > .ut-aside { width: auto; margin-left: 0; min-height: 0; }
+.ut-sidecol > .ut-aside { flex: 0 1 auto; max-height: none; }
+.ut-sidecol > .ut-fb { flex: none; }
+@media (max-width: 899px) { .ut-sidecol { display: none; } }
+
+/* 어느 화면에서든 남기는 의견 칸 */
+.ut-fb { background: #fff; border-radius: 20px; padding: 18px 20px 16px; box-shadow: 0 24px 48px -12px rgba(0,0,0,.38), 0 4px 14px rgba(0,0,0,.1); }
+.ut-cover .ut-fb { box-shadow: 0 8px 24px rgba(0,0,0,.08); }
+.ut-fb-label { display: flex; flex-direction: column; gap: 2px; font-size: 15px; font-weight: 600; color: var(--text-primary); }
+.ut-fb-label small { font-size: 13px; font-weight: 400; color: var(--text-secondary); margin-bottom: 8px; }
+.ut-fb-row { display: flex; gap: 8px; align-items: flex-end; }
+.ut-fb textarea {
+  flex: 1; min-width: 0; min-height: 44px; max-height: 120px; resize: none; padding: 11px 12px; border-radius: 10px;
+  border: 1px solid var(--border-primary); background: var(--surface-secondary);
+  font: 400 14px/1.45 Pretendard, system-ui, sans-serif; color: var(--text-primary);
+}
+.ut-fb textarea:focus { outline: 0; border-color: var(--magenta-400); }
+.ut-fb-send { flex: none; height: 44px; padding: 0 14px; border-radius: 10px; background: var(--magenta-400); color: #fff; font-size: 14px; font-weight: 600; }
+.ut-fb-send:disabled { background: #ced4da; }
+.ut-fb-sent { margin-top: 8px; font-size: 13px; color: var(--magenta-400); font-weight: 600; }
+/* 폰 위쪽 막대 안(어두운 배경) */
+.ut-fb.dark { background: rgba(255,255,255,.06); box-shadow: none; padding: 14px; border-radius: 12px; }
+.ut-fb.dark .ut-fb-label { color: #fff; font-size: 14px; }
+.ut-fb.dark .ut-fb-label small { color: #adb5bd; }
+.ut-fb.dark textarea { background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.14); color: #fff; }
+.ut-fb.dark textarea::placeholder { color: #868e96; }
+.ut-fb.dark .ut-fb-sent { color: #ff7fbf; }

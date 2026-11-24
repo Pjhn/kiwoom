@@ -38,6 +38,48 @@ function PanelBody({ ut }: { ut: UtApi }) {
   );
 }
 
+/** 1차 UT 처럼 어느 화면에서든 떠오르는 불편을 바로 적어 보내는 칸 */
+export function UtFeedback({ ut, dark = false }: { ut: UtApi; dark?: boolean }) {
+  const [text, setText] = useState('');
+  const [sent, setSent] = useState(false);
+  if (!ut.on) return null;
+  const v = text.trim();
+  return (
+    <form
+      className={`ut-fb ${dark ? 'dark' : ''}`}
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (!v) return;
+        ut.feedback(v);
+        setText('');
+        setSent(true);
+      }}
+    >
+      <label className="ut-fb-label">
+        <span>불편한 점이 있었나요?</span>
+        <small>언제든 떠오르는 대로 짧게 적어 주세요</small>
+        <span className="ut-fb-row">
+          <textarea
+            rows={1}
+            value={text}
+            placeholder="예: 가격 바꾸는 곳이 헷갈렸어요"
+            onChange={(e) => {
+              setText(e.target.value);
+              setSent(false);
+              e.target.style.height = 'auto';
+              e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`;
+            }}
+          />
+          <button className="ut-fb-send" type="submit" disabled={!v}>
+            보내기
+          </button>
+        </span>
+      </label>
+      {sent && <p className="ut-fb-sent">의견을 받았어요. 고마워요!</p>}
+    </form>
+  );
+}
+
 function UtPill({ ut }: { ut: UtApi }) {
   const rating = ut.phase === 'rate';
   // 미션 중에 펼쳐 둔 내용은 완료되면 접는다 (화면을 가리지 않게)
@@ -55,6 +97,7 @@ function UtPill({ ut }: { ut: UtApi }) {
       {shown && (
         <div className="ut-bar ut-pop" role="region" aria-label="미션 안내">
           <PanelBody ut={ut} />
+          <UtFeedback ut={ut} dark />
         </div>
       )}
     </div>
@@ -104,7 +147,7 @@ export function UtLayer({ ut, side = false }: { ut: UtApi; side?: boolean }) {
     case 'intro':
       return <Intro cls={cls} onStart={ut.start} />;
     case 'ready':
-      return <Ready cls={cls} m={ut.m} onBegin={ut.begin} />;
+      return <Ready cls={cls} m={ut.m} onBegin={ut.begin} fb={side ? null : <UtFeedback ut={ut} />} />;
     case 'survey':
       // PC 목업은 오른쪽 카드에서 답하고, 폰 화면은 흐리게 두되 토글로 다시 볼 수 있다
       if (side) return <SurveyCard cls={`${cls} ut-scroll`} onSubmit={ut.submitSurvey} />;
@@ -117,7 +160,7 @@ export function UtLayer({ ut, side = false }: { ut: UtApi; side?: boolean }) {
         </>
       );
     case 'done':
-      return <Done cls={cls} />;
+      return <Done cls={cls} fb={side ? null : <UtFeedback ut={ut} />} />;
     default:
       return null;
   }
@@ -161,7 +204,7 @@ function Intro({ cls, onStart }: { cls: string; onStart: () => void }) {
   );
 }
 
-function Ready({ cls, m, onBegin }: { cls: string; m: number; onBegin: () => void }) {
+function Ready({ cls, m, onBegin, fb }: { cls: string; m: number; onBegin: () => void; fb: ReactNode }) {
   return (
     <div className={cls}>
       <div className="ut-card">
@@ -176,6 +219,7 @@ function Ready({ cls, m, onBegin }: { cls: string; m: number; onBegin: () => voi
           미션 시작
         </button>
       </div>
+      {fb}
     </div>
   );
 }
@@ -240,7 +284,7 @@ function SurveyCard({ cls, onSubmit }: { cls: string; onSubmit: (scores: number[
   );
 }
 
-function Done({ cls }: { cls: string }) {
+function Done({ cls, fb }: { cls: string; fb: ReactNode }) {
   return (
     <div className={cls}>
       <div className="ut-card">
@@ -248,6 +292,7 @@ function Done({ cls }: { cls: string }) {
         <h1 className="ut-title">참여해 주셔서 감사합니다!</h1>
         <p className="ut-sub">보내 주신 답변은 주문 화면을 더 쉽게 만드는 데 쓰여요. 이제 창을 닫으셔도 돼요.</p>
       </div>
+      {fb}
     </div>
   );
 }
