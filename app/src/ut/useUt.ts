@@ -69,7 +69,32 @@ type Run = {
   typesOpened: number;
   /** 미션 2: 시작 때 가지고 있던 수량 */
   holdAtStart: number;
+  /** 무엇을 눌렀는지 시간순 기록 (시트 events 탭, 1차 UT 와 같은 칸) */
+  events: UtEvent[];
 };
+
+type UtEvent = { t: number; event: string; target: string; value: string; on_path: string };
+
+const MAX_EVENTS = 600;
+function push(r: Run, event: string, target: string, value = '') {
+  if (r.events.length >= MAX_EVENTS) return;
+  r.events.push({ t: Math.round(performance.now() - r.start), event, target, value, on_path: '' });
+}
+
+/** 누른 요소의 이름: 접근성 이름 > 글자 > 종류 */
+function nameOf(target: Element | null): string {
+  if (!target) return '빈 곳';
+  if (target.closest('canvas')) return '차트 영역';
+  if (target.closest('.dim')) return '시트 바깥(닫기)';
+  const el = target.closest('button, a, input, textarea, [role], label') ?? target;
+  const aria = el.getAttribute('aria-label');
+  if (aria) return aria.slice(0, 40);
+  if (el instanceof HTMLInputElement) return el.placeholder || el.type;
+  const text = (el.textContent ?? '').replace(/\s+/g, ' ').trim();
+  if (text) return text.slice(0, 40);
+  const cls = typeof el.className === 'string' ? el.className.split(' ')[0] : '';
+  return cls || el.tagName.toLowerCase();
+}
 
 /** 마지막 화면 평가: 1차 UT(11월 16일)와 같은 문항, 같은 1~5점 (그렇다 = 불편, 낮을수록 좋음). 1차 7번(주문 취소)은 이번 미션에 없어 뺐다 */
 export const SURVEY = [
@@ -117,7 +142,7 @@ function save(s: Saved | null) {
   }
 }
 
-function send(kind: 'task' | 'sus' | 'final', payload: Record<string, unknown>) {
+function send(kind: 'task' | 'events' | 'sus' | 'final', payload: Record<string, unknown>) {
   if (!SEND || !SHEET_URL) return;
   try {
     fetch(SHEET_URL, {
@@ -190,6 +215,8 @@ export function useUt(hooks: {
   );
   const [results, setResults] = useState<MissionResult[]>(saved?.results ?? []);
   const [survey, setSurvey] = useState<Survey | null>(saved?.survey ?? null);
+  // 점수와 설문을 고르는 동안 프로토타입을 흐리게 가릴지 (1차 UT 의 「화면 흐리게」 토글)
+  const [blur, setBlur] = useState(true);
   const [pendingOk, setPendingOk] = useState<boolean | null>(null);
   const run = useRef<Run | null>(null);
   const hooksRef = useRef(hooks);
@@ -205,15 +232,29 @@ export function useUt(hooks: {
     if (UT_ON) save({ pid, idx, phase, results, survey });
   }, [pid, idx, phase, results, survey]);
 
-  // 미션 중 화면 탭 수 (UT 안내 영역은 빼고 센다)
+  // 미션 중 화면 탭 수와 무엇을 눌렀는지 (UT 안내 영역은 빼고 센다)
   useEffect(() => {
     if (!UT_ON || phase !== 'run') return;
     const on = (e: PointerEvent) => {
-      if ((e.target as Element | null)?.closest?.('.ut')) return;
-      if (run.current) run.current.taps++;
+      const el = e.target as Element | null;
+      if (el?.closest?.('.ut')) return;
+      const r = run.current;
+      if (!r) return;
+      r.taps++;
+      push(r, 'tap', nameOf(el));
+    };
+    // 입력칸에 넣은 값 (가격, 수량)
+    const onChange = (e: Event) => {
+      const el = e.target as HTMLInputElement | null;
+      if (!el || el.closest?.('.ut') || !run.current) return;
+      push(run.current, 'input', nameOf(el), el.value);
     };
     document.addEventListener('pointerdown', on, true);
-    return () => document.removeEventListener('pointerdown', on, true);
+    document.addEventListener('change', onChange, true);
+    return () => {
+      document.removeEventListener('pointerdown', on, true);
+      document.removeEventListener('change', onChange, true);
+    };
   }, [phase]);
 
   const m = idx + 1;
@@ -228,6 +269,7 @@ export function useUt(hooks: {
       errs: 0,
       typesOpened: 0,
       holdAtStart: hooksRef.current.holdingQty('hyundai'),
+      events: [],
     };
     setPhase('run');
     clarity('set', 'mission', String(m));
@@ -239,6 +281,8 @@ export function useUt(hooks: {
       const r = run.current;
       if (!r) return;
       run.current = null;
+      push(r, ok ? 'mission_success' : 'mission_fail', `미션 ${m}`, extra);
+      send('events', { pid, task: m, events: r.events });
       draft.current = {
         m,
         ok,
@@ -250,6 +294,7 @@ export function useUt(hooks: {
       setPendingOk(ok);
       clarity('event', `m${m}_${ok ? 'success' : 'fail'}`);
       // 앱의 완료 안내를 잠깐 보여 준 뒤 점수 카드를 띄운다
+      setBlur(true);
       if (delay) setTimeout(() => setPhase('rate'), delay);
       else setPhase('rate');
     },
@@ -268,6 +313,7 @@ export function useUt(hooks: {
     setResults(next);
     send('task', { pid, task: res.m, ok: res.ok ? 1 : 0, sec: res.sec, taps: res.taps, errs: res.errs, seq, extra: res.extra });
     if (idx + 1 >= MISSIONS.length) {
+      setBlur(true);
       setPhase('survey');
     } else {
       setIdx(idx + 1);
@@ -286,6 +332,7 @@ export function useUt(hooks: {
   const order = (o: UtOrder) => {
     const r = run.current;
     if (!UT_ON || phase !== 'run' || !r) return;
+    push(r, 'order', o.side === 'buy' ? '구매 확정' : '판매 확정', `${o.stockId} ${o.qty}주 ${o.price}원 ${o.type} 가격:${o.src} 화면:${o.view}`);
     if (m === 1) {
       if (o.side === 'buy' && o.stockId === 'hyundai' && o.qty === 10) {
         return finish(true, `${TYPE_CODE[o.type]}${r.typesOpened ? 1 : 0}`, DONE_DELAY);
@@ -305,7 +352,10 @@ export function useUt(hooks: {
 
   /** 미션과 상관없이 헤맨 것으로 볼 행동 (주문 확인 시트에서 취소 등) */
   const stray = () => {
-    if (run.current && phase === 'run') run.current.errs++;
+    if (run.current && phase === 'run') {
+      run.current.errs++;
+      push(run.current, 'confirm_cancel', '주문 확인 취소');
+    }
   };
   const typesOpened = () => {
     if (run.current) run.current.typesOpened++;
@@ -347,6 +397,8 @@ export function useUt(hooks: {
     results,
     survey,
     submitSurvey,
+    blur,
+    setBlur,
     pendingOk,
     start: () => setPhase('ready'),
     begin,

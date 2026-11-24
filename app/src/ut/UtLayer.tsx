@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { CLARITY_ON, MISSIONS, SURVEY, TERMS, type UtApi } from './useUt';
 import './ut.css';
 
@@ -96,22 +96,45 @@ export function UtLayer({ ut, side = false }: { ut: UtApi; side?: boolean }) {
     case 'rate':
       // 미션 완료: 프로토타입을 흐리게 막고, 점수는 토글(폰은 위쪽 막대, PC 는 오른쪽 카드)에서 고른다
       return side ? null : (
-        <div className="ut ut-veil" aria-hidden>
+        <Veil ut={ut}>
           <span className="ut-veil-text ut-veil-phone">위쪽 분홍 막대를 눌러 점수를 남겨 주세요</span>
           <span className="ut-veil-text ut-veil-desk">오른쪽에서 점수를 남겨 주세요 →</span>
-        </div>
+        </Veil>
       );
     case 'intro':
       return <Intro cls={cls} onStart={ut.start} />;
     case 'ready':
       return <Ready cls={cls} m={ut.m} onBegin={ut.begin} />;
     case 'survey':
-      return <SurveyCard cls={`${cls} ut-scroll`} onSubmit={ut.submitSurvey} />;
+      // PC 목업은 오른쪽 카드에서 답하고, 폰 화면은 흐리게 두되 토글로 다시 볼 수 있다
+      if (side) return <SurveyCard cls={`${cls} ut-scroll`} onSubmit={ut.submitSurvey} />;
+      return (
+        <>
+          <SurveyCard cls="ut ut-cover ut-scroll ut-phone-only" onSubmit={ut.submitSurvey} />
+          <Veil ut={ut} deskOnly>
+            <span className="ut-veil-text">오른쪽 질문에 답해 주세요 →</span>
+          </Veil>
+        </>
+      );
     case 'done':
       return <Done cls={cls} onRestart={ut.restart} />;
     default:
       return null;
   }
+}
+
+/** 지난 UT 처럼 「화면 흐리게」 스위치로 프로토타입을 가렸다 보였다 한다. 보일 때도 누르기는 막는다 */
+function Veil({ ut, deskOnly = false, children }: { ut: UtApi; deskOnly?: boolean; children: ReactNode }) {
+  return (
+    <div className={`ut ut-veil ${ut.blur ? '' : 'off'} ${deskOnly ? 'ut-desk-only' : ''}`}>
+      {ut.blur && children}
+      <label className="ut-blur-t">
+        <span>화면 흐리게</span>
+        <input type="checkbox" checked={ut.blur} onChange={(e) => ut.setBlur(e.target.checked)} />
+        <i aria-hidden />
+      </label>
+    </div>
+  );
 }
 
 function Intro({ cls, onStart }: { cls: string; onStart: () => void }) {
