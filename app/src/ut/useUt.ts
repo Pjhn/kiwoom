@@ -60,7 +60,7 @@ export type MissionResult = {
   extra: string;
 };
 
-type Phase = 'intro' | 'ready' | 'run' | 'rate' | 'survey' | 'done';
+type Phase = 'intro' | 'pre' | 'ready' | 'run' | 'rate' | 'survey' | 'done';
 
 type Run = {
   start: number;
@@ -109,7 +109,22 @@ export const SURVEY = [
 export const TERMS = ['가격 정해서 주문', '시장 가격으로 주문', '대기', '보유', '내역', '체결', '호가', '소수점', '미수거래'];
 export type Survey = { scores: number[]; terms: number[]; etc: string };
 
-type Saved = { pid: string; idx: number; phase: Phase; results: MissionResult[]; survey?: Survey | null };
+type Saved = { pid: string; idx: number; phase: Phase; results: MissionResult[]; survey?: Survey | null; segment?: Segment };
+
+/** 사전 질문 (1차 UT 와 같은 문항과 같은 기준) */
+export const PRE_QS = [
+  { key: 'exp', q: '주식 투자를 한 지 얼마나 됐나요?', opts: ['해 본 적 없어요', '1년 미만', '1~3년', '3년 이상'] },
+  { key: 'kiwoom', q: '키움증권 앱을 써 봤나요?', opts: ['지금 쓰고 있어요', '써 본 적 있어요', '써 본 적 없어요'] },
+] as const;
+export type Segment = '' | '숙련' | '중간' | '입문';
+/** 숙련: 3년 이상이면서 키움 앱 경험 있음. 입문: 해 본 적 없음, 1년 미만, 또는 키움 앱 경험 없음. 나머지는 중간 */
+export function segmentOf(exp: string, kiwoom: string): Segment {
+  if (exp === '3년 이상' && kiwoom !== '써 본 적 없어요') return '숙련';
+  if (exp === '해 본 적 없어요' || exp === '1년 미만' || kiwoom === '써 본 적 없어요') return '입문';
+  return '중간';
+}
+/** 모든 전송 행에 붙이는 참가자 구분 */
+let SEGMENT: Segment = '';
 
 const TYPE_CODE: Record<OrderType, string> = {
   limit: 'L',
@@ -142,14 +157,14 @@ function save(s: Saved | null) {
   }
 }
 
-function send(kind: 'task' | 'events' | 'sus' | 'final' | 'feedback', payload: Record<string, unknown>) {
+function send(kind: 'pre' | 'task' | 'events' | 'sus' | 'final' | 'feedback', payload: Record<string, unknown>) {
   if (!SEND || !SHEET_URL) return;
   try {
     fetch(SHEET_URL, {
       method: 'POST',
       mode: 'no-cors',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ kind, version: VERSION, ts: Date.now(), ...payload }),
+      body: JSON.stringify({ kind, version: VERSION, ts: Date.now(), segment: SEGMENT, ...payload }),
     }).catch(() => {});
   } catch {
     /* 네트워크가 없어도 결과 코드로 받을 수 있다 */
@@ -211,7 +226,7 @@ export function useUt(hooks: {
   const [idx, setIdx] = useState(saved?.idx ?? 0);
   // 새로고침되면 진행 중이던 미션은 시작 카드부터 다시
   const [phase, setPhase] = useState<Phase>(
-    saved ? (saved.phase === 'done' || saved.phase === 'survey' || saved.phase === 'intro' ? saved.phase : 'ready') : 'intro',
+    saved ? (saved.phase === 'done' || saved.phase === 'survey' || saved.phase === 'intro' || saved.phase === 'pre' ? saved.phase : 'ready') : 'intro',
   );
   const [results, setResults] = useState<MissionResult[]>(saved?.results ?? []);
   const [survey, setSurvey] = useState<Survey | null>(saved?.survey ?? null);
@@ -223,14 +238,28 @@ export function useUt(hooks: {
   hooksRef.current = hooks;
   const draft = useRef<Omit<MissionResult, 'seq'> | null>(null);
 
+  const [segment, setSegment] = useState<Segment>(saved?.segment ?? '');
+  SEGMENT = segment;
+
   useEffect(() => {
     clarity('identify', pid);
     clarity('set', 'version', VERSION);
   }, [pid]);
+  useEffect(() => {
+    if (segment) clarity('set', 'segment', segment);
+  }, [segment]);
 
   useEffect(() => {
-    if (UT_ON) save({ pid, idx, phase, results, survey });
-  }, [pid, idx, phase, results, survey]);
+    if (UT_ON) save({ pid, idx, phase, results, survey, segment });
+  }, [pid, idx, phase, results, survey, segment]);
+
+  const submitPre = (exp: string, kiwoom: string) => {
+    const seg = segmentOf(exp, kiwoom);
+    SEGMENT = seg;
+    setSegment(seg);
+    send('pre', { pid, exp, kiwoom, device: matchMedia('(pointer:coarse)').matches ? 'mobile' : 'desktop' });
+    setPhase('ready');
+  };
 
   // 미션 중 화면 탭 수와 무엇을 눌렀는지 (UT 안내 영역은 빼고 센다)
   useEffect(() => {
@@ -387,9 +416,9 @@ export function useUt(hooks: {
   /** 화면마다 받는 자유 의견. 어느 단계, 몇 번째 미션에서 남겼는지 함께 보낸다 */
   const feedback = (text: string) => {
     const where =
-      ({ intro: '시작 안내', ready: `미션 ${m} 시작 전`, run: `미션 ${m} 진행 중`, rate: `미션 ${m} 쉬움 점수`, survey: '마지막 질문', done: '완료 화면' } as Record<Phase, string>)[phase] ?? phase;
+      ({ intro: '시작 안내', pre: '사전 질문', ready: `미션 ${m} 시작 전`, run: `미션 ${m} 진행 중`, rate: `미션 ${m} 쉬움 점수`, survey: '마지막 질문', done: '완료 화면' } as Record<Phase, string>)[phase] ?? phase;
     const r = run.current;
-    send('feedback', { pid, where, phase, task: phase === 'intro' || phase === 'survey' || phase === 'done' ? '' : m, t_ms: phase === 'run' && r ? Math.round(performance.now() - r.start) : '', text: text.slice(0, 1000) });
+    send('feedback', { pid, where, phase, task: phase === 'intro' || phase === 'pre' || phase === 'survey' || phase === 'done' ? '' : m, t_ms: phase === 'run' && r ? Math.round(performance.now() - r.start) : '', text: text.slice(0, 1000) });
     clarity('event', 'feedback');
   };
 
@@ -409,7 +438,9 @@ export function useUt(hooks: {
     blur,
     setBlur,
     pendingOk,
-    start: () => setPhase('ready'),
+    segment,
+    submitPre,
+    start: () => setPhase('pre'),
     begin,
     giveUp,
     rate,
