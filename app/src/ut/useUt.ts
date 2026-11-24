@@ -142,7 +142,7 @@ function save(s: Saved | null) {
   }
 }
 
-function send(kind: 'task' | 'events' | 'sus' | 'final', payload: Record<string, unknown>) {
+function send(kind: 'task' | 'events' | 'sus' | 'final' | 'feedback', payload: Record<string, unknown>) {
   if (!SEND || !SHEET_URL) return;
   try {
     fetch(SHEET_URL, {
@@ -384,6 +384,15 @@ export function useUt(hooks: {
     setPhase('done');
   };
 
+  /** 화면마다 받는 자유 의견. 어느 단계, 몇 번째 미션에서 남겼는지 함께 보낸다 */
+  const feedback = (text: string) => {
+    const where =
+      ({ intro: '시작 안내', ready: `미션 ${m} 시작 전`, run: `미션 ${m} 진행 중`, rate: `미션 ${m} 쉬움 점수`, survey: '마지막 질문', done: '완료 화면' } as Record<Phase, string>)[phase] ?? phase;
+    const r = run.current;
+    send('feedback', { pid, where, phase, task: phase === 'intro' || phase === 'survey' || phase === 'done' ? '' : m, t_ms: phase === 'run' && r ? Math.round(performance.now() - r.start) : '', text: text.slice(0, 1000) });
+    clarity('event', 'feedback');
+  };
+
   const restart = () => {
     save(null);
     location.reload();
@@ -408,6 +417,7 @@ export function useUt(hooks: {
     stray,
     typesOpened,
     sawHistory,
+    feedback,
     restart,
   };
 }

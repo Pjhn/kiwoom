@@ -12,7 +12,7 @@ import { StockPicker } from './components/StockPicker';
 import { CASH, STOCKS, type Market, type Stock, bestAsk, bestBid, fmt, krxTick, stockById } from './lib/market';
 import { autoPrice, isUserPriced, typeLabel, type OrderType } from './lib/orderTypes';
 import { useMarket } from './lib/useMarket';
-import { UtBar, UtLayer } from './ut/UtLayer';
+import { UtBar, UtFeedback, UtLayer } from './ut/UtLayer';
 import { useUt, type PriceSrc } from './ut/useUt';
 
 /**
@@ -565,10 +565,11 @@ export default function App() {
       </div>
       </div>
       {frameMode === 'mock' && (
-        <>
+        <div className="ut-sidecol">
           <UtBar ut={ut} side />
           <UtLayer ut={ut} side />
-        </>
+          <UtFeedback ut={ut} />
+        </div>
       )}
     </div>
   );
