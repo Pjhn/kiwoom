@@ -476,6 +476,7 @@ export default function App() {
       <div className="phone">
       <div className="device" style={frameMode === false && viewH !== window.innerHeight ? { height: viewH } : undefined}>
         {framed && <StatusBar />}
+        <UtBar ut={ut} />
         <div className="scroller" ref={scrollerRef}>
           <TopAppBar name={stock.name} onSearch={() => setPickerOpen(true)} />
           <SubBar panelOpen={panelOpen} onTogglePanel={() => setPanelOpen((v) => !v)} />
@@ -533,7 +534,6 @@ export default function App() {
             />
           </div>
         </div>
-        <UtBar ut={ut} />
         {framed && <HomeIndicator />}
         {snack && <SnackBar snack={snack} />}
         {confirming && effPrice != null && qty != null && (
