@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import arrowDown12 from '../assets/icons/arrow-down-12.svg';
 import arrowUp12 from '../assets/icons/arrow-up-12.svg';
-import check from '../assets/icons/check.svg';
+import alertFilled from '../assets/icons/alert-filled.svg';
+import cancelFilled from '../assets/icons/cancel-filled.svg';
+import checkFilled from '../assets/icons/check-filled.svg';
 import { type Stock, fmt } from '../lib/market';
 import { StockLogo } from './StockLogo';
 import type { Side } from './OrderPanel';
@@ -88,12 +90,15 @@ export function ConfirmSheet({
 }
 
 /** name 이 있으면 text 앞에 붙고, 길면 종목 이름만 ... 으로 줄인다 */
-export type Snack = { id: number; text: string; action: string; onAction: () => void; name?: string };
+export type Snack = { id: number; text: string; action: string; onAction: () => void; name?: string; tone?: SnackTone };
+/** 피그마 Snack bar 의 State (Default, Error, Warning) */
+export type SnackTone = 'default' | 'error' | 'warning';
+const SNACK_ICON: Record<SnackTone, string> = { default: checkFilled, error: cancelFilled, warning: alertFilled };
 
 export function SnackBar({ snack }: { snack: Snack }) {
   return (
     <div className="snack" role="status" key={snack.id}>
-      <img src={check} alt="" />
+      <img src={SNACK_ICON[snack.tone ?? 'default']} alt="" />
       <p>
         {snack.name && <span className="snack-name">{snack.name}</span>}
         <span className="snack-rest">{snack.name ? ` ${snack.text}` : snack.text}</span>

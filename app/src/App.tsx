@@ -6,7 +6,7 @@ import { IconTabs, type View } from './components/IconTabs';
 import { OrderPanel, type Side } from './components/OrderPanel';
 import { MultiChart } from './components/MultiChart';
 import { OrderInfo, type Holding, type InfoTab, type Order } from './components/OrderInfo';
-import { ConfirmSheet, SnackBar, type Snack } from './components/Overlays';
+import { ConfirmSheet, SnackBar, type Snack, type SnackTone } from './components/Overlays';
 import { OrderTypeSheet } from './components/OrderTypeSheet';
 import { StockPicker } from './components/StockPicker';
 import { CASH, STOCKS, type Market, type Stock, bestAsk, bestBid, fmt, krxTick, stockById } from './lib/market';
@@ -211,8 +211,8 @@ export default function App() {
     freshTimer.current = setTimeout(() => setFresh(null), 4000);
   };
 
-  const toast = useCallback((text: string, action: string, onAction: () => void, name?: string) => {
-    setSnack({ id: seq.current++, text, action, onAction, name });
+  const toast = useCallback((text: string, action: string, onAction: () => void, name?: string, tone?: SnackTone) => {
+    setSnack({ id: seq.current++, text, action, onAction, name, tone });
   }, []);
 
   const scrollToInfo = () => {
@@ -303,7 +303,7 @@ export default function App() {
     }
     if (qty > maxQty) {
       setQty(maxQty > 0 ? maxQty : null);
-      toast(side === 'buy' ? '구매가능 금액에 맞춰 수량을 줄였어요' : `판매가능 수량은 ${maxQty}주예요`, '확인', () => setSnack(null));
+      toast(side === 'buy' ? '구매가능 금액에 맞춰 수량을 줄였어요' : `판매가능 수량은 ${maxQty}주예요`, '확인', () => setSnack(null), undefined, 'warning');
       return;
     }
     setConfirming(true);
