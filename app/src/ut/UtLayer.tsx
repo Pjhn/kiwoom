@@ -117,7 +117,7 @@ export function UtLayer({ ut, side = false }: { ut: UtApi; side?: boolean }) {
         </>
       );
     case 'done':
-      return <Done cls={cls} onRestart={ut.restart} />;
+      return <Done cls={cls} />;
     default:
       return null;
   }
@@ -153,10 +153,10 @@ function Intro({ cls, onStart }: { cls: string; onStart: () => void }) {
             <li>이 프로토타입 안에서 누른 위치와 움직임이 익명으로 녹화돼요. 기기의 다른 화면이나 앱은 녹화되지 않아요. 녹화 도구(Microsoft Clarity)는 쿠키를 사용해요.</li>
           )}
         </ul>
+        <button className="ut-btn primary wide" onClick={onStart}>
+          {CLARITY_ON ? '동의하고 시작할게요' : '시작할게요'}
+        </button>
       </div>
-      <button className="ut-btn primary wide" onClick={onStart}>
-        {CLARITY_ON ? '동의하고 시작할게요' : '시작할게요'}
-      </button>
     </div>
   );
 }
@@ -172,10 +172,10 @@ function Ready({ cls, m, onBegin }: { cls: string; m: number; onBegin: () => voi
         <p className="ut-sub">
           다 하면 자동으로 다음 미션으로 넘어가요.
         </p>
+        <button className="ut-btn primary wide" onClick={onBegin}>
+          미션 시작
+        </button>
       </div>
-      <button className="ut-btn primary wide" onClick={onBegin}>
-        미션 시작
-      </button>
     </div>
   );
 }
@@ -240,7 +240,7 @@ function SurveyCard({ cls, onSubmit }: { cls: string; onSubmit: (scores: number[
   );
 }
 
-function Done({ cls, onRestart }: { cls: string; onRestart: () => void }) {
+function Done({ cls }: { cls: string }) {
   return (
     <div className={cls}>
       <div className="ut-card">
@@ -248,9 +248,6 @@ function Done({ cls, onRestart }: { cls: string; onRestart: () => void }) {
         <h1 className="ut-title">참여해 주셔서 감사합니다!</h1>
         <p className="ut-sub">보내 주신 답변은 주문 화면을 더 쉽게 만드는 데 쓰여요. 이제 창을 닫으셔도 돼요.</p>
       </div>
-      <button className="ut-link" onClick={onRestart}>
-        처음부터 다시 하기
-      </button>
     </div>
   );
 }
