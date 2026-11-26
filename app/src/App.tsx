@@ -80,6 +80,8 @@ export default function App() {
     });
   };
   const [view, setView] = useState<View>('book');
+  const viewRef = useRef(view);
+  viewRef.current = view;
   const [side, setSide] = useState<Side>('buy');
   const [price, setPrice] = useState<number | null>(null);
   const [qty, setQty] = useState<number | null>(null);
@@ -137,6 +139,7 @@ export default function App() {
   historyRef.current = history;
   const ut = useUt({
     holdingQty: (id) => holdingsRef.current.find((h) => h.stockId === id)?.qty ?? 0,
+    chartOpen: () => viewRef.current === 'chart',
     prepare: (m) => {
       setSnack(null);
       if (m === 2 && !holdingsRef.current.some((h) => h.stockId === 'hyundai')) {
@@ -170,6 +173,11 @@ export default function App() {
       }
     },
   });
+  // UT 미션 3: 차트 보기를 연 적이 있는지 기록
+  useEffect(() => {
+    if (view === 'chart') ut.sawChart();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view]);
 
   const userPriced = isUserPriced(orderType);
   const auto = autoPrice(orderType, side, market);
