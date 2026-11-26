@@ -69,6 +69,8 @@ type Run = {
   typesOpened: number;
   /** 미션 2: 시작 때 가지고 있던 수량 */
   holdAtStart: number;
+  /** 미션 중 차트 보기를 한 번이라도 열었는지 (미션 3) */
+  chartSeen: boolean;
   /** 무엇을 눌렀는지 시간순 기록 (시트 events 탭, 1차 UT 와 같은 칸) */
   events: UtEvent[];
 };
@@ -220,6 +222,8 @@ export function useUt(hooks: {
   /** 미션을 시작하기 직전에 화면 상태를 맞춘다 (예: 미션 2에서 팔 주식이 없으면 넣어 둔다) */
   prepare: (m: number) => void;
   holdingQty: (stockId: string) => number;
+  /** 지금 차트 보기인지 */
+  chartOpen: () => boolean;
 }) {
   const [saved] = useState(load);
   const [pid] = useState(() => saved?.pid ?? newPid());
@@ -298,6 +302,7 @@ export function useUt(hooks: {
       errs: 0,
       typesOpened: 0,
       holdAtStart: hooksRef.current.holdingQty('hyundai'),
+      chartSeen: hooksRef.current.chartOpen(),
       events: [],
     };
     setPhase('run');
@@ -372,7 +377,8 @@ export function useUt(hooks: {
         return finish(true, `${o.qty}-${h}`, DONE_DELAY);
       }
     } else if (m === 3) {
-      if (o.side === 'buy' && o.view === 'chart' && (o.type === 'limit' || o.type === 'conditional')) {
+      // 미션 중 차트 보기를 한 번이라도 열었고, 가격을 정해서 구매하면 성공 (가격을 어디서 골랐는지는 extra 와 events 에 남는다)
+      if (o.side === 'buy' && (o.view === 'chart' || r.chartSeen) && (o.type === 'limit' || o.type === 'conditional')) {
         return finish(true, o.src, DONE_DELAY);
       }
     }
@@ -385,6 +391,9 @@ export function useUt(hooks: {
       run.current.errs++;
       push(run.current, 'confirm_cancel', '주문 확인 취소');
     }
+  };
+  const sawChart = () => {
+    if (run.current) run.current.chartSeen = true;
   };
   const typesOpened = () => {
     if (run.current) run.current.typesOpened++;
@@ -447,6 +456,7 @@ export function useUt(hooks: {
     order,
     stray,
     typesOpened,
+    sawChart,
     sawHistory,
     feedback,
     restart,
