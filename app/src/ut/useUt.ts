@@ -71,6 +71,8 @@ type Run = {
   holdAtStart: number;
   /** 미션 중 차트 보기를 한 번이라도 열었는지 (미션 3) */
   chartSeen: boolean;
+  /** 미션 중 현대차를 판 수량 합계 (미션 2, 나눠 팔아도 인정) */
+  sold: number;
   /** 무엇을 눌렀는지 시간순 기록 (시트 events 탭, 1차 UT 와 같은 칸) */
   events: UtEvent[];
 };
@@ -303,6 +305,7 @@ export function useUt(hooks: {
       typesOpened: 0,
       holdAtStart: hooksRef.current.holdingQty('hyundai'),
       chartSeen: hooksRef.current.chartOpen(),
+      sold: 0,
       events: [],
     };
     setPhase('run');
@@ -373,8 +376,13 @@ export function useUt(hooks: {
       }
     } else if (m === 2) {
       const h = r.holdAtStart;
-      if (o.side === 'sell' && o.stockId === 'hyundai' && h > 0 && (o.qty === Math.floor(h / 2) || o.qty === Math.ceil(h / 2))) {
-        return finish(true, `${o.qty}-${h}`, DONE_DELAY);
+      if (o.side === 'sell' && o.stockId === 'hyundai') {
+        r.sold += o.qty;
+        // 한 번에 팔든 나눠 팔든 합계가 절반이면 성공. extra 는 시트가 날짜로 바꾸지 않게 「판 수량of보유」로 남긴다
+        if (h > 0 && (r.sold === Math.floor(h / 2) || r.sold === Math.ceil(h / 2))) {
+          return finish(true, `${r.sold}of${h}`, DONE_DELAY);
+        }
+        if (r.sold < Math.floor(h / 2)) return; // 아직 덜 팔았으면 헤맨 것으로 세지 않는다
       }
     } else if (m === 3) {
       // 미션 중 차트 보기를 한 번이라도 열었고, 가격을 정해서 구매하면 성공 (가격을 어디서 골랐는지는 extra 와 events 에 남는다)

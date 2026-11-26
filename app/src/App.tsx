@@ -142,12 +142,18 @@ export default function App() {
     chartOpen: () => viewRef.current === 'chart',
     prepare: (m) => {
       setSnack(null);
-      if (m === 2 && !holdingsRef.current.some((h) => h.stockId === 'hyundai')) {
-        // 미션 1을 건너뛰었거나 아직 체결 전이면 판매할 주식 10주를 넣어 둔다
-        const p = marketRef.current.stock.id === 'hyundai' ? marketRef.current.price : priceOf('hyundai');
-        const h = { stockId: 'hyundai', qty: 10, avg: p };
-        holdingsRef.current = [h, ...holdingsRef.current];
-        setHoldings((l) => [h, ...l.filter((x) => x.stockId !== 'hyundai')]);
+      // 앞 미션의 판매 탭이 남아 있지 않게 늘 구매 탭에서 시작한다
+      setSide('buy');
+      setQty(null);
+      if (m === 2) {
+        // 절반이 늘 5주가 되게 현대차 보유를 정확히 10주로 맞춘다 (미션 1을 건너뛰었거나 더 샀어도)
+        const cur = holdingsRef.current.find((h) => h.stockId === 'hyundai');
+        if (!cur || cur.qty !== 10) {
+          const p = marketRef.current.stock.id === 'hyundai' ? marketRef.current.price : priceOf('hyundai');
+          const h = { stockId: 'hyundai', qty: 10, avg: cur?.avg ?? p };
+          holdingsRef.current = [h, ...holdingsRef.current.filter((x) => x.stockId !== 'hyundai')];
+          setHoldings((l) => [h, ...l.filter((x) => x.stockId !== 'hyundai')]);
+        }
       }
       if (m === 4) {
         // 내역 탭을 직접 찾아가게 대기 탭에서 시작한다
